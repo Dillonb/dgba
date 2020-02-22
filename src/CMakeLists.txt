@@ -3,8 +3,17 @@ SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
 INCLUDE_DIRECTORIES(SYSTEM "contrib")
 
 add_library(core
-        rom.c
-        rom.h
+        util.h
+        gbabus.c
+        gbabus.h
+        gbarom.c
+        gbarom.h
+        log.c
+        log.h
+        gbamem.c
+        gbamem.h
+        arm7tdmi.c
+        arm7tdmi.h
         )
 
 add_executable (gba gba.c)
