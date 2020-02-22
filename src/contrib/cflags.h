@@ -319,7 +319,9 @@ static void cflags_parse(cflags_t * flags, int argc, char ** argv)
                                 _cflags_process_flag(flag, NULL);
                             }
                             else {
-                                if (argv[i + 1][0] == '-') {
+                                if (flag->type == CFLAGS_TYPE_BOOL ||
+                                    flag->type == CFLAGS_TYPE_BOOL_CALLBACK ||
+                                    argv[i + 1][0] == '-') {
                                     _cflags_process_flag(flag, NULL);
                                 }
                                 else {
@@ -343,7 +345,9 @@ static void cflags_parse(cflags_t * flags, int argc, char ** argv)
                                 _cflags_process_flag(flag, NULL);
                             }
                             else {
-                                if (argv[i + 1][0] == '-') {
+                                if (flag->type == CFLAGS_TYPE_BOOL ||
+                                    flag->type == CFLAGS_TYPE_BOOL_CALLBACK ||
+                                    argv[i + 1][0] == '-') {
                                     _cflags_process_flag(flag, NULL);
                                 }
                                 else {
