@@ -1,0 +1,7 @@
+*.gba
+CMakeCache.txt
+CMakeFiles
+Makefile
+*.cmake
+gba
+src
