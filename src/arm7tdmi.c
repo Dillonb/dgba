@@ -36,17 +36,18 @@ bool check_cond(arminstr* instr) {
         case AL:
             return true;
         default:
-            LOG(FATAL, "Unimplemented COND: %d", instr->parsed.cond);
-            return false;
+            logfatal("Unimplemented COND: %d", instr->parsed.cond);
     }
 }
 
 void arm7tdmi_tick(arm7tdmi* state) {
     arminstr instr = read32_instr(state, state->pc);
-    LOG(DEBUG, "read: %04X", instr);
-    LOG(DEBUG, "cond: %d", instr.parsed.cond);
-    if (check_cond(&instr)) {
-        LOG(DEBUG, "We should in fact execute this");
+    logdebug("read: 0x%04X", instr.raw);
+    logdebug("cond: %d", instr.parsed.cond);
+    logdebug("remaining: 0x%04X", instr.parsed.raw);
+    if (!check_cond(&instr)) {
+        // TODO 1 cycle
+        return;
     }
     exit(0);
 }

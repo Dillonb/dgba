@@ -16,14 +16,14 @@ byte gba_read_byte(uint32_t addr) {
         // Cartridge
         uint32_t adjusted = addr - 0x08000000;
         if (adjusted > mem->rom_size) {
-            LOG(FATAL, "Attempted out of range read");
+            logfatal("Attempted out of range read");
         }
         else {
             return mem->rom[adjusted];
         }
     }
 
-    LOG(WARN, "Something's up, we reached the end of gba_read_byte without getting a value\n");
+    logwarn("Something's up, we reached the end of gba_read_byte without getting a value\n");
     return 0; // TODO
 }
 

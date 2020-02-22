@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
 
     cflags_parse(flags, argc, argv);
 
-    LOG_set_verbosity(verbose->count);
+    log_set_verbosity(verbose->count);
 
     if (flags->argc != 1) {
         usage(flags);
@@ -37,8 +37,8 @@ int main(int argc, char** argv) {
     char* romfile = flags->argv[0];
     load_gbarom(romfile, mem);
 
-    LOG(INFO, "ROM loaded: %d bytes", mem->rom_size);
-    LOG(INFO, "Beginning CPU loop");
+    loginfo("ROM loaded: %lu bytes", mem->rom_size);
+    loginfo("Beginning CPU loop");
 
     while(true) {
         arm7tdmi_tick(cpu);

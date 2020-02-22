@@ -14,6 +14,7 @@ add_library(core
         gbamem.h
         arm7tdmi.c
         arm7tdmi.h
+        arm_instr.h
         )
 
 add_executable (gba gba.c)
