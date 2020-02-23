@@ -47,7 +47,6 @@ int main(int argc, char** argv) {
 
     while(true) {
         arm7tdmi_step(cpu);
-
     }
 
 
