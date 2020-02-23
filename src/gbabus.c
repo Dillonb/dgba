@@ -1,6 +1,6 @@
 #include <err.h>
 #include "gbabus.h"
-#include "io_register_sizes.h"
+#include "ioreg_util.h"
 #include "gbamem.h"
 #include "log.h"
 
@@ -10,7 +10,15 @@ void init_gbabus(gbamem_t* new_mem) {
     mem = new_mem;
 }
 
-void write_io_register(word addr, word value) {
+void write_byte_ioreg(word addr, byte value) {
+    logwarn("Write to unknown byte ioreg addr 0x%08X == 0x%02X", addr, value)
+}
+
+void write_half_ioreg(word addr, half value) {
+    logwarn("Write to unknown half ioreg addr 0x%08X == 0x%04X", addr, value)
+}
+
+void write_word_ioreg(word addr, word value) {
     // 0x04XX0800 is the only address that's mirrored.
     if ((addr & 0xFF00FFFFu) == 0x04000800u) {
         addr = 0xFF00FFFFu;
@@ -49,7 +57,7 @@ void gba_write_byte(word addr, byte value) {
         logwarn("Tried to write to 0x%08X", addr)
         unimplemented(1, "Tried to write general internal memory")
     } else if (addr < 0x04000400) {
-        write_io_register(addr, value);
+        write_byte_ioreg(addr, value);
     } else if (addr < 0x05000000) {
         logwarn("Tried to write to 0x%08X", addr)
         unimplemented(1, "Tried to write to unused portion of general internal memory")
@@ -67,8 +75,10 @@ void gba_write_byte(word addr, byte value) {
 void gba_write_half(word address, half value) {
     if (is_ioreg(address)) {
         byte ioreg_size = get_ioreg_size_for_addr(address);
+        unimplemented(ioreg_size > sizeof(half), "writing to a too-large ioreg from gba_write_half")
         if (ioreg_size == sizeof(half)) {
-            logfatal("Writing a half to half-size ioreg")
+            write_half_ioreg(address, value);
+            return;
         } else if (ioreg_size == 0) {
             // Unused io register
             logwarn("Unused half size ioregister!")
@@ -93,16 +103,18 @@ void gba_write_word(word address, word value) {
     if (is_ioreg(address)) {
         byte ioreg_size = get_ioreg_size_for_addr(address);
         if(ioreg_size == sizeof(word)) {
+            write_word_ioreg(address, value);
             logfatal("Writing a word to word-size ioreg")
         } else if (ioreg_size == 0) {
             logwarn("Unused word size ioregister!")
             // Unused io register
             return;
         }
+        // Otherwise, it'll be smaller than a word, and we'll write each part to the respective registers.
     }
 
     half lower = (value & 0xFFFFu);
-    half upper = (value & 0xFFFF0000u);
+    half upper = (value & 0xFFFF0000u) >> 16u;
 
     gba_write_half(address, lower);
     gba_write_half(address + 2, upper);

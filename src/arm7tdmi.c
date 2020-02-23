@@ -83,6 +83,69 @@ word get_register(arm7tdmi_t* state, word index) {
     return state->r[index];
 }
 
+
+void psr_transfer(arm7tdmi_t* state,
+                  bool immediate,
+                  unsigned int dt_opcode,
+                  unsigned int dt_rn,
+                  unsigned int dt_rd,
+                  unsigned int dt_operand2) {
+    union {
+        struct {
+            bool msr:1; // if 0, mrs, if 1, msr
+            bool spsr:1; // if 0, cpsr, if 1, spsr_current mode
+            unsigned:2;
+        };
+        unsigned raw:4;
+    } opcode;
+    opcode.raw = dt_opcode;
+
+    unimplemented(!opcode.msr, "MRS mode unimplemented.")
+    unimplemented(opcode.spsr, "SPSR not implemented")
+
+
+
+
+
+
+
+    if (opcode.msr) {
+        union {
+            struct {
+                bool f:1; // Write to flags field
+                bool s:1; // Write to status field
+                bool x:1; // Write to extension field
+                bool c:1; // Write to control field
+            };
+            unsigned raw:4;
+        } field_masks;
+        field_masks.raw = dt_rn; // field masks come from the "rn" field in data processing
+
+        // Debug
+        printf("cpsr_");
+        if (field_masks.c) { printf("c"); }
+        if (field_masks.x) { printf("x"); }
+        if (field_masks.s) { printf("s"); }
+        if (field_masks.f) { printf("f"); }
+        printf("\n");
+
+
+        if (immediate) {
+            logfatal("Immediate not implemented")
+        }
+        else {
+            unsigned int source_register = dt_operand2 & 0b1111u;
+            // http://problemkaputt.de/gbatek.htm#armopcodespsrtransfermrsmsr
+            logfatal("Source register r%d gotten out of dt_operand2 %d", source_register, dt_operand2);
+        }
+    }
+    else {
+        // MRS
+    }
+
+    logfatal("Hello!")
+}
+
 // http://problemkaputt.de/gbatek.htm#armopcodesdataprocessingalu
 void data_processing(arm7tdmi_t* state,
                      unsigned int operand2,
@@ -91,6 +154,11 @@ void data_processing(arm7tdmi_t* state,
                      bool s,
                      bool immediate,
                      unsigned int opcode) {
+    // If it's one of these opcodes, and the s flag isn't set, this is actually a psr transfer op.
+    if (!s && opcode >= 0x8 && opcode <= 0xb) { // TODO optimize with masks (opcode>>8) & 0b1100 == 0b1100 ?
+        return psr_transfer(state, immediate, opcode, rn, rd, operand2);
+    }
+
     if (s) {
         logfatal("in a data processing instruction, wanted to update condition codes. This isn't implemented yet")
     }
@@ -167,7 +235,7 @@ void branch(arm7tdmi_t* state, word offset, bool link) {
 int arm7tdmi_step(arm7tdmi_t* state) {
     this_step_ticks = 0;
     arminstr_t instr = next_instr(state);
-    logdebug("read: 0x%04X", instr.raw)
+    logwarn("adjusted pc: 0x%04X read: 0x%04X", state->pc - 8, instr.raw)
     logdebug("cond: %d", instr.parsed.cond)
     if (check_cond(&instr)) {
         arm_instr_type_t type = get_instr_type(&instr);
@@ -211,6 +279,7 @@ int arm7tdmi_step(arm7tdmi_t* state) {
                 logfatal("Unimplemented instruction type: BLOCK_DATA_TRANSFER")
             case BRANCH:
                 branch(state, instr.parsed.BRANCH.offset, instr.parsed.BRANCH.l);
+                state->pc -= 4; // This is to correct for the state->pc+=4 that happens after this switch
                 break;
             case COPROCESSOR_DATA_TRANSFER:
                 logfatal("Unimplemented instruction type: COPROCESSOR_DATA_TRANSFER")
@@ -221,6 +290,7 @@ int arm7tdmi_step(arm7tdmi_t* state) {
             case SOFTWARE_INTERRUPT:
                 logfatal("Unimplemented instruction type: SOFTWARE_INTERRUPT")
         }
+        state->pc += 4;
     }
     else { // Cond told us not to execute this instruction
         tick(1);

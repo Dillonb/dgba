@@ -1,10 +1,11 @@
-#ifndef GBA_IO_REGISTER_SIZES_H
-#define GBA_IO_REGISTER_SIZES_H
+#ifndef GBA_IOREG_UTIL_H
+#define GBA_IOREG_UTIL_H
 
 #include "util.h"
+#include "log.h"
 
 #define is_ioreg(addr) ((addr >> 24u) == 0x4u)
-#define mirror_ioreg(addr) ( ((addr & 0xFF00FFFFu) == 0x04000800u) ? 0xFF00FFFFu : addr )
+#define mirror_ioreg(addr) ( ((addr & 0xFF00FFFFu) == 0x04000800u) ? 0x04000800u : addr )
 #define ioreg_size_index(addr) (mirror_ioreg(addr) - 0x04000000u)
 
 // Offset by 0x4000000 - subtract that to get the index to this array
@@ -119,14 +120,14 @@ byte io_register_sizes[] = {
         0,0,0,0,0,0,0,0,
 
         // Serial Communication (1)
-        4,4,4,4, // 0x4000120      R/W  SIODATA32 SIO Data (Normal-32bit Mode; shared with below)
+        // 4,4,4,4, // 0x4000120      R/W  SIODATA32 SIO Data (Normal-32bit Mode; shared with below)
         2,2,     // 0x4000120      R/W  SIOMULTI0 SIO Data 0 (Parent)    (Multi-Player Mode)
         2,2,     // 0x4000122      R/W  SIOMULTI1 SIO Data 1 (1st Child) (Multi-Player Mode)
         2,2,     // 0x4000124      R/W  SIOMULTI2 SIO Data 2 (2nd Child) (Multi-Player Mode)
         2,2,     // 0x4000126      R/W  SIOMULTI3 SIO Data 3 (3rd Child) (Multi-Player Mode)
         2,2,     // 0x4000128      R/W  SIOCNT    SIO Control Register
         2,2,     // 0x400012A      R/W  SIOMLT_SEND SIO Data (Local of MultiPlayer; shared below)
-        2,2,     // 0x400012A      R/W  SIODATA8  SIO Data (Normal-8bit and UART Mode)
+        // 2,2,     // 0x400012A      R/W  SIODATA8  SIO Data (Normal-8bit and UART Mode)
         0,0,0,0,
 
         // Keypad Input
@@ -221,4 +222,6 @@ byte get_ioreg_size_for_addr(word address) {
     }
 }
 
-#endif //GBA_IO_REGISTER_SIZES_H
+#define IOREG_BYTE_IME 0x208
+
+#endif //GBA_IOREG_UTIL_H
