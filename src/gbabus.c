@@ -1,5 +1,6 @@
 #include <err.h>
 #include "gbabus.h"
+#include "io_register_sizes.h"
 #include "gbamem.h"
 #include "log.h"
 
@@ -63,11 +64,22 @@ void gba_write_byte(word addr, byte value) {
     }
 }
 
-void gba_write_half(word addr, half value) {
+void gba_write_half(word address, half value) {
+    if (is_ioreg(address)) {
+        byte ioreg_size = get_ioreg_size_for_addr(address);
+        if (ioreg_size == sizeof(half)) {
+            logfatal("Writing a half to half-size ioreg")
+        } else if (ioreg_size == 0) {
+            // Unused io register
+            logwarn("Unused half size ioregister!")
+            return;
+        }
+    }
+
     byte lower = value & 0xFFu;
     byte upper = (value & 0xFF00u) >> 8u;
-    gba_write_byte(addr, lower);
-    gba_write_byte(addr + 1, upper);
+    gba_write_byte(address, lower);
+    gba_write_byte(address + 1, upper);
 }
 
 word gba_read_word(word addr) {
@@ -78,6 +90,17 @@ word gba_read_word(word addr) {
 }
 
 void gba_write_word(word address, word value) {
+    if (is_ioreg(address)) {
+        byte ioreg_size = get_ioreg_size_for_addr(address);
+        if(ioreg_size == sizeof(word)) {
+            logfatal("Writing a word to word-size ioreg")
+        } else if (ioreg_size == 0) {
+            logwarn("Unused word size ioregister!")
+            // Unused io register
+            return;
+        }
+    }
+
     half lower = (value & 0xFFFFu);
     half upper = (value & 0xFFFF0000u);
 

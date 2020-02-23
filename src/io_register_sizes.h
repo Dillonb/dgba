@@ -3,6 +3,10 @@
 
 #include "util.h"
 
+#define is_ioreg(addr) ((addr >> 24u) == 0x4u)
+#define mirror_ioreg(addr) ( ((addr & 0xFF00FFFFu) == 0x04000800u) ? 0xFF00FFFFu : addr )
+#define ioreg_size_index(addr) (mirror_ioreg(addr) - 0x04000000u)
+
 // Offset by 0x4000000 - subtract that to get the index to this array
 // In the case of >1 sizes, % by the value returned to get the base.
 // 0 means the address is not used.
@@ -206,5 +210,15 @@ byte io_register_sizes[] = {
         // 0x4000804       -    -         Not used
         // 4,4,4,4, // 0x4xx0800      R/W  ?         Mirrors of 0x4000800 (repeated each 64K)
 };
+
+byte get_ioreg_size_for_addr(word address) {
+    word mirrored = mirror_ioreg(address);
+    if (mirrored >= 0x4000804) {
+        return 0;
+    }
+    else {
+        return io_register_sizes[ioreg_size_index(mirrored)];
+    }
+}
 
 #endif //GBA_IO_REGISTER_SIZES_H
