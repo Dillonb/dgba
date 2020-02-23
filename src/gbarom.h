@@ -5,6 +5,6 @@
 #include "util.h"
 #include "gbamem.h"
 
-void load_gbarom(char* filename, gbamem* mem);
+void load_gbarom(char* filename, gbamem_t* mem);
 
 #endif

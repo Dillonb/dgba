@@ -5,11 +5,11 @@
 
 #include "util.h"
 
-typedef struct gbamem_t {
+typedef struct gbamem {
     byte* rom;
     size_t rom_size;
-} gbamem;
+} gbamem_t;
 
-gbamem* init_mem();
+gbamem_t* init_mem();
 
 #endif

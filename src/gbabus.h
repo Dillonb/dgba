@@ -4,7 +4,7 @@
 #include "util.h"
 #include "gbamem.h"
 
-void init_gbabus(gbamem* new_mem);
+void init_gbabus(gbamem_t* new_mem);
 byte gba_read_byte(uint32_t addr);
 uint16_t gba_read16(uint32_t addr);
 void gba_write_byte(uint32_t addr, byte value);

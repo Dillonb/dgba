@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include "gbamem.h"
 
-gbamem* init_mem() {
-    return malloc(sizeof(gbamem));
+gbamem_t* init_mem() {
+    return malloc(sizeof(gbamem_t));
 }

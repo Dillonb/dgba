@@ -3,9 +3,9 @@
 #include "gbamem.h"
 #include "log.h"
 
-gbamem* mem;
+gbamem_t* mem;
 
-void init_gbabus(gbamem* new_mem) {
+void init_gbabus(gbamem_t* new_mem) {
     mem = new_mem;
 }
 
