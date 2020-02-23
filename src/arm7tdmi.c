@@ -4,25 +4,43 @@
 #include "log.h"
 #include "arm_instr.h"
 
-arm7tdmi_t* init_arm7tdmi(byte (*read_byte)(uint32_t),
-                          uint16_t (*read16)(uint32_t),
-                          void (*write_byte)(uint32_t, byte),
-                          void (*write16)(uint32_t, uint16_t)) {
-    arm7tdmi_t* mem = malloc(sizeof(arm7tdmi_t));
-    mem->pc = 0x08000000;
-    mem->read_byte = read_byte;
-    mem->read16 = read16;
-    mem->write_byte = write_byte;
-    mem->write16 = write16;
-
-    return mem;
-}
-
 uint32_t read32(arm7tdmi_t* state, uint32_t addr) {
     uint32_t lower = state->read16(addr);
     uint32_t upper = state->read16(addr + 2);
 
     return (upper << 16u) | lower;
+}
+
+void fill_pipe(arm7tdmi_t* state) {
+    state->pipeline[0] = read32(state, state->pc);
+    state->pc += 4;
+    state->pipeline[1] = read32(state, state->pc);
+    state->pc += 4;
+
+    logdebug("Filling the instruction pipeline: 0x%08X = 0x%08X / 0x%08X = 0x%08X",
+             state->pc - 8,
+             state->pipeline[0],
+             state->pc - 4,
+             state->pipeline[1])
+}
+
+arm7tdmi_t* init_arm7tdmi(byte (*read_byte)(uint32_t),
+                          uint16_t (*read16)(uint32_t),
+                          void (*write_byte)(uint32_t, byte),
+                          void (*write16)(uint32_t, uint16_t)) {
+    arm7tdmi_t* state = malloc(sizeof(arm7tdmi_t));
+
+    state->read_byte = read_byte;
+    state->read16 = read16;
+    state->write_byte = write_byte;
+    state->write16 = write16;
+
+    state->pc = 0x08000000;
+
+    state->mode = ARM;
+
+    fill_pipe(state);
+    return state;
 }
 
 arminstr_t read32_instr(arm7tdmi_t* state, uint32_t addr) {
@@ -46,9 +64,42 @@ void tick(int ticks) {
     this_step_ticks += ticks;
 }
 
+arminstr_t next_instr(arm7tdmi_t* state) {
+    // TODO handle thumb mode
+
+    arminstr_t instr;
+    instr.raw = state->pipeline[0];
+    state->pipeline[0] = state->pipeline[1];
+    state->pipeline[1] = read32(state, state->pc);
+
+    return instr;
+}
+
+void branch(arm7tdmi_t* state, uint32_t offset, bool link) {
+    bool thumb = offset & 1u;
+    if (thumb) {
+        logfatal("Attempted to activate THUMB mode, but this is not supported yet.");
+    }
+    bool negative = (offset & 0b100000000000000000000000u) > 0;
+    if (negative) {
+        offset = ~offset + 1;
+        logfatal("Encountered a branch with a negative offset. Make sure this is doing the right thing!")
+    }
+    loginfo("My offset is %d", offset << 2u)
+
+    if (link) {
+        logfatal("Branch-with-link isn't implemented yet.")
+    }
+
+    uint32_t newpc = (state->pc) + (offset << 2u);
+    logdebug("Hold on to your hats, we're jumping to 0x%02X", newpc)
+    state->pc = newpc;
+    fill_pipe(state);
+}
+
 int arm7tdmi_step(arm7tdmi_t* state) {
     this_step_ticks = 0;
-    arminstr_t instr = read32_instr(state, state->pc);
+    arminstr_t instr = next_instr(state);
     logdebug("read: 0x%04X", instr.raw)
     logdebug("cond: %d", instr.parsed.cond)
     if (check_cond(&instr)) {
@@ -75,7 +126,8 @@ int arm7tdmi_step(arm7tdmi_t* state) {
             case BLOCK_DATA_TRANSFER:
                 logfatal("Unimplemented instruction type: BLOCK_DATA_TRANSFER")
             case BRANCH:
-                logfatal("Unimplemented instruction type: BRANCH")
+                branch(state, instr.parsed.BRANCH.offset, instr.parsed.BRANCH.l);
+                break;
             case COPROCESSOR_DATA_TRANSFER:
                 logfatal("Unimplemented instruction type: COPROCESSOR_DATA_TRANSFER")
             case COPROCESSOR_DATA_OPERATION:

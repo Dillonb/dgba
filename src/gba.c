@@ -31,14 +31,14 @@ int main(int argc, char** argv) {
     gbamem_t* mem = init_mem();
     init_gbabus(mem);
 
-    // Initialize the CPU, hook it up to the GBA bus
-    arm7tdmi_t* cpu = init_arm7tdmi(gba_read_byte, gba_read16, gba_write_byte, gba_write16);
-
     char* romfile = flags->argv[0];
     load_gbarom(romfile, mem);
 
-    loginfo("ROM loaded: %lu bytes", mem->rom_size);
-    loginfo("Beginning CPU loop");
+    // Initialize the CPU, hook it up to the GBA bus
+    arm7tdmi_t* cpu = init_arm7tdmi(gba_read_byte, gba_read16, gba_write_byte, gba_write16);
+
+    loginfo("ROM loaded: %lu bytes", mem->rom_size)
+    loginfo("Beginning CPU loop")
 
     while(true) {
         arm7tdmi_step(cpu);

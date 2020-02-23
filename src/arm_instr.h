@@ -2,7 +2,7 @@
 #define __ARM_INSTR_H__
 
 typedef enum arm_cond_t {
-    EQ, NE, CS, CC, MI, PL, VS, VC, HI, LS, GE, LT, GT, LE, AL
+    EQ, NE, CS, CC, MI, PL, VS, VC, HI, LS, GE, LT, GT, LE, AL, NV
 } arm_cond_t;
 
 typedef enum arm_instr_type {
@@ -34,6 +34,15 @@ typedef union arminstr {
             };
             // TODO DPFSR (Data processing and FSR transfer)
             struct {
+                unsigned operand2:12;
+                unsigned rd:4;
+                unsigned rn:4;
+                bool s:1;
+                unsigned opcode:4;
+                unsigned identifier:3; // Equals 0b001 if instruction is this type.
+                arm_cond_t cond:4;
+            } DPFSR;
+            struct {
                 unsigned rm:4;
                 unsigned identifier2:4; // Equals 0b1001 if instruction is this type
                 unsigned rs:4;
@@ -41,7 +50,7 @@ typedef union arminstr {
                 unsigned rd:4;
                 bool s:1;
                 bool a:1;
-                unsigned int identifier:6; // Equals 0b000000 if instruction is this type
+                unsigned identifier:6; // Equals 0b000000 if instruction is this type
                 arm_cond_t cond:4;
             } MULTIPLY;
             // TODO MULTIPLY_LONG
@@ -53,7 +62,7 @@ typedef union arminstr {
             // TODO UNDEFINED
             // TODO BLOCK_DATA_TRANSFER
             struct {
-                unsigned offset:24;
+                unsigned offset:24; // This value is actually signed, but needs to be this way because of how C works
                 bool l:1;
                 unsigned identifier:3; // Equals 0b101 if instruction is this type
                 arm_cond_t cond:4;
@@ -66,6 +75,9 @@ typedef union arminstr {
     } parsed;
 } arminstr_t;
 
+bool is_dpfsr(arminstr_t* instr) {
+    return instr->parsed.DPFSR.identifier == 0b001u;
+}
 
 bool is_multiply(arminstr_t* instr) {
     return instr->parsed.MULTIPLY.identifier == 0b001u && instr->parsed.MULTIPLY.identifier2 == 0b1001u;
@@ -76,10 +88,11 @@ bool is_branch(arminstr_t* instr) {
 }
 
 arm_instr_type_t get_instr_type(arminstr_t* instr) {
-    if (is_multiply(instr)) {
+    if (is_dpfsr(instr)) {
+        return DPFSR;
+    } else if (is_multiply(instr)) {
         return MULTIPLY;
     } else if (is_branch(instr)) {
-        loginfo("It's a branch.")
         return BRANCH;
     } else {
         logfatal("Could not determine instruction type! 0x%04X", instr->raw)
