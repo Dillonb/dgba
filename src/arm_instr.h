@@ -74,7 +74,8 @@ typedef union arminstr {
                 unsigned rn:4;
                 bool s:1;
                 unsigned opcode:4;
-                unsigned IGNORED:3;
+                bool immediate:1;
+                unsigned IGNORED:2;
                 arm_cond_t cond:4;
             } DATA_PROCESSING;
             struct {
@@ -102,7 +103,8 @@ typedef union arminstr {
                 bool b:1;
                 bool u:1;
                 bool p:1;
-                unsigned IGNORED:3;
+                bool i:1;
+                unsigned IGNORED:2;
                 arm_cond_t cond:4;
             } SINGLE_DATA_TRANSFER;
             // TODO UNDEFINED

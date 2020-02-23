@@ -82,23 +82,27 @@ void data_processing(arm7tdmi_t* state,
                      unsigned int rd,
                      unsigned int rn,
                      bool s,
+                     bool immediate,
                      unsigned int opcode) {
     if (s) {
         logfatal("in a data processing instruction, wanted to update condition codes. This isn't implemented yet")
     }
+    if (!immediate) {
+        logfatal("In a data processing instruction, NOT using immediate, time to implement it.")
+    }
     // Because this is immediate mode, we gotta do stuff with the operand
-    uint32_t immediate = operand2 & 0xFFu; // Last 8 bits of operand2 are the pre-shift value
+    uint32_t immediate_value = operand2 & 0xFFu; // Last 8 bits of operand2 are the pre-shift value
     uint32_t shift = (operand2 & 0xF00u) >> 7u; // Only shift by 7 because we were going to multiply it by 2 anyway
-    loginfo("operand2: 0x%02X Immediate: 0x%02X shift: 0x%02X", operand2, immediate, shift);
+    loginfo("operand2: 0x%02X immediate_value: 0x%02X shift: 0x%02X", operand2, immediate_value, shift);
 
-    immediate &= 31u;
-    immediate = (immediate >> shift) | (immediate << (-shift & 31u));
+    immediate_value &= 31u;
+    immediate_value = (immediate_value >> shift) | (immediate_value << (-shift & 31u));
 
-    loginfo("Post-shift: 0x%02X", immediate)
+    loginfo("Post-shift: 0x%02X", immediate_value)
 
     switch(opcode) {
         case 0xD:
-                set_register(state, rd, immediate);
+                set_register(state, rd, immediate_value);
                 break;
             default:
                 logfatal("DATA_PROCESSING: unknown opcode: 0x%X", opcode)
@@ -141,6 +145,7 @@ int arm7tdmi_step(arm7tdmi_t* state) {
                                 instr.parsed.DATA_PROCESSING.rd,
                                 instr.parsed.DATA_PROCESSING.rn,
                                 instr.parsed.DATA_PROCESSING.s,
+                                instr.parsed.DATA_PROCESSING.immediate,
                                 instr.parsed.DATA_PROCESSING.opcode);
                 break;
             case MULTIPLY:
