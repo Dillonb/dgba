@@ -11,6 +11,14 @@ uint32_t read32(arm7tdmi_t* state, uint32_t addr) {
     return (upper << 16u) | lower;
 }
 
+void write32(arm7tdmi_t* state, uint32_t address, uint32_t value) {
+    uint16_t lower = (value & 0xFFFFu);
+    uint16_t upper = (value & 0xFFFF0000u);
+
+    state->write16(address, lower);
+    state->write16(address + 2, upper);
+}
+
 void fill_pipe(arm7tdmi_t* state) {
     state->pipeline[0] = read32(state, state->pc);
     state->pc += 4;
@@ -73,7 +81,17 @@ void set_register(arm7tdmi_t* state, uint32_t index, uint32_t newvalue) {
     if (index > 12) {
         logfatal("Tried to set a register > r12 - this has the possibility of being different depending on the mode, but that isn't implemented yet.")
     }
+    logdebug("Set r%d to 0x%08X", index, newvalue)
     state->r[index] = newvalue;
+}
+
+uint32_t get_register(arm7tdmi_t* state, uint32_t index) {
+    if (index > 12) {
+        logfatal("Tried to get a register > r12 - this has the possibility of being different depending on the mode, but that isn't implemented yet.")
+    }
+
+    logdebug("Read the value of r%d: 0x%08X", index, state->r[index])
+    return state->r[index];
 }
 
 // http://problemkaputt.de/gbatek.htm#armopcodesdataprocessingalu
@@ -109,11 +127,37 @@ void data_processing(arm7tdmi_t* state,
         }
 }
 
+// http://problemkaputt.de/gbatek.htm#armopcodesmemorysingledatatransferldrstrpld
+void single_data_transfer(arm7tdmi_t* state,
+                          unsigned int offset,
+                          unsigned int rd, // dest if this is LDR, source if this is STR
+                          unsigned int rn,
+                          bool l,   // 0 == str, 1 == ldr
+                          bool w,   // different meanings depending on state of P (writeback)
+                          bool b,   // (byte) when 0, transfer word, when 1, transfer byte
+                          bool up,  // When 0, subtract offset from base, when 1, add to base
+                          bool pre, // when 0, offset after transfer, when 1, before transfer.
+                          bool immediate_offset_type) { //  When 0, Immediate as Offset
+                                                        //  When 1, Register shifted by Immediate as Offset
+    logdebug("l: %d w: %d b: %d u: %d p: %d i: %d", l, w, b, up, pre, immediate_offset_type)
+    logdebug("rn: %d rd: %d, offset: 0x%03X", rn, rd, offset)
+    unimplemented(immediate_offset_type, "immediate_offset_type == 1 in single_data_transfer")
+    unimplemented(l, "LDR")
+    unimplemented(w, "w flag")
+    unimplemented(!up, "down (subtract from base)")
+    unimplemented(!pre, "post-transfer offset")
+    unimplemented(rn == 15, "special case where rn == r15")
+
+    uint32_t address = get_register(state, rn) + offset;
+
+    logdebug("I'm gonna save r%d to 0x%02X", rd, address)
+    write32(state, address, get_register(state, rd));
+}
+
+
 void branch(arm7tdmi_t* state, uint32_t offset, bool link) {
     bool thumb = offset & 1u;
-    if (thumb) {
-        logfatal("Attempted to activate THUMB mode, but this is not supported yet.");
-    }
+    unimplemented(thumb, "THUMB mode")
     bool negative = (offset & 0b100000000000000000000000u) > 0;
     if (negative) {
         offset = ~offset + 1;
@@ -149,7 +193,7 @@ int arm7tdmi_step(arm7tdmi_t* state) {
                                 instr.parsed.DATA_PROCESSING.opcode);
                 break;
             case MULTIPLY:
-                logfatal("Unimplemented instruction type: MULTIPLY")
+                unimplemented(1, "MULTIPLY instruction type")
             case MULTIPLY_LONG:
                 logfatal("Unimplemented instruction type: MULTIPLY_LONG")
             case SINGLE_DATA_SWAP:
@@ -161,7 +205,17 @@ int arm7tdmi_step(arm7tdmi_t* state) {
             case HALFWORD_DT_IO:
                 logfatal("Unimplemented instruction type: HALFWORD_DT_IO")
             case SINGLE_DATA_TRANSFER:
-                logfatal("Unimplemented instruction type: SINGLE_DATA_TRANSFER")
+                single_data_transfer(state,
+                                     instr.parsed.SINGLE_DATA_TRANSFER.offset,
+                                     instr.parsed.SINGLE_DATA_TRANSFER.rd,
+                                     instr.parsed.SINGLE_DATA_TRANSFER.rn,
+                                     instr.parsed.SINGLE_DATA_TRANSFER.l,
+                                     instr.parsed.SINGLE_DATA_TRANSFER.w,
+                                     instr.parsed.SINGLE_DATA_TRANSFER.b,
+                                     instr.parsed.SINGLE_DATA_TRANSFER.u,
+                                     instr.parsed.SINGLE_DATA_TRANSFER.p,
+                                     instr.parsed.SINGLE_DATA_TRANSFER.i);
+                break;
             case UNDEFINED:
                 logfatal("Unimplemented instruction type: UNDEFINED")
             case BLOCK_DATA_TRANSFER:
@@ -184,4 +238,3 @@ int arm7tdmi_step(arm7tdmi_t* state) {
     }
     return this_step_ticks;
 }
-
