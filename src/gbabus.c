@@ -15,6 +15,7 @@ void write_io_register(uint32_t addr, uint32_t value) {
         addr = 0xFF00FFFFu;
     }
 
+    logwarn("Wrote 0x%08X to 0x%08X", value, addr)
     unimplemented(1, "io register write")
 }
 
@@ -68,3 +69,19 @@ void gba_write16(uint32_t addr, uint16_t value) {
     gba_write_byte(addr, lower);
     gba_write_byte(addr + 1, upper);
 }
+
+uint32_t gba_read32(uint32_t addr) {
+    uint32_t lower = gba_read16(addr);
+    uint32_t upper = gba_read16(addr + 2);
+
+    return (upper << 16u) | lower;
+}
+
+void gba_write32(uint32_t address, uint32_t value) {
+    uint16_t lower = (value & 0xFFFFu);
+    uint16_t upper = (value & 0xFFFF0000u);
+
+    gba_write16(address, lower);
+    gba_write16(address + 2, upper);
+}
+

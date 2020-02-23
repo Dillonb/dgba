@@ -7,8 +7,10 @@ typedef struct arm7tdmi {
     // Connections to the bus
     byte (*read_byte)(uint32_t);
     uint16_t (*read16)(uint32_t);
+    uint32_t (*read32)(uint32_t);
     void (*write_byte)(uint32_t, byte);
     void (*write16)(uint32_t, uint16_t);
+    void (*write32)(uint32_t, uint32_t);
 
     // Registers
     // http://problemkaputt.de/gbatek.htm#armcpuflagsconditionfieldcond
@@ -59,8 +61,10 @@ typedef struct arm7tdmi {
 
 arm7tdmi_t* init_arm7tdmi(byte (*read_byte)(uint32_t),
                           uint16_t (*read16)(uint32_t),
+                          uint32_t (*read32)(uint32_t),
                           void (*write_byte)(uint32_t, byte),
-                          void (*write16)(uint32_t, uint16_t));
+                          void (*write16)(uint32_t, uint16_t),
+                          void (*write32)(uint32_t, uint32_t));
 
 int arm7tdmi_step(arm7tdmi_t* state);
 

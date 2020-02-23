@@ -4,25 +4,10 @@
 #include "log.h"
 #include "arm_instr.h"
 
-uint32_t read32(arm7tdmi_t* state, uint32_t addr) {
-    uint32_t lower = state->read16(addr);
-    uint32_t upper = state->read16(addr + 2);
-
-    return (upper << 16u) | lower;
-}
-
-void write32(arm7tdmi_t* state, uint32_t address, uint32_t value) {
-    uint16_t lower = (value & 0xFFFFu);
-    uint16_t upper = (value & 0xFFFF0000u);
-
-    state->write16(address, lower);
-    state->write16(address + 2, upper);
-}
-
 void fill_pipe(arm7tdmi_t* state) {
-    state->pipeline[0] = read32(state, state->pc);
+    state->pipeline[0] = state->read32(state->pc);
     state->pc += 4;
-    state->pipeline[1] = read32(state, state->pc);
+    state->pipeline[1] = state->read32(state->pc);
     state->pc += 4;
 
     logdebug("Filling the instruction pipeline: 0x%08X = 0x%08X / 0x%08X = 0x%08X",
@@ -34,14 +19,18 @@ void fill_pipe(arm7tdmi_t* state) {
 
 arm7tdmi_t* init_arm7tdmi(byte (*read_byte)(uint32_t),
                           uint16_t (*read16)(uint32_t),
+                          uint32_t (*read32)(uint32_t),
                           void (*write_byte)(uint32_t, byte),
-                          void (*write16)(uint32_t, uint16_t)) {
+                          void (*write16)(uint32_t, uint16_t),
+                          void (*write32)(uint32_t, uint32_t)) {
     arm7tdmi_t* state = malloc(sizeof(arm7tdmi_t));
 
     state->read_byte = read_byte;
     state->read16 = read16;
+    state->read32 = read32;
     state->write_byte = write_byte;
     state->write16 = write16;
+    state->write32 = write32;
 
     state->pc = 0x08000000;
 
@@ -72,7 +61,7 @@ arminstr_t next_instr(arm7tdmi_t* state) {
     arminstr_t instr;
     instr.raw = state->pipeline[0];
     state->pipeline[0] = state->pipeline[1];
-    state->pipeline[1] = read32(state, state->pc);
+    state->pipeline[1] = state->read32(state->pc);
 
     return instr;
 }
@@ -151,7 +140,7 @@ void single_data_transfer(arm7tdmi_t* state,
     uint32_t address = get_register(state, rn) + offset;
 
     logdebug("I'm gonna save r%d to 0x%02X", rd, address)
-    write32(state, address, get_register(state, rd));
+    state->write32(address, get_register(state, rd));
 }
 
 

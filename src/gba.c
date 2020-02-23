@@ -35,7 +35,7 @@ int main(int argc, char** argv) {
     load_gbarom(romfile, mem);
 
     // Initialize the CPU, hook it up to the GBA bus
-    arm7tdmi_t* cpu = init_arm7tdmi(gba_read_byte, gba_read16, gba_write_byte, gba_write16);
+    arm7tdmi_t* cpu = init_arm7tdmi(gba_read_byte, gba_read16, gba_read32, gba_write_byte, gba_write16, gba_write32);
 
     loginfo("ROM loaded: %lu bytes", mem->rom_size)
     loginfo("Beginning CPU loop")
