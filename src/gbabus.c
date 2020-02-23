@@ -9,7 +9,7 @@ void init_gbabus(gbamem_t* new_mem) {
     mem = new_mem;
 }
 
-void write_io_register(uint32_t addr, uint32_t value) {
+void write_io_register(word addr, word value) {
     // 0x04XX0800 is the only address that's mirrored.
     if ((addr & 0xFF00FFFFu) == 0x04000800u) {
         addr = 0xFF00FFFFu;
@@ -19,13 +19,13 @@ void write_io_register(uint32_t addr, uint32_t value) {
     unimplemented(1, "io register write")
 }
 
-byte gba_read_byte(uint32_t addr) {
+byte gba_read_byte(word addr) {
     if (addr < 0x08000000) {
         logwarn("Tried to read from 0x%08X", addr)
         unimplemented(1, "Read from non-cartridge address")
     } else if (addr < 0x0E00FFFF) {
         // Cartridge
-        uint32_t adjusted = addr - 0x08000000;
+        word adjusted = addr - 0x08000000;
         if (adjusted > mem->rom_size) {
             logfatal("Attempted out of range read");
         } else {
@@ -36,14 +36,14 @@ byte gba_read_byte(uint32_t addr) {
     logfatal("Something's up, we reached the end of gba_read_byte without getting a value! addr: 0x%08X", addr)
 }
 
-uint16_t gba_read16(uint32_t addr) {
+half gba_read_half(word addr) {
     byte lower = gba_read_byte(addr);
     byte upper = gba_read_byte(addr + 1);
 
     return (upper << 8u) | lower;
 }
 
-void gba_write_byte(uint32_t addr, byte value) {
+void gba_write_byte(word addr, byte value) {
     if (addr < 0x04000000) {
         logwarn("Tried to write to 0x%08X", addr)
         unimplemented(1, "Tried to write general internal memory")
@@ -63,25 +63,25 @@ void gba_write_byte(uint32_t addr, byte value) {
     }
 }
 
-void gba_write16(uint32_t addr, uint16_t value) {
+void gba_write_half(word addr, half value) {
     byte lower = value & 0xFFu;
     byte upper = (value & 0xFF00u) >> 8u;
     gba_write_byte(addr, lower);
     gba_write_byte(addr + 1, upper);
 }
 
-uint32_t gba_read32(uint32_t addr) {
-    uint32_t lower = gba_read16(addr);
-    uint32_t upper = gba_read16(addr + 2);
+word gba_read_word(word addr) {
+    word lower = gba_read_half(addr);
+    word upper = gba_read_half(addr + 2);
 
     return (upper << 16u) | lower;
 }
 
-void gba_write32(uint32_t address, uint32_t value) {
-    uint16_t lower = (value & 0xFFFFu);
-    uint16_t upper = (value & 0xFFFF0000u);
+void gba_write_word(word address, word value) {
+    half lower = (value & 0xFFFFu);
+    half upper = (value & 0xFFFF0000u);
 
-    gba_write16(address, lower);
-    gba_write16(address + 2, upper);
+    gba_write_half(address, lower);
+    gba_write_half(address + 2, upper);
 }
 

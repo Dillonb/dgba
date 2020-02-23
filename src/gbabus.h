@@ -5,10 +5,10 @@
 #include "gbamem.h"
 
 void init_gbabus(gbamem_t* new_mem);
-byte gba_read_byte(uint32_t addr);
-uint16_t gba_read16(uint32_t addr);
-void gba_write_byte(uint32_t addr, byte value);
-void gba_write16(uint32_t addr, uint16_t value);
-uint32_t gba_read32(uint32_t addr);
-void gba_write32(uint32_t address, uint32_t value);
+byte gba_read_byte(word addr);
+half gba_read_half(word addr);
+void gba_write_byte(word addr, byte value);
+void gba_write_half(word addr, half value);
+word gba_read_word(word addr);
+void gba_write_word(word address, word value);
 #endif

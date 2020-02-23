@@ -5,36 +5,36 @@
 
 typedef struct arm7tdmi {
     // Connections to the bus
-    byte (*read_byte)(uint32_t);
-    uint16_t (*read16)(uint32_t);
-    uint32_t (*read32)(uint32_t);
-    void (*write_byte)(uint32_t, byte);
-    void (*write16)(uint32_t, uint16_t);
-    void (*write32)(uint32_t, uint32_t);
+    byte (*read_byte)(word);
+    half (*read_half)(word);
+    word (*read_word)(word);
+    void (*write_byte)(word, byte);
+    void (*write_half)(word, half);
+    void (*write_word)(word, word);
 
     // Registers
     // http://problemkaputt.de/gbatek.htm#armcpuflagsconditionfieldcond
-    uint32_t r[13]; // General registers. Shared between modes.
+    word r[13]; // General registers. Shared between modes.
     // !!!!! NOTE !!!!!
     // r8-r12 have separate values for FIQ mode, but that's only called by hardware debuggers
     // There is no way to trigger it from software, so they have been omitted.
     // These are technically r13, r14, and r15.
     // Don't put any other values between these and the r[13] array above.
     // This is so out of bounds access of that array will continue to work
-    uint32_t sp;
-    uint32_t lr;
-    uint32_t pc;
+    word sp;
+    word lr;
+    word pc;
 
     // Copies of registers for supervisor mode
-    uint32_t r13_svc;
-    uint32_t r14_svc;
+    word r13_svc;
+    word r14_svc;
 
     // Copies of registers for abort mode
-    uint32_t r13_abt;
-    uint32_t r14_abt;
+    word r13_abt;
+    word r14_abt;
 
     union {
-        uint32_t raw;
+        word raw;
         struct {
             bool N:1;
             bool Z:1;
@@ -55,16 +55,16 @@ typedef struct arm7tdmi {
     } cpsr;
 
     // Other state
-    uint32_t pipeline[2];
+    word pipeline[2];
 
 } arm7tdmi_t;
 
-arm7tdmi_t* init_arm7tdmi(byte (*read_byte)(uint32_t),
-                          uint16_t (*read16)(uint32_t),
-                          uint32_t (*read32)(uint32_t),
-                          void (*write_byte)(uint32_t, byte),
-                          void (*write16)(uint32_t, uint16_t),
-                          void (*write32)(uint32_t, uint32_t));
+arm7tdmi_t* init_arm7tdmi(byte (*read_byte)(word),
+                          half (*read_half)(word),
+                          word (*read_word)(word),
+                          void (*write_byte)(word, byte),
+                          void (*write_half)(word, half),
+                          void (*write_word)(word, word));
 
 int arm7tdmi_step(arm7tdmi_t* state);
 

@@ -5,9 +5,9 @@
 #include "arm_instr.h"
 
 void fill_pipe(arm7tdmi_t* state) {
-    state->pipeline[0] = state->read32(state->pc);
+    state->pipeline[0] = state->read_word(state->pc);
     state->pc += 4;
-    state->pipeline[1] = state->read32(state->pc);
+    state->pipeline[1] = state->read_word(state->pc);
     state->pc += 4;
 
     logdebug("Filling the instruction pipeline: 0x%08X = 0x%08X / 0x%08X = 0x%08X",
@@ -17,20 +17,20 @@ void fill_pipe(arm7tdmi_t* state) {
              state->pipeline[1])
 }
 
-arm7tdmi_t* init_arm7tdmi(byte (*read_byte)(uint32_t),
-                          uint16_t (*read16)(uint32_t),
-                          uint32_t (*read32)(uint32_t),
-                          void (*write_byte)(uint32_t, byte),
-                          void (*write16)(uint32_t, uint16_t),
-                          void (*write32)(uint32_t, uint32_t)) {
+arm7tdmi_t* init_arm7tdmi(byte (*read_byte)(word),
+                          half (*read_half)(word),
+                          word (*read_word)(word),
+                          void (*write_byte)(word, byte),
+                          void (*write_half)(word, half),
+                          void (*write_word)(word, word)) {
     arm7tdmi_t* state = malloc(sizeof(arm7tdmi_t));
 
     state->read_byte = read_byte;
-    state->read16 = read16;
-    state->read32 = read32;
+    state->read_half = read_half;
+    state->read_word = read_word;
     state->write_byte = write_byte;
-    state->write16 = write16;
-    state->write32 = write32;
+    state->write_half = write_half;
+    state->write_word = write_word;
 
     state->pc = 0x08000000;
 
@@ -61,12 +61,12 @@ arminstr_t next_instr(arm7tdmi_t* state) {
     arminstr_t instr;
     instr.raw = state->pipeline[0];
     state->pipeline[0] = state->pipeline[1];
-    state->pipeline[1] = state->read32(state->pc);
+    state->pipeline[1] = state->read_word(state->pc);
 
     return instr;
 }
 
-void set_register(arm7tdmi_t* state, uint32_t index, uint32_t newvalue) {
+void set_register(arm7tdmi_t* state, word index, word newvalue) {
     if (index > 12) {
         logfatal("Tried to set a register > r12 - this has the possibility of being different depending on the mode, but that isn't implemented yet.")
     }
@@ -74,7 +74,7 @@ void set_register(arm7tdmi_t* state, uint32_t index, uint32_t newvalue) {
     state->r[index] = newvalue;
 }
 
-uint32_t get_register(arm7tdmi_t* state, uint32_t index) {
+word get_register(arm7tdmi_t* state, word index) {
     if (index > 12) {
         logfatal("Tried to get a register > r12 - this has the possibility of being different depending on the mode, but that isn't implemented yet.")
     }
@@ -98,8 +98,8 @@ void data_processing(arm7tdmi_t* state,
         logfatal("In a data processing instruction, NOT using immediate, time to implement it.")
     }
     // Because this is immediate mode, we gotta do stuff with the operand
-    uint32_t immediate_value = operand2 & 0xFFu; // Last 8 bits of operand2 are the pre-shift value
-    uint32_t shift = (operand2 & 0xF00u) >> 7u; // Only shift by 7 because we were going to multiply it by 2 anyway
+    word immediate_value = operand2 & 0xFFu; // Last 8 bits of operand2 are the pre-shift value
+    word shift = (operand2 & 0xF00u) >> 7u; // Only shift by 7 because we were going to multiply it by 2 anyway
     loginfo("operand2: 0x%02X immediate_value: 0x%02X shift: 0x%02X", operand2, immediate_value, shift);
 
     immediate_value &= 31u;
@@ -137,14 +137,14 @@ void single_data_transfer(arm7tdmi_t* state,
     unimplemented(!pre, "post-transfer offset")
     unimplemented(rn == 15, "special case where rn == r15")
 
-    uint32_t address = get_register(state, rn) + offset;
+    word address = get_register(state, rn) + offset;
 
     logdebug("I'm gonna save r%d to 0x%02X", rd, address)
-    state->write32(address, get_register(state, rd));
+    state->write_word(address, get_register(state, rd));
 }
 
 
-void branch(arm7tdmi_t* state, uint32_t offset, bool link) {
+void branch(arm7tdmi_t* state, word offset, bool link) {
     bool thumb = offset & 1u;
     unimplemented(thumb, "THUMB mode")
     bool negative = (offset & 0b100000000000000000000000u) > 0;
@@ -158,7 +158,7 @@ void branch(arm7tdmi_t* state, uint32_t offset, bool link) {
         logfatal("Branch-with-link isn't implemented yet.")
     }
 
-    uint32_t newpc = (state->pc) + (offset << 2u);
+    word newpc = (state->pc) + (offset << 2u);
     logdebug("Hold on to your hats, we're jumping to 0x%02X", newpc)
     state->pc = newpc;
     fill_pipe(state);

@@ -23,7 +23,7 @@ typedef enum arm_instr_type {
     SOFTWARE_INTERRUPT
 } arm_instr_type_t;
 
-uint32_t instr_type_masks[] = {
+word instr_type_masks[] = {
         0b00001100000000000000000000000000, // DATA_PROCESSING
         0b00001111110000000000000010010000, // MULTIPLY
         0b00001111100000000000000010010000, // MULTIPLY_LONG
@@ -41,7 +41,7 @@ uint32_t instr_type_masks[] = {
         0b00001111000000000000000000000000, // SOFTWARE_INTERRUPT
 };
 
-uint32_t instr_type_identifiers[] = {
+word instr_type_identifiers[] = {
         0b00000000000000000000000000000000, // DATA_PROCESSING
         0b00000000000000000000000010010000, // MULTIPLY
         0b00000000100000000000000010010000, // MULTIPLY_LONG
@@ -125,7 +125,7 @@ typedef union arminstr {
 
 arm_instr_type_t get_instr_type(arminstr_t* instr) {
     for (arm_instr_type_t type = DATA_PROCESSING; type <= SOFTWARE_INTERRUPT; type++) {
-        uint32_t masked = instr->raw & instr_type_masks[type];
+        word masked = instr->raw & instr_type_masks[type];
         if (masked == instr_type_identifiers[type]) {
             return type;
         }
