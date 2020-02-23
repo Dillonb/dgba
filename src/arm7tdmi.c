@@ -37,16 +37,10 @@ arm7tdmi_t* init_arm7tdmi(byte (*read_byte)(uint32_t),
 
     state->pc = 0x08000000;
 
-    state->mode = ARM;
+    state->cpsr.raw = 0;
 
     fill_pipe(state);
     return state;
-}
-
-arminstr_t read32_instr(arm7tdmi_t* state, uint32_t addr) {
-    arminstr_t instr;
-    instr.raw = read32(state, addr);
-    return instr;
 }
 
 bool check_cond(arminstr_t* instr) {
@@ -73,6 +67,42 @@ arminstr_t next_instr(arm7tdmi_t* state) {
     state->pipeline[1] = read32(state, state->pc);
 
     return instr;
+}
+
+void set_register(arm7tdmi_t* state, uint32_t index, uint32_t newvalue) {
+    if (index > 12) {
+        logfatal("Tried to set a register > r12 - this has the possibility of being different depending on the mode, but that isn't implemented yet.")
+    }
+    state->r[index] = newvalue;
+}
+
+// http://problemkaputt.de/gbatek.htm#armopcodesdataprocessingalu
+void data_processing(arm7tdmi_t* state,
+                     unsigned int operand2,
+                     unsigned int rd,
+                     unsigned int rn,
+                     bool s,
+                     unsigned int opcode) {
+    if (s) {
+        logfatal("in a data processing instruction, wanted to update condition codes. This isn't implemented yet")
+    }
+    // Because this is immediate mode, we gotta do stuff with the operand
+    uint32_t immediate = operand2 & 0xFFu; // Last 8 bits of operand2 are the pre-shift value
+    uint32_t shift = (operand2 & 0xF00u) >> 7u; // Only shift by 7 because we were going to multiply it by 2 anyway
+    loginfo("operand2: 0x%02X Immediate: 0x%02X shift: 0x%02X", operand2, immediate, shift);
+
+    immediate &= 31u;
+    immediate = (immediate >> shift) | (immediate << (-shift & 31u));
+
+    loginfo("Post-shift: 0x%02X", immediate)
+
+    switch(opcode) {
+        case 0xD:
+                set_register(state, rd, immediate);
+                break;
+            default:
+                logfatal("DATA_PROCESSING: unknown opcode: 0x%X", opcode)
+        }
 }
 
 void branch(arm7tdmi_t* state, uint32_t offset, bool link) {
@@ -105,8 +135,14 @@ int arm7tdmi_step(arm7tdmi_t* state) {
     if (check_cond(&instr)) {
         arm_instr_type_t type = get_instr_type(&instr);
         switch (type) {
-            case DPFSR:
-                logfatal("Unimplemented instruction type: DPFSR")
+            case DATA_PROCESSING:
+                data_processing(state,
+                                instr.parsed.DATA_PROCESSING.operand2,
+                                instr.parsed.DATA_PROCESSING.rd,
+                                instr.parsed.DATA_PROCESSING.rn,
+                                instr.parsed.DATA_PROCESSING.s,
+                                instr.parsed.DATA_PROCESSING.opcode);
+                break;
             case MULTIPLY:
                 logfatal("Unimplemented instruction type: MULTIPLY")
             case MULTIPLY_LONG:
@@ -143,3 +179,4 @@ int arm7tdmi_step(arm7tdmi_t* state) {
     }
     return this_step_ticks;
 }
+

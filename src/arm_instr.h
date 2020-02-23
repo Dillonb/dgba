@@ -6,7 +6,7 @@ typedef enum arm_cond_t {
 } arm_cond_t;
 
 typedef enum arm_instr_type {
-    DPFSR,
+    DATA_PROCESSING,
     MULTIPLY,
     MULTIPLY_LONG,
     SINGLE_DATA_SWAP,
@@ -32,7 +32,6 @@ typedef union arminstr {
                 unsigned remaining:28;
                 arm_cond_t cond:4;
             };
-            // TODO DPFSR (Data processing and FSR transfer)
             struct {
                 unsigned operand2:12;
                 unsigned rd:4;
@@ -41,7 +40,7 @@ typedef union arminstr {
                 unsigned opcode:4;
                 unsigned identifier:3; // Equals 0b001 if instruction is this type.
                 arm_cond_t cond:4;
-            } DPFSR;
+            } DATA_PROCESSING;
             struct {
                 unsigned rm:4;
                 unsigned identifier2:4; // Equals 0b1001 if instruction is this type
@@ -75,8 +74,8 @@ typedef union arminstr {
     } parsed;
 } arminstr_t;
 
-bool is_dpfsr(arminstr_t* instr) {
-    return instr->parsed.DPFSR.identifier == 0b001u;
+bool is_data_processing(arminstr_t* instr) {
+    return instr->parsed.DATA_PROCESSING.identifier == 0b001u;
 }
 
 bool is_multiply(arminstr_t* instr) {
@@ -88,8 +87,8 @@ bool is_branch(arminstr_t* instr) {
 }
 
 arm_instr_type_t get_instr_type(arminstr_t* instr) {
-    if (is_dpfsr(instr)) {
-        return DPFSR;
+    if (is_data_processing(instr)) {
+        return DATA_PROCESSING;
     } else if (is_multiply(instr)) {
         return MULTIPLY;
     } else if (is_branch(instr)) {
