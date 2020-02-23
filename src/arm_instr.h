@@ -18,7 +18,7 @@ typedef enum arm_cond_t {
    LE = 13,
    AL = 14,
    NV = 15,
-} arm_cont;
+} arm_cond;
 
 typedef enum arm_instr_type_t {
     DPFSR,
