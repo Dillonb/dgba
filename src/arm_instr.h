@@ -75,18 +75,18 @@ typedef union arminstr {
                 bool s:1;
                 unsigned opcode:4;
                 bool immediate:1;
-                unsigned IGNORED:2;
+                unsigned:2;
                 arm_cond_t cond:4;
             } DATA_PROCESSING;
             struct {
                 unsigned rm:4;
-                unsigned IGNORED:4;
+                unsigned:4;
                 unsigned rs:4;
                 unsigned rn:4;
                 unsigned rd:4;
                 bool s:1;
                 bool a:1;
-                unsigned IGNORED2:6;
+                unsigned:6;
                 arm_cond_t cond:4;
             } MULTIPLY;
             // TODO MULTIPLY_LONG
@@ -104,7 +104,7 @@ typedef union arminstr {
                 bool u:1;
                 bool p:1;
                 bool i:1;
-                unsigned IGNORED:2;
+                unsigned:2;
                 arm_cond_t cond:4;
             } SINGLE_DATA_TRANSFER;
             // TODO UNDEFINED
@@ -112,7 +112,7 @@ typedef union arminstr {
             struct {
                 unsigned offset:24; // This value is actually signed, but needs to be this way because of how C works
                 bool l:1;
-                unsigned IGNORED:3;
+                unsigned:3;
                 arm_cond_t cond:4;
             } BRANCH;
             // TODO COPROCESSOR_DATA_TRANSFER
