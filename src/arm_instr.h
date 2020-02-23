@@ -2,8 +2,23 @@
 #define __ARM_INSTR_H__
 
 typedef enum arm_cond_t {
-    EQ, NE, CS, CC, MI, PL, VS, VC, HI, LS, GE, LT, GT, LE, AL
-} arm_cond;
+   EQ = 0,
+   NE = 1,
+   HS = 2,
+   LO = 3,
+   MI = 4,
+   PL = 5,
+   VS = 6,
+   VC = 7,
+   HI = 8,
+   LS = 9,
+   GE = 10,
+   LT = 11,
+   GT = 12,
+   LE = 13,
+   AL = 14,
+   NV = 15,
+} arm_cont;
 
 typedef enum arm_instr_type_t {
     DPFSR,
