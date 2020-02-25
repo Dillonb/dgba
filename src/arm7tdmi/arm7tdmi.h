@@ -1,7 +1,8 @@
 #ifndef __ARM7TDMI_H__
 #define __ARM7TDMI_H__
 
-#include "util.h"
+#include "../common/util.h"
+
 
 typedef struct arm7tdmi {
     // Connections to the bus
@@ -67,5 +68,10 @@ arm7tdmi_t* init_arm7tdmi(byte (*read_byte)(word),
                           void (*write_word)(word, word));
 
 int arm7tdmi_step(arm7tdmi_t* state);
+
+word get_register(arm7tdmi_t* state, word index);
+void set_register(arm7tdmi_t* state, word index, word newvalue);
+
+void set_pc(arm7tdmi_t* state, word new_pc);
 
 #endif

@@ -1,9 +1,9 @@
 #include <cflags.h>
 
 #include "gbarom.h"
-#include "log.h"
+#include "common/log.h"
 #include "gbabus.h"
-#include "arm7tdmi.h"
+#include "arm7tdmi/arm7tdmi.h"
 
 void usage(cflags_t* flags) {
     cflags_print_usage(flags,

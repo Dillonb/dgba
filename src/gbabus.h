@@ -1,7 +1,7 @@
 #ifndef __GBABUS_H__
 #define __GBABUS_H__
 
-#include "util.h"
+#include "common/util.h"
 #include "gbamem.h"
 
 void init_gbabus(gbamem_t* new_mem);

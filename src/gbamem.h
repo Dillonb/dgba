@@ -3,7 +3,7 @@
 
 #include <stddef.h>
 
-#include "util.h"
+#include "common/util.h"
 
 typedef struct gbamem {
     byte* rom;

@@ -1,8 +1,7 @@
-#include <err.h>
 #include "gbabus.h"
 #include "ioreg_util.h"
 #include "gbamem.h"
-#include "log.h"
+#include "common/log.h"
 
 gbamem_t* mem;
 
@@ -11,11 +10,11 @@ void init_gbabus(gbamem_t* new_mem) {
 }
 
 void write_byte_ioreg(word addr, byte value) {
-    logwarn("Write to unknown byte ioreg addr 0x%08X == 0x%02X", addr, value)
+    logwarn("Write to unknown (but valid) byte ioreg addr 0x%08X == 0x%02X", addr, value)
 }
 
 void write_half_ioreg(word addr, half value) {
-    logwarn("Write to unknown half ioreg addr 0x%08X == 0x%04X", addr, value)
+    logwarn("Write to unknown (but valid) half ioreg addr 0x%08X == 0x%04X", addr, value)
 }
 
 void write_word_ioreg(word addr, word value) {
