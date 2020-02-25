@@ -103,12 +103,6 @@ void psr_transfer(arm7tdmi_t* state,
     unimplemented(!opcode.msr, "MRS mode unimplemented.")
     unimplemented(opcode.spsr, "SPSR not implemented")
 
-
-
-
-
-
-
     if (opcode.msr) {
         union {
             struct {
@@ -121,67 +115,109 @@ void psr_transfer(arm7tdmi_t* state,
         } field_masks;
         field_masks.raw = dt_rn; // field masks come from the "rn" field in data processing
 
-        // Debug
-        printf("cpsr_");
-        if (field_masks.c) { printf("c"); }
-        if (field_masks.x) { printf("x"); }
-        if (field_masks.s) { printf("s"); }
-        if (field_masks.f) { printf("f"); }
-        printf("\n");
-
-
         if (immediate) {
             logfatal("Immediate not implemented")
         }
         else {
             unsigned int source_register = dt_operand2 & 0b1111u;
+            // Debug
+            printf("MSR CPSR_");
+            if (field_masks.c) { printf("c"); }
+            if (field_masks.x) { printf("x"); }
+            if (field_masks.s) { printf("s"); }
+            if (field_masks.f) { printf("f"); }
+            printf(", r%d\n", source_register);
             // http://problemkaputt.de/gbatek.htm#armopcodespsrtransfermrsmsr
-            logfatal("Source register r%d gotten out of dt_operand2 %d", source_register, dt_operand2);
+
+            word source_data = get_register(state, source_register);
+            logdebug("Source data: 0x%08X", source_data);
+            logfatal("I know how to get the instruction, but not how to execute it.")
         }
     }
     else {
         // MRS
+        logfatal("Hello! This is an MRS instruction!")
     }
 
-    logfatal("Hello!")
 }
 
 // http://problemkaputt.de/gbatek.htm#armopcodesdataprocessingalu
 void data_processing(arm7tdmi_t* state,
-                     unsigned int operand2,
-                     unsigned int rd,
-                     unsigned int rn,
+                     word immediate_operand2,
+                     word rd,
+                     word rn,
                      bool s,
                      bool immediate,
-                     unsigned int opcode) {
+                     word opcode) {
     // If it's one of these opcodes, and the s flag isn't set, this is actually a psr transfer op.
     if (!s && opcode >= 0x8 && opcode <= 0xb) { // TODO optimize with masks (opcode>>8) & 0b1100 == 0b1100 ?
-        return psr_transfer(state, immediate, opcode, rn, rd, operand2);
+        return psr_transfer(state, immediate, opcode, rn, rd, immediate_operand2);
     }
 
-    if (s) {
-        logfatal("in a data processing instruction, wanted to update condition codes. This isn't implemented yet")
-    }
-    if (!immediate) {
-        logfatal("In a data processing instruction, NOT using immediate, time to implement it.")
-    }
-    // Because this is immediate mode, we gotta do stuff with the operand
-    word immediate_value = operand2 & 0xFFu; // Last 8 bits of operand2 are the pre-shift value
-    word shift = (operand2 & 0xF00u) >> 7u; // Only shift by 7 because we were going to multiply it by 2 anyway
-    loginfo("operand2: 0x%02X immediate_value: 0x%02X shift: 0x%02X", operand2, immediate_value, shift);
+    unimplemented(s, "updating condition codes flag in data processing")
 
-    immediate_value &= 31u;
-    immediate_value = (immediate_value >> shift) | (immediate_value << (-shift & 31u));
+    word operand2;
 
-    loginfo("Post-shift: 0x%02X", immediate_value)
+    // Operand2 comes from an immediate value
+    if (immediate) {
+        // Because this is immediate mode, we gotta do stuff with the operand
+        operand2 = immediate_operand2 & 0xFFu; // Last 8 bits of operand2 are the pre-shift value
+
+        // first 4 bytes * 7 are the shift value
+        // Only shift by 7 because we were going to multiply it by 2 anyway
+        word shift = (immediate_operand2 & 0xF00u) >> 7u;
+
+        operand2 &= 31u;
+        operand2 = (operand2 >> shift) | (operand2 << (-shift & 31u));
+    }
+    // Operand2 comes from another register
+    else {
+        //logfatal("In a data processing instruction, NOT using immediate, time to implement it.")
+        union {
+            struct {
+                struct {
+                    unsigned:7; // common flags
+                    unsigned shift_amount:5;
+                } shift_immediate;
+                struct {
+                    unsigned:8; // common flags
+                    unsigned rs:4;
+                } shift_register;
+                // Common to both
+                struct {
+                    unsigned rm:4;
+                    bool r:1; // 1: shift by register, 0, shift by immediate.
+                    unsigned shift_type:2;
+                };
+            };
+            unsigned raw:12;
+        } nonimmediate_flags;
+
+        byte shift_amount;
+
+        // Shift by register
+        if (nonimmediate_flags.r) {
+            shift_amount = get_register(state, nonimmediate_flags.shift_register.rs);
+        }
+        // Shift by immediate
+        else {
+            shift_amount = nonimmediate_flags.shift_immediate.shift_amount;
+        }
+
+        unimplemented(1, "I've done part of this, still work to do.")
+    }
+
 
     switch(opcode) {
-        case 0xD:
-                set_register(state, rd, immediate_value);
-                break;
-            default:
-                logfatal("DATA_PROCESSING: unknown opcode: 0x%X", opcode)
-        }
+        case 0xC: // OR logical: Rd = Rn OR Op2
+            set_register(state, rd, get_register(state, rn) | operand2);
+            break;
+        case 0xD: // MOV: Rd = Op2
+            set_register(state, rd, operand2);
+            break;
+        default:
+            logfatal("DATA_PROCESSING: unknown opcode: 0x%X", opcode)
+    }
 }
 
 // http://problemkaputt.de/gbatek.htm#armopcodesmemorysingledatatransferldrstrpld
