@@ -61,20 +61,18 @@ void psr_transfer(arm7tdmi_t* state,
 
 typedef union nonimmediate_flags {
     struct {
-        struct {
-            unsigned:7; // common flags
-            unsigned shift_amount:5;
-        } shift_immediate;
-        struct {
-            unsigned:8; // common flags
-            unsigned rs:4;
-        } shift_register;
-        // Common to both
-        struct {
-            unsigned rm:4;
-            bool r:1; // 1: shift by register, 0, shift by immediate.
-            unsigned shift_type:2;
-        };
+        unsigned:7; // common flags
+        unsigned shift_amount:5;
+    } shift_immediate;
+    struct {
+        unsigned:8; // common flags
+        unsigned rs:4;
+    } shift_register;
+    // Common to both
+    struct {
+        unsigned rm:4;
+        bool r:1; // 1: shift by register, 0, shift by immediate.
+        unsigned shift_type:2;
     };
     unsigned raw:12;
 } nonimmediate_flags_t;
@@ -110,20 +108,23 @@ void data_processing(arm7tdmi_t* state,
 
         byte shift_amount;
 
-        nonimmediate_flags_t nonimmediate_flags;
+        nonimmediate_flags_t flags;
+        flags.raw = immediate_operand2;
 
         // Shift by register
-        if (nonimmediate_flags.r) {
-            shift_amount = get_register(state, nonimmediate_flags.shift_register.rs);
+        if (flags.r) {
+            shift_amount = get_register(state, flags.shift_register.rs);
         }
-            // Shift by immediate
+        // Shift by immediate
         else {
-            shift_amount = nonimmediate_flags.shift_immediate.shift_amount;
+            shift_amount = flags.shift_immediate.shift_amount;
         }
 
-        switch (nonimmediate_flags.shift_type) {
+        logdebug("Shift amount: 0x%02X", shift_amount)
+
+        switch (flags.shift_type) {
             default:
-                logfatal("Unknown shift type: %d", nonimmediate_flags.shift_type)
+                logfatal("Unknown shift type: %d", flags.shift_type)
         }
     }
 

@@ -1,7 +1,7 @@
 #ifndef GBA_IOREG_UTIL_H
 #define GBA_IOREG_UTIL_H
 
-#include "util.h"
+#include "common/util.h"
 #include "common/log.h"
 
 #define is_ioreg(addr) ((addr >> 24u) == 0x4u)
