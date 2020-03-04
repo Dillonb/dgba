@@ -21,6 +21,14 @@ word get_mask(field_masks_t* masks) {
     return mask;
 }
 
+typedef union msr_immediate_flags {
+    struct {
+        unsigned shift:4;
+        unsigned imm:8;
+    } parsed;
+    unsigned raw:12;
+} msr_immediate_flags_t;
+
 void psr_transfer(arm7tdmi_t* state,
                   bool immediate,
                   unsigned int dt_opcode,
@@ -48,7 +56,13 @@ void psr_transfer(arm7tdmi_t* state,
         word source_data;
 
         if (immediate) {
-            logfatal("Immediate not implemented")
+            msr_immediate_flags_t flags;
+            flags.raw = dt_operand2;
+            source_data = flags.parsed.imm;
+            int shift = flags.parsed.shift * 2;
+
+            source_data &= 31u;
+            source_data = (source_data >> shift) | (source_data << (-shift & 31u));
         }
         else {
             unsigned int source_register = dt_operand2 & 0b1111u;
@@ -108,6 +122,9 @@ void data_processing(arm7tdmi_t* state,
         return psr_transfer(state, immediate, opcode, rn, rd, immediate_operand2);
     }
 
+    unimplemented(rd == 15, "r15 is a special case")
+    unimplemented(rn == 15, "r15 is a special case")
+
     unimplemented(s, "updating condition codes flag in data processing")
 
     word operand2;
@@ -129,26 +146,37 @@ void data_processing(arm7tdmi_t* state,
         nonimmediate_flags_t flags;
         flags.raw = immediate_operand2;
 
+        unimplemented(flags.rm == 15, "r15 is a special case")
+        operand2 = get_register(state, flags.rm);
+
         // Shift by register
         if (flags.r) {
-            shift_amount = get_register(state, flags.shift_register.rs);
+            unimplemented(flags.shift_register.rs == 15, "r15 is a special case")
+            shift_amount = get_register(state, flags.shift_register.rs) & 0xFFu; // Only lowest 8 bits used
+            unimplemented(shift_amount == 0, "shift amount 0 is a special case! see docs.")
         }
         // Shift by immediate
         else {
             shift_amount = flags.shift_immediate.shift_amount;
+            unimplemented(shift_amount == 0, "shift amount 0 is a special case! see docs.")
         }
 
         logdebug("Shift amount: 0x%02X", shift_amount)
 
-        // Needed since the shifts below use the carry flag
+        // Needed when s == true - set condition codes on status register
         // status_register_t* psr = get_psr(state);
+
+        logdebug("Operand before shift: 0x%08X", operand2)
 
         switch (flags.shift_type) {
             case 0: // LSL
                 logfatal("LSL shift type unimplemented")
             case 1: // LSR
-                logfatal("LSR shift type unimplemented")
+                operand2 >>= shift_amount;
+                // TODO update condition codes if S == true?
+                break;
             case 2: // ASR
+                // TODO update condition codes if S == true?
                 logfatal("ASR shift type unimplemented")
             case 3: // ROR
                 logfatal("ROR shift type unimplemented")
@@ -157,6 +185,8 @@ void data_processing(arm7tdmi_t* state,
         }
     }
 
+    logdebug("Operand after shift: 0x%08X", operand2)
+
 
     switch(opcode) {
         case 0xC: // OR logical: Rd = Rn OR Op2
@@ -164,6 +194,9 @@ void data_processing(arm7tdmi_t* state,
             break;
         case 0xD: // MOV: Rd = Op2
             set_register(state, rd, operand2);
+            break;
+        case 0xE: // BIC: Rd = Rn AND NOT Op2
+            set_register(state, rd, get_register(state, rn) & (~operand2));
             break;
         default:
             logfatal("DATA_PROCESSING: unknown opcode: 0x%X", opcode)

@@ -166,3 +166,9 @@ int arm7tdmi_step(arm7tdmi_t* state) {
 status_register_t* get_psr(arm7tdmi_t* state) {
     return &state->cpsr;
 }
+
+// Sets the correct status register.
+// For now, always sets CPSR, but when modes are implemented this will be mode-aware.
+void set_psr(arm7tdmi_t* state, word value) {
+    return &state->cpsr;
+}
