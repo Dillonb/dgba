@@ -22,6 +22,7 @@ int main(int argc, char** argv) {
 
     loginfo("ROM loaded: %lu bytes", mem->rom_size)
     loginfo("Beginning CPU loop")
+    // TODO check for failed / completed tests
     while(true) {
         arm7tdmi_step(cpu);
     }
