@@ -2,6 +2,25 @@
 #include "arm7tdmi.h"
 #include "../common/log.h"
 
+typedef union field_masks {
+    struct {
+        bool f:1; // Write to flags field
+        bool s:1; // Write to status field
+        bool x:1; // Write to extension field
+        bool c:1; // Write to control field
+    };
+    unsigned raw:4;
+} field_masks_t;
+
+word get_mask(field_masks_t* masks) {
+    word mask = 0;
+    if (masks->f) mask |= 0xFF000000u;
+    if (masks->s) mask |= 0x00FF0000u;
+    if (masks->x) mask |= 0x0000FF00u;
+    if (masks->c) mask |= 0x000000FFu;
+    return mask;
+}
+
 void psr_transfer(arm7tdmi_t* state,
                   bool immediate,
                   unsigned int dt_opcode,
@@ -22,16 +41,11 @@ void psr_transfer(arm7tdmi_t* state,
     unimplemented(opcode.spsr, "SPSR not implemented")
 
     if (opcode.msr) {
-        union {
-            struct {
-                bool f:1; // Write to flags field
-                bool s:1; // Write to status field
-                bool x:1; // Write to extension field
-                bool c:1; // Write to control field
-            };
-            unsigned raw:4;
-        } field_masks;
+        field_masks_t field_masks;
         field_masks.raw = dt_rn; // field masks come from the "rn" field in data processing
+        word mask = get_mask(&field_masks);
+
+        word source_data;
 
         if (immediate) {
             logfatal("Immediate not implemented")
@@ -47,10 +61,14 @@ void psr_transfer(arm7tdmi_t* state,
             printf(", r%d\n", source_register);
             // http://problemkaputt.de/gbatek.htm#armopcodespsrtransfermrsmsr
 
-            word source_data = get_register(state, source_register);
-            logdebug("Source data: 0x%08X", source_data);
-            logfatal("I know how to get the instruction, but not how to execute it.")
+            source_data = get_register(state, source_register);
         }
+
+        logdebug("Source data: 0x%08X", source_data)
+        source_data &= mask;
+        logdebug("Mask: 0x%08X", mask)
+        logdebug("Source data masked: 0x%08X", source_data)
+        logfatal("I know how to get the instruction, but not how to execute it.")
     }
     else {
         // MRS
