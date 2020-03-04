@@ -141,6 +141,14 @@ void data_processing(arm7tdmi_t* state,
         logdebug("Shift amount: 0x%02X", shift_amount)
 
         switch (flags.shift_type) {
+            case 0: // LSL
+                logfatal("LSL shift type unimplemented")
+            case 1: // LSR
+                logfatal("LSR shift type unimplemented")
+            case 2: // ASR
+                logfatal("ASR shift type unimplemented")
+            case 3: // ROR
+                logfatal("ROR shift type unimplemented")
             default:
                 logfatal("Unknown shift type: %d", flags.shift_type)
         }
