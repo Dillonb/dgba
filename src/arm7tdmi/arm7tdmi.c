@@ -160,3 +160,9 @@ int arm7tdmi_step(arm7tdmi_t* state) {
     }
     return this_step_ticks;
 }
+
+// Gets the correct status register.
+// For now, always returns CPSR, but when modes are implemented this will be mode-aware.
+status_register_t* get_psr(arm7tdmi_t* state) {
+    return &state->cpsr;
+}

@@ -140,6 +140,9 @@ void data_processing(arm7tdmi_t* state,
 
         logdebug("Shift amount: 0x%02X", shift_amount)
 
+        // Needed since the shifts below use the carry flag
+        // status_register_t* psr = get_psr(state);
+
         switch (flags.shift_type) {
             case 0: // LSL
                 logfatal("LSL shift type unimplemented")

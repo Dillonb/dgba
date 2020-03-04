@@ -3,6 +3,26 @@
 
 #include "../common/util.h"
 
+typedef union status_register {
+    word raw;
+    struct {
+        bool N:1;
+        bool Z:1;
+        bool C:1;
+        bool V:1;
+        unsigned RESERVED_DO_NOT_TOUCH:20;
+        bool disable_irq:1;
+        bool disable_fiq:1;
+        bool thumb:1;
+        // Mode bits. "Current operating mode".
+        // Does it make more sense to make this be a 5 bit value?
+        bool m4:1;
+        bool m3:1;
+        bool m2:1;
+        bool m1:1;
+        bool m0:1;
+    };
+} status_register_t;
 
 typedef struct arm7tdmi {
     // Connections to the bus
@@ -34,26 +54,7 @@ typedef struct arm7tdmi {
     word r13_abt;
     word r14_abt;
 
-    union {
-        word raw;
-        struct {
-            bool N:1;
-            bool Z:1;
-            bool C:1;
-            bool V:1;
-            unsigned RESERVED_DO_NOT_TOUCH:20;
-            bool disable_irq:1;
-            bool disable_fiq:1;
-            bool thumb:1;
-            // Mode bits. "Current operating mode".
-            // Does it make more sense to make this be a 5 bit value?
-            bool m4:1;
-            bool m3:1;
-            bool m2:1;
-            bool m1:1;
-            bool m0:1;
-        };
-    } cpsr;
+    status_register_t cpsr;
 
     // Other state
     word pipeline[2];
@@ -73,5 +74,9 @@ word get_register(arm7tdmi_t* state, word index);
 void set_register(arm7tdmi_t* state, word index, word newvalue);
 
 void set_pc(arm7tdmi_t* state, word new_pc);
+
+// Gets the correct status register.
+// For now, always returns CPSR, but when modes are implemented this will be mode-aware.
+status_register_t* get_psr(arm7tdmi_t* state);
 
 #endif
