@@ -1,0 +1,6 @@
+add_executable(test_arm test_arm.c)
+add_executable(test_thumb test_thumb.c)
+target_link_libraries(test_arm core)
+target_link_libraries(test_thumb core)
+add_test(test_arm test_arm)
+add_test(test_thumb test_thumb)
