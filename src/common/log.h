@@ -19,9 +19,9 @@ void log_set_verbosity(unsigned int level);
     fprintf(stderr, message "\n" COLOR_END, ##__VA_ARGS__);\
     exit(EXIT_FAILURE);}
 
-#define logwarn(message,...) if (log_get_verbosity() >= 0) {printf(COLOR_YELLOW message "\n" COLOR_END, ##__VA_ARGS__);}
-#define loginfo(message,...) if (log_get_verbosity() >= 0) {printf(COLOR_CYAN message "\n" COLOR_END, ##__VA_ARGS__);}
-#define logdebug(message,...) if (log_get_verbosity() >= 0) {printf(message "\n", ##__VA_ARGS__);}
+#define logwarn(message,...) if (log_get_verbosity() >= 0) {printf(COLOR_YELLOW "[WARN]  " message "\n" COLOR_END, ##__VA_ARGS__);}
+#define loginfo(message,...) if (log_get_verbosity() >= 0) {printf(COLOR_CYAN "[INFO]  " message "\n" COLOR_END, ##__VA_ARGS__);}
+#define logdebug(message,...) if (log_get_verbosity() >= 0) {printf("[DEBUG] " message "\n", ##__VA_ARGS__);}
 
 #define unimplemented(condition, message) if (condition) { logfatal("UNIMPLEMENTED CASE DETECTED: %s", message) }
 #endif
