@@ -82,5 +82,6 @@ void set_pc(arm7tdmi_t* state, word new_pc);
 // Gets the correct status register.
 // For now, always returns CPSR, but when modes are implemented this will be mode-aware.
 status_register_t* get_psr(arm7tdmi_t* state);
+void set_psr(arm7tdmi_t* state, word value);
 
 #endif

@@ -82,7 +82,12 @@ void psr_transfer(arm7tdmi_t* state,
         source_data &= mask;
         logdebug("Mask: 0x%08X", mask)
         logdebug("Source data masked: 0x%08X", source_data)
-        logfatal("I know how to get the instruction, but not how to execute it.")
+        if (field_masks.c) {
+            logwarn("TODO: mode change hook here!")
+        }
+        word psr = get_psr(state)->raw;
+        psr = (psr & ~mask) | source_data;
+        set_psr(state, psr);
     }
     else {
         // MRS
