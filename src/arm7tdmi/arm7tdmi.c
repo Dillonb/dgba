@@ -48,8 +48,10 @@ arm7tdmi_t* init_arm7tdmi(byte (*read_byte)(word),
     return state;
 }
 
-bool check_cond(arminstr_t* instr) {
+bool check_cond(arm7tdmi_t* state, arminstr_t* instr) {
     switch (instr->parsed.cond) {
+        case EQ:
+            return get_psr(state)->Z == 1;
         case AL:
             return true;
         default:
@@ -100,7 +102,7 @@ int arm7tdmi_step(arm7tdmi_t* state) {
     arminstr_t instr = next_instr(state);
     logwarn("adjusted pc: 0x%04X read: 0x%04X", state->pc - 8, instr.raw)
     logdebug("cond: %d", instr.parsed.cond)
-    if (check_cond(&instr)) {
+    if (check_cond(state, &instr)) {
         arm_instr_type_t type = get_instr_type(&instr);
         switch (type) {
             case DATA_PROCESSING:
