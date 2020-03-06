@@ -22,9 +22,13 @@ int main(int argc, char** argv) {
 
     loginfo("ROM loaded: %lu bytes", mem->rom_size)
     loginfo("Beginning CPU loop")
-    // TODO check for failed / completed tests
     while(true) {
         arm7tdmi_step(cpu);
+        word failed_test = cpu->r[7];
+        if (failed_test != 0) {
+            logfatal("test_thumb: FAILED TEST: %d", failed_test)
+        }
+        // TODO check for when all tests pass
     }
     exit(0);
 }
