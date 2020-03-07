@@ -57,6 +57,14 @@ half gba_read_half(word addr) {
 void gba_write_byte(word addr, byte value) {
     if (addr < GBA_BIOS_SIZE) {
         logfatal("Tried to write to the BIOS!")
+    } else if (addr < 0x01FFFFFF) {
+        logfatal("Tried to write to unused section of RAM in between bios and WRAM")
+    } else if (addr < 0x02FFFFFF) { // EWRAM
+        word index = (addr - 0x02000000) % 0x40000;
+        mem->ewram[index] = addr;
+    } else if (addr < 0x03FFFFFF) { // IWRAM
+        word index = (addr - 0x03000000) % 0x8000;
+        mem->iwram[index] = value;
     } else if (addr < 0x04000000) {
         logwarn("Tried to write to 0x%08X", addr)
         unimplemented(1, "Tried to write general internal memory")

@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include "arm7tdmi.h"
 #include "../common/log.h"
+#include "shifts.h"
 
 typedef union field_masks {
     struct {
@@ -175,21 +176,7 @@ void data_processing(arm7tdmi_t* state,
 
         logdebug("Operand before shift: 0x%08X", operand2)
 
-        switch (flags.shift_type) {
-            case 0: // LSL
-                logfatal("LSL shift type unimplemented")
-            case 1: // LSR
-                operand2 >>= shift_amount;
-                // TODO update condition codes if S == true?
-                break;
-            case 2: // ASR
-                // TODO update condition codes if S == true?
-                logfatal("ASR shift type unimplemented")
-            case 3: // ROR
-                logfatal("ROR shift type unimplemented")
-            default:
-                logfatal("Unknown shift type: %d", flags.shift_type)
-        }
+        operand2 = arm_shift(flags.shift_type, operand2, shift_amount);
     }
 
     logdebug("Operand after shift: 0x%08X", operand2)
