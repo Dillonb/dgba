@@ -80,19 +80,43 @@ arminstr_t next_instr(arm7tdmi_t* state) {
 
 void set_register(arm7tdmi_t* state, word index, word newvalue) {
     if (index > 12) {
-        logfatal("Tried to set a register > r12 - this has the possibility of being different depending on the mode, but that isn't implemented yet.")
+        logwarn("Tried to set a register > r12 (%d) - this has the possibility of being different depending on the mode, but that isn't implemented yet.", index)
     }
+
     logdebug("Set r%d to 0x%08X", index, newvalue)
-    state->r[index] = newvalue;
+    if (index < 13) {
+        state->r[index] = newvalue;
+    } else if (index == 13) {
+        state->sp = newvalue;
+    } else if (index == 14) {
+        state->lr = newvalue;
+    } else if (index == 15) {
+        state->pc = newvalue;
+    } else {
+        logfatal("Attempted to write unknown register: r%d", index)
+    }
 }
 
 word get_register(arm7tdmi_t* state, word index) {
     if (index > 12) {
-        logfatal("Tried to get a register > r12 (%d) - this has the possibility of being different depending on the mode, but that isn't implemented yet.", index)
+        logwarn("Trying to get a register > r12 (%d) - this has the possibility of being different depending on the mode, but that isn't implemented yet.", index)
     }
 
-    logdebug("Read the value of r%d: 0x%08X", index, state->r[index])
-    return state->r[index];
+    word value;
+    if (index < 13) {
+        value = state->r[index];
+    } else if (index == 13) {
+        value = state->sp;
+    } else if (index == 14) {
+        value = state->lr;
+    } else if (index == 15) {
+        value = state->pc;
+    } else {
+        logfatal("Attempted to read unknown register: r%d", index)
+    }
+
+    logdebug("Read the value of r%d: 0x%08X", index, value)
+    return value;
 }
 
 
