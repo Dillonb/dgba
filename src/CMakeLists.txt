@@ -3,6 +3,8 @@ SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
 INCLUDE_DIRECTORIES(SYSTEM "contrib")
 
 add_library(core
+        gbabios.c
+        gbabios.h
         gbabus.c
         gbabus.h
         gbarom.c

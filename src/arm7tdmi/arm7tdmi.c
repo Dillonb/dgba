@@ -40,7 +40,7 @@ arm7tdmi_t* init_arm7tdmi(byte (*read_byte)(word),
     state->write_half = write_half;
     state->write_word = write_word;
 
-    state->pc       = 0x08000000;
+    state->pc       = 0x00000000;
     state->sp       = 0x03007F00;
     state->lr       = 0x08000000;
     state->cpsr.raw = 0x0000005F;

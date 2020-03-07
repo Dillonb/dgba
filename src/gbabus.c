@@ -2,6 +2,7 @@
 #include "ioreg_util.h"
 #include "gbamem.h"
 #include "common/log.h"
+#include "gbabios.h"
 
 gbamem_t* mem;
 
@@ -28,7 +29,9 @@ void write_word_ioreg(word addr, word value) {
 }
 
 byte gba_read_byte(word addr) {
-    if (addr < 0x08000000) {
+    if (addr < GBA_BIOS_SIZE) { // BIOS
+        return gbabios_read_byte(addr);
+    } else if (addr < 0x08000000) {
         logwarn("Tried to read from 0x%08X", addr)
         unimplemented(1, "Read from non-cartridge address")
     } else if (addr < 0x0E00FFFF) {
@@ -52,7 +55,9 @@ half gba_read_half(word addr) {
 }
 
 void gba_write_byte(word addr, byte value) {
-    if (addr < 0x04000000) {
+    if (addr < GBA_BIOS_SIZE) {
+        logfatal("Tried to write to the BIOS!")
+    } else if (addr < 0x04000000) {
         logwarn("Tried to write to 0x%08X", addr)
         unimplemented(1, "Tried to write general internal memory")
     } else if (addr < 0x04000400) {
