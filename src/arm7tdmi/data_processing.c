@@ -196,6 +196,11 @@ void data_processing(arm7tdmi_t* state,
 
 
     switch(opcode) {
+        case 0x2: { // SUB: Rd = Rn-Op2
+            word newvalue = get_register(state, rn) - operand2;
+            if (s) { set_flags_nz(state, newvalue); }
+            set_register(state, rd, newvalue);
+        }
         case 0xC: { // OR logical: Rd = Rn OR Op2
             word newvalue = get_register(state, rn) | operand2;
             if (s) { set_flags_nz(state, newvalue); }
