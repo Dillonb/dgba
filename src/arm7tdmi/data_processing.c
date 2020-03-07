@@ -183,8 +183,32 @@ void data_processing(arm7tdmi_t* state,
 
 
     switch(opcode) {
+        case 0x0: { // AND logical: Rd = Rn AND Op2
+            word newvalue = get_register(state, rn) & operand2;
+            if (s) { set_flags_nz(state, newvalue); }
+            set_register(state, rd, newvalue);
+            break;
+        }
+        case 0x1: { // XOR logical: Rd = Rn XOR Op2
+            word newvalue = get_register(state, rn) ^ operand2;
+            if (s) { set_flags_nz(state, newvalue); }
+            set_register(state, rd, newvalue);
+            break;
+        }
         case 0x2: { // SUB: Rd = Rn-Op2
             word newvalue = get_register(state, rn) - operand2;
+            if (s) { set_flags_nz(state, newvalue); }
+            set_register(state, rd, newvalue);
+            break;
+        }
+        case 0x3: { // RSB (subtract reversed): Rd = Op2-Rn
+            word newvalue = operand2 - get_register(state, rn);
+            if (s) { set_flags_nz(state, newvalue); }
+            set_register(state, rd, newvalue);
+            break;
+        }
+        case 0x4: { // ADD: Rd = Rn+Op2
+            word newvalue = get_register(state, rn) + operand2;
             if (s) { set_flags_nz(state, newvalue); }
             set_register(state, rd, newvalue);
             break;
