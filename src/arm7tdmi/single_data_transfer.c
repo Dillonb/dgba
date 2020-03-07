@@ -16,15 +16,35 @@ void single_data_transfer(arm7tdmi_t* state,
     //  When 1, Register shifted by Immediate as Offset
     logdebug("l: %d w: %d b: %d u: %d p: %d i: %d", l, w, b, up, pre, immediate_offset_type)
     logdebug("rn: %d rd: %d, offset: 0x%03X", rn, rd, offset)
+    if (w && rn == 15) {
+        logfatal("Write-back must not be specified when Rn == R15")
+    }
     unimplemented(immediate_offset_type, "immediate_offset_type == 1 in single_data_transfer")
-    unimplemented(l, "LDR")
     unimplemented(w, "w flag")
     unimplemented(!up, "down (subtract from base)")
     unimplemented(!pre, "post-transfer offset")
-    unimplemented(rn == 15, "special case where rn == r15")
 
     word address = get_register(state, rn) + offset;
 
-    logdebug("I'm gonna save r%d to 0x%02X", rd, address)
-    state->write_word(address, get_register(state, rd));
+
+    if (l) { // LDR
+        word source;
+        if (b) { // Read a byte
+            logdebug("I'm gonna load r%d with a byte from 0x%08X", rd, address)
+            source = state->read_byte(address);
+        }
+        else { // Read a word
+            logdebug("I'm gonna load r%d with a word from 0x%08X", rd, address)
+            source = state->read_word(address);
+        }
+        logdebug("And that value is 0x%08X", source)
+        set_register(state, rd, source);
+    } else { // STR
+        unimplemented(rd == 15,
+                      "When R15 is the source register (rd) of a register"
+                      " store operation, the stored value will be the address of"
+                      " the instruction plus 12. Make sure this is happening!")
+        logdebug("I'm gonna save r%d to 0x%08X", rd, address)
+        state->write_word(address, get_register(state, rd));
+    }
 }

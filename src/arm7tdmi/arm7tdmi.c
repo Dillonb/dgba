@@ -88,7 +88,7 @@ void set_register(arm7tdmi_t* state, word index, word newvalue) {
 
 word get_register(arm7tdmi_t* state, word index) {
     if (index > 12) {
-        logfatal("Tried to get a register > r12 - this has the possibility of being different depending on the mode, but that isn't implemented yet.")
+        logfatal("Tried to get a register > r12 (%d) - this has the possibility of being different depending on the mode, but that isn't implemented yet.", index)
     }
 
     logdebug("Read the value of r%d: 0x%08X", index, state->r[index])
