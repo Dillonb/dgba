@@ -33,16 +33,18 @@ arm7tdmi_t* init_arm7tdmi(byte (*read_byte)(word),
                           void (*write_word)(word, word)) {
     arm7tdmi_t* state = malloc(sizeof(arm7tdmi_t));
 
-    state->read_byte = read_byte;
-    state->read_half = read_half;
-    state->read_word = read_word;
+    state->read_byte  = read_byte;
+    state->read_half  = read_half;
+    state->read_word  = read_word;
     state->write_byte = write_byte;
     state->write_half = write_half;
     state->write_word = write_word;
 
-    state->pc = 0x08000000;
-
-    state->cpsr.raw = 0;
+    state->pc       = 0x08000000;
+    state->sp       = 0x03007F00;
+    state->lr       = 0x08000000;
+    state->cpsr.raw = 0x0000005F;
+    // SPSR raw = 0x00000000;
 
     fill_pipe(state);
     return state;
