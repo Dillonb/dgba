@@ -50,10 +50,37 @@ arm7tdmi_t* init_arm7tdmi(byte (*read_byte)(word),
     return state;
 }
 
+// EQ, NE, CS, CC, MI, PL, VS, VC, HI, LS, GE, LT, GT, LE, AL, NV
 bool check_cond(arm7tdmi_t* state, arminstr_t* instr) {
     switch (instr->parsed.cond) {
         case EQ:
-            return get_psr(state)->Z == 1;
+            return state->cpsr.Z == 1;
+        case NE:
+            return state->cpsr.Z == 0;
+        case CS:
+            return state->cpsr.C == 1;
+        case CC:
+            return state->cpsr.C == 0;
+        case MI:
+            return state->cpsr.N == 1;
+        case PL:
+            return state->cpsr.N == 0;
+        case VS:
+            return state->cpsr.V == 1;
+        case VC:
+            return state->cpsr.V == 0;
+        case HI:
+            return state->cpsr.C == 1 && state->cpsr.Z == 0;
+        case LS:
+            return state->cpsr.C == 0 || state->cpsr.Z == 1;
+        case GE:
+            return (!state->cpsr.N == !state->cpsr.V);
+        case LT:
+            return (!state->cpsr.N != !state->cpsr.V);
+        case GT:
+            return (!state->cpsr.Z && !state->cpsr.N == !state->cpsr.V);
+        case LE:
+            return (state->cpsr.Z || !state->cpsr.N != !state->cpsr.V);
         case AL:
             return true;
         default:
