@@ -3,17 +3,17 @@
 
 #include "../common/util.h"
 
+#define MODE_FIQ 0b10001
+#define MODE_SUPERVISOR 0b10011
+#define MODE_ABORT 0b10111
+#define MODE_IRQ 0b10010
+#define MODE_UNDEFINED 0b11011
+
 typedef union status_register {
     word raw;
     struct {
         // Mode bits. "Current operating mode".
-        // Does it make more sense to make this be a 5 bit value?
-        bool m4:1;
-        bool m3:1;
-        bool m2:1;
-        bool m1:1;
-        bool m0:1;
-
+        unsigned mode:5;
 
         bool thumb:1;
         bool disable_fiq:1;
@@ -44,10 +44,20 @@ typedef struct arm7tdmi {
     // r8-r12 have separate values for FIQ mode, but that's only called by hardware debuggers
     // There is no way to trigger it from software, so they have been omitted.
     // These are technically r13, r14, and r15.
-    // Don't put any other values between these and the r[13] array above.
-    // This is so out of bounds access of that array will continue to work
     word sp;
+    word sp_fiq;
+    word sp_svc;
+    word sp_abt;
+    word sp_irq;
+    word sp_und;
+
     word lr;
+    word lr_fiq;
+    word lr_svc;
+    word lr_abt;
+    word lr_irq;
+    word lr_und;
+
     word pc;
 
     // Copies of registers for supervisor mode
@@ -59,6 +69,11 @@ typedef struct arm7tdmi {
     word r14_abt;
 
     status_register_t cpsr;
+    status_register_t spsr_fiq;
+    status_register_t spsr_svc;
+    status_register_t spsr_abt;
+    status_register_t spsr_irq;
+    status_register_t spsr_und;
 
     // Other state
     word pipeline[2];
@@ -79,9 +94,12 @@ void set_register(arm7tdmi_t* state, word index, word newvalue);
 
 void set_pc(arm7tdmi_t* state, word new_pc);
 
-// Gets the correct status register.
-// For now, always returns CPSR, but when modes are implemented this will be mode-aware.
+// PSR, processor status register
 status_register_t* get_psr(arm7tdmi_t* state);
 void set_psr(arm7tdmi_t* state, word value);
+
+// SPSR, saved processor status register
+status_register_t* get_spsr(arm7tdmi_t* state);
+void set_spsr(arm7tdmi_t* state, word value);
 
 #endif

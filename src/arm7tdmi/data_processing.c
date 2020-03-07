@@ -29,6 +29,7 @@ typedef union msr_immediate_flags {
     unsigned raw:12;
 } msr_immediate_flags_t;
 
+// http://problemkaputt.de/gbatek.htm#armopcodespsrtransfermrsmsr
 void psr_transfer(arm7tdmi_t* state,
                   bool immediate,
                   unsigned int dt_opcode,
@@ -46,7 +47,6 @@ void psr_transfer(arm7tdmi_t* state,
     opcode.raw = dt_opcode;
 
     unimplemented(!opcode.msr, "MRS mode unimplemented.")
-    unimplemented(opcode.spsr, "SPSR not implemented")
 
     if (opcode.msr) {
         field_masks_t field_masks;
@@ -82,12 +82,16 @@ void psr_transfer(arm7tdmi_t* state,
         source_data &= mask;
         logdebug("Mask: 0x%08X", mask)
         logdebug("Source data masked: 0x%08X", source_data)
-        if (field_masks.c) {
-            logwarn("TODO: mode change hook here!")
+        if (opcode.spsr) { // SPSR
+            word spsr = get_spsr(state)->raw;
+            spsr = (spsr & ~mask) | source_data;
+            set_spsr(state, spsr);
         }
-        word psr = get_psr(state)->raw;
-        psr = (psr & ~mask) | source_data;
-        set_psr(state, psr);
+        else { // CPSR
+            word psr = get_psr(state)->raw;
+            psr = (psr & ~mask) | source_data;
+            set_psr(state, psr);
+        }
     }
     else {
         // MRS

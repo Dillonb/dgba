@@ -78,18 +78,96 @@ arminstr_t next_instr(arm7tdmi_t* state) {
     return instr;
 }
 
-void set_register(arm7tdmi_t* state, word index, word newvalue) {
-    if (index > 12) {
-        logwarn("Tried to set a register > r12 (%d) - this has the possibility of being different depending on the mode, but that isn't implemented yet.", index)
+void set_sp(arm7tdmi_t* state, word newvalue) {
+    switch (state->cpsr.mode) {
+        case MODE_FIQ:
+            state->sp_fiq = newvalue;
+            break;
+        case MODE_SUPERVISOR:
+            state->sp_svc = newvalue;
+            break;
+        case MODE_ABORT:
+            state->sp_abt = newvalue;
+            break;
+        case MODE_IRQ:
+            state->sp_irq = newvalue;
+            break;
+        case MODE_UNDEFINED:
+            state->sp_und = newvalue;
+            break;
+        default:
+            state->sp = newvalue;
+            break;
     }
+}
+
+word get_sp(arm7tdmi_t* state) {
+    switch (state->cpsr.mode) {
+        case MODE_FIQ:
+            return state->sp_fiq;
+        case MODE_SUPERVISOR:
+            return state->sp_svc;
+        case MODE_ABORT:
+            return state->sp_abt;
+        case MODE_IRQ:
+            return state->sp_irq;
+        case MODE_UNDEFINED:
+            return state->sp_und;
+        default:
+            return state->sp;
+    }
+}
+
+void set_lr(arm7tdmi_t* state, word newvalue) {
+    switch (state->cpsr.mode) {
+        case MODE_FIQ:
+            state->lr_fiq = newvalue;
+            break;
+        case MODE_SUPERVISOR:
+            state->lr_svc = newvalue;
+            break;
+        case MODE_ABORT:
+            state->lr_abt = newvalue;
+            break;
+        case MODE_IRQ:
+            state->lr_irq = newvalue;
+            break;
+        case MODE_UNDEFINED:
+            state->lr_und = newvalue;
+            break;
+        default:
+            state->lr = newvalue;
+            break;
+    }
+}
+
+word get_lr(arm7tdmi_t* state) {
+    switch (state->cpsr.mode) {
+        case MODE_FIQ:
+            return state->lr_fiq;
+        case MODE_SUPERVISOR:
+            return state->lr_svc;
+        case MODE_ABORT:
+            return state->lr_abt;
+        case MODE_IRQ:
+            return state->lr_irq;
+        case MODE_UNDEFINED:
+            return state->lr_und;
+        default:
+            return state->lr;
+    }
+}
+
+void set_register(arm7tdmi_t* state, word index, word newvalue) {
+    unimplemented(state->cpsr.mode == MODE_FIQ && index >= 8 && index <= 12, "Accessing one of R8 - R12 while in FIQ mode - this needs to be banked")
 
     logdebug("Set r%d to 0x%08X", index, newvalue)
     if (index < 13) {
         state->r[index] = newvalue;
     } else if (index == 13) {
-        state->sp = newvalue;
+        set_sp(state, newvalue);
     } else if (index == 14) {
-        state->lr = newvalue;
+        set_lr(state, newvalue);
     } else if (index == 15) {
         state->pc = newvalue;
     } else {
@@ -98,17 +176,15 @@ void set_register(arm7tdmi_t* state, word index, word newvalue) {
 }
 
 word get_register(arm7tdmi_t* state, word index) {
-    if (index > 12) {
-        logwarn("Trying to get a register > r12 (%d) - this has the possibility of being different depending on the mode, but that isn't implemented yet.", index)
-    }
+    unimplemented(state->cpsr.mode == MODE_FIQ && index >= 8 && index <= 12, "Accessing one of R8 - R12 while in FIQ mode - this needs to be banked")
 
     word value;
     if (index < 13) {
         value = state->r[index];
     } else if (index == 13) {
-        value = state->sp;
+        value = get_sp(state);
     } else if (index == 14) {
-        value = state->lr;
+        value = get_lr(state);
     } else if (index == 15) {
         value = state->pc;
     } else {
@@ -189,14 +265,32 @@ int arm7tdmi_step(arm7tdmi_t* state) {
     return this_step_ticks;
 }
 
-// Gets the correct status register.
-// For now, always returns CPSR, but when modes are implemented this will be mode-aware.
 status_register_t* get_psr(arm7tdmi_t* state) {
     return &state->cpsr;
 }
 
-// Sets the correct status register.
-// For now, always sets CPSR, but when modes are implemented this will be mode-aware.
 void set_psr(arm7tdmi_t* state, word value) {
     state->cpsr.raw = value;
+}
+
+status_register_t* get_spsr(arm7tdmi_t* state) {
+    switch (state->cpsr.mode) {
+        case MODE_FIQ:
+            return &state->spsr_fiq;
+        case MODE_SUPERVISOR:
+            return &state->spsr_svc;
+        case MODE_ABORT:
+            return &state->spsr_abt;
+        case MODE_IRQ:
+            return &state->spsr_irq;
+        case MODE_UNDEFINED:
+            return &state->spsr_und;
+        default:
+            logfatal("Getting SPSR for mode: 0x%02X is unsupported (and maybe should be?)", state->cpsr.mode)
+    }
+}
+
+void set_spsr(arm7tdmi_t* state, word value) {
+    status_register_t* spsr = get_spsr(state);
+    spsr->raw = value;
 }
