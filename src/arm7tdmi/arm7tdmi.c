@@ -294,3 +294,9 @@ void set_spsr(arm7tdmi_t* state, word value) {
     status_register_t* spsr = get_spsr(state);
     spsr->raw = value;
 }
+
+void set_flags_nz(arm7tdmi_t* state, word newvalue) {
+    status_register_t* psr = get_psr(state);
+    psr->Z = newvalue == 0;
+    psr->N = newvalue >> 31u;
+}

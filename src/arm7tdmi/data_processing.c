@@ -134,8 +134,6 @@ void data_processing(arm7tdmi_t* state,
     unimplemented(rd == 15, "r15 is a special case")
     unimplemented(rn == 15, "r15 is a special case")
 
-    unimplemented(s, "updating condition codes flag in data processing")
-
     word operand2;
 
     if (immediate) { // Operand2 comes from an immediate value
@@ -198,15 +196,23 @@ void data_processing(arm7tdmi_t* state,
 
 
     switch(opcode) {
-        case 0xC: // OR logical: Rd = Rn OR Op2
-            set_register(state, rd, get_register(state, rn) | operand2);
+        case 0xC: { // OR logical: Rd = Rn OR Op2
+            word newvalue = get_register(state, rn) | operand2;
+            if (s) { set_flags_nz(state, newvalue); }
+            set_register(state, rd, newvalue);
             break;
-        case 0xD: // MOV: Rd = Op2
+        }
+        case 0xD: { // MOV: Rd = Op2
             set_register(state, rd, operand2);
+            if (s) { set_flags_nz(state, operand2); }
             break;
-        case 0xE: // BIC: Rd = Rn AND NOT Op2
-            set_register(state, rd, get_register(state, rn) & (~operand2));
+        }
+        case 0xE: { // BIC: Rd = Rn AND NOT Op2
+            word newvalue = get_register(state, rn) & (~operand2);
+            if (s) { set_flags_nz(state, operand2); }
+            set_register(state, rd, newvalue);
             break;
+        }
         default:
             logfatal("DATA_PROCESSING: unknown opcode: 0x%X", opcode)
     }

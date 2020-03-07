@@ -102,4 +102,6 @@ void set_psr(arm7tdmi_t* state, word value);
 status_register_t* get_spsr(arm7tdmi_t* state);
 void set_spsr(arm7tdmi_t* state, word value);
 
+void set_flags_nz(arm7tdmi_t* state, word newvalue);
+
 #endif
