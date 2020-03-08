@@ -6,18 +6,26 @@
 #include "../common/log.h"
 
 word arm_lsr(word data, word shift_amount) {
+    unimplemented(shift_amount == 0, "shift amount 0 is a special case! see docs.")
     return data >> shift_amount;
 }
 
 word arm_lsl(word data, word shift_amount) {
-    return data << shift_amount;
+    if (shift_amount == 0) {
+        return data;
+    } else {
+        return data << shift_amount;
+    }
+
 }
 
 word arm_asr(word data, word shift_amount) {
+    unimplemented(shift_amount == 0, "shift amount 0 is a special case! see docs.")
     logfatal("ASR shift type unimplemented")
 }
 
 word arm_ror(word data, word shift_amount) {
+    unimplemented(shift_amount == 0, "shift amount 0 is a special case! see docs.")
     logfatal("ROR shift type unimplemented")
 }
 

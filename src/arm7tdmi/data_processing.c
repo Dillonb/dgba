@@ -68,7 +68,6 @@ void data_processing(arm7tdmi_t* state,
         // Shift by immediate
         else {
             shift_amount = flags.shift_immediate.shift_amount;
-            unimplemented(shift_amount == 0, "shift amount 0 is a special case! see docs.")
         }
 
         logdebug("Shift amount: 0x%02X", shift_amount)
