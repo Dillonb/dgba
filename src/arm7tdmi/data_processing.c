@@ -46,7 +46,10 @@ void data_processing(arm7tdmi_t* state,
         // Only shift by 7 because we were going to multiply it by 2 anyway
         word shift = (immediate_operand2 & 0xF00u) >> 7u;
 
-        operand2 &= 31u;
+        logdebug("Shift amount: %d", shift)
+        logdebug("Operand2 before shift: %d", operand2)
+
+        shift &= 31u;
         operand2 = (operand2 >> shift) | (operand2 << (-shift & 31u));
     }
     else { // Operand2 comes from another register
