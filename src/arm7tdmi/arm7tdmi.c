@@ -344,3 +344,11 @@ void set_flags_nz(arm7tdmi_t* state, word newvalue) {
     psr->Z = newvalue == 0;
     psr->N = newvalue >> 31u;
 }
+
+void set_flags_add(arm7tdmi_t* state, uint64_t op1, uint64_t op2) {
+    state->cpsr.C = op1 + op2 > 0xFFFFFFFF;
+}
+
+void set_flags_sub(arm7tdmi_t* state, word op1, word op2) {
+    state->cpsr.C = op2 <= op1;
+}

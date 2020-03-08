@@ -83,39 +83,55 @@ void data_processing(arm7tdmi_t* state,
     logdebug("Operand after shift: 0x%08X", operand2)
 
 
+    word rndata = get_register(state, rn);
     switch(opcode) {
         case 0x0: { // AND logical: Rd = Rn AND Op2
-            word newvalue = get_register(state, rn) & operand2;
+            word newvalue = rndata & operand2;
             if (s) { set_flags_nz(state, newvalue); }
             set_register(state, rd, newvalue);
             break;
         }
         case 0x1: { // XOR logical: Rd = Rn XOR Op2
-            word newvalue = get_register(state, rn) ^ operand2;
+            word newvalue = rndata ^ operand2;
             if (s) { set_flags_nz(state, newvalue); }
             set_register(state, rd, newvalue);
             break;
         }
         case 0x2: { // SUB: Rd = Rn-Op2
-            word newvalue = get_register(state, rn) - operand2;
-            if (s) { set_flags_nz(state, newvalue); }
+            word newvalue = rndata - operand2;
+            if (s) {
+                set_flags_nz(state, newvalue);
+                set_flags_sub(state, rndata, operand2);
+            }
             set_register(state, rd, newvalue);
             break;
         }
         case 0x3: { // RSB (subtract reversed): Rd = Op2-Rn
-            word newvalue = operand2 - get_register(state, rn);
-            if (s) { set_flags_nz(state, newvalue); }
+            word newvalue = operand2 - rndata;
+            if (s) {
+                set_flags_nz(state, newvalue);
+                set_flags_sub(state, operand2, rndata);
+            }
             set_register(state, rd, newvalue);
             break;
         }
         case 0x4: { // ADD: Rd = Rn+Op2
-            word newvalue = get_register(state, rn) + operand2;
-            if (s) { set_flags_nz(state, newvalue); }
+            word newvalue = rndata + operand2;
+            if (s) {
+                set_flags_nz(state, newvalue);
+                set_flags_add(state, rndata, operand2);
+            }
             set_register(state, rd, newvalue);
             break;
         }
+        case 0xA: { // CMP: Void = Rn-Op2
+            unimplemented(!s, "BUG DETECTED: s flag must be set for opcodes 0x8-0xB")
+            set_flags_nz(state, rndata - operand2);
+            set_flags_sub(state, rndata, operand2);
+            break;
+        }
         case 0xC: { // OR logical: Rd = Rn OR Op2
-            word newvalue = get_register(state, rn) | operand2;
+            word newvalue = rndata | operand2;
             if (s) { set_flags_nz(state, newvalue); }
             set_register(state, rd, newvalue);
             break;
@@ -126,7 +142,13 @@ void data_processing(arm7tdmi_t* state,
             break;
         }
         case 0xE: { // BIC: Rd = Rn AND NOT Op2
-            word newvalue = get_register(state, rn) & (~operand2);
+            word newvalue = rndata & (~operand2);
+            if (s) { set_flags_nz(state, operand2); }
+            set_register(state, rd, newvalue);
+            break;
+        }
+        case 0xF: { // NOT: Rd = NOT Op2
+            word newvalue = ~operand2;
             if (s) { set_flags_nz(state, operand2); }
             set_register(state, rd, newvalue);
             break;

@@ -103,5 +103,7 @@ status_register_t* get_spsr(arm7tdmi_t* state);
 void set_spsr(arm7tdmi_t* state, word value);
 
 void set_flags_nz(arm7tdmi_t* state, word newvalue);
+void set_flags_add(arm7tdmi_t* state, uint64_t op1, uint64_t op2);
+void set_flags_sub(arm7tdmi_t* state, word op1, word op2);
 
 #endif
