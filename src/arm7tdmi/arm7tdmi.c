@@ -225,11 +225,21 @@ word get_register(arm7tdmi_t* state, word index) {
     return value;
 }
 
+#define cpsrflag(f, c) (f == 1?c:"-")
+
 int arm7tdmi_step(arm7tdmi_t* state) {
     this_step_ticks = 0;
     arminstr_t instr = next_instr(state);
+    logdebug("r0: %08X   r1: %08X   r2: %08X   r3: %08X", state->r[0], state->r[1], state->r[2], state->r[3])
+    logdebug("r4: %08X   r5: %08X   r6: %08X   r7: %08X", state->r[4], state->r[5], state->r[6], state->r[7])
+    logdebug("r8: %08X   r9: %08X  r10: %08X  r11: %08X", state->r[8], state->r[9], state->r[10], state->r[11])
+    logdebug("r12: %08X r13: %08X  r14: %08X  r15: %08X", state->r[12], state->sp, state->lr, state->pc)
+    logdebug("cpsr: %08X [%s%s%s%s%s%s%s]", state->cpsr.raw, cpsrflag(state->cpsr.N, "N"), cpsrflag(state->cpsr.Z, "Z"),
+             cpsrflag(state->cpsr.C, "C"), cpsrflag(state->cpsr.V, "V"), cpsrflag(state->cpsr.disable_irq, "I"),
+             cpsrflag(state->cpsr.disable_fiq, "F"), cpsrflag(state->cpsr.thumb, "T"))
     logwarn("adjusted pc: 0x%04X read: 0x%04X", state->pc - 8, instr.raw)
     logdebug("cond: %d", instr.parsed.cond)
+    getchar();
     if (check_cond(state, &instr)) {
         arm_instr_type_t type = get_instr_type(&instr);
         switch (type) {
