@@ -284,11 +284,12 @@ int arm7tdmi_step(arm7tdmi_t* state) {
             case SOFTWARE_INTERRUPT:
                 logfatal("Unimplemented instruction type: SOFTWARE_INTERRUPT")
         }
-        state->pc += 4;
     }
     else { // Cond told us not to execute this instruction
+        logdebug("Skipping instr because cond %d was not met.", instr.parsed.cond)
         tick(1);
     }
+    state->pc += 4;
     return this_step_ticks;
 }
 
