@@ -5,19 +5,24 @@
 void branch(arm7tdmi_t* state, word offset, bool link) {
     bool thumb = offset & 1u;
     unimplemented(thumb, "THUMB mode")
-    bool negative = (offset & 0b100000000000000000000000u) > 0;
+    bool negative = (offset & 0x800000u) > 0;
     if (negative) {
-        offset = ~offset + 1;
-        logfatal("Encountered a branch with a negative offset. Make sure this is doing the right thing!")
+        // Since this is a 24 bit value stored in a 32 bit int, need to mask away the top 8 bits
+        // after doing the two's complement thingy
+        offset = (~offset + 1) & 0xFFFFFFu;
     }
-    loginfo("My offset is %d", offset << 2u)
+    offset <<= 2u;
+
+    int signed_offset = negative ? -1 * (int)offset : (int)offset;
+
+    loginfo("My offset is %d", signed_offset)
 
     if (link) {
         word returnaddress = state->pc - 4; // PC is 3 bytes ahead, need to make it just 1 byte ahead for returning.
         state->lr = returnaddress;
     }
 
-    word newpc = (state->pc) + (offset << 2u);
+    word newpc = (state->pc) + signed_offset;
     logdebug("Hold on to your hats, we're jumping to 0x%02X", newpc)
     set_pc(state, newpc);
 }
