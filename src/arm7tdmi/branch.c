@@ -2,6 +2,26 @@
 #include "arm7tdmi.h"
 #include "../common/log.h"
 
+void branch_exchange(arm7tdmi_t* state, byte opcode, byte rn) {
+    switch (opcode) {
+        case 0b0001: {// BX
+            word rndata = get_register(state, rn);
+            bool thumb = rndata & 1u;
+            unimplemented(thumb, "THUMB mode unimplemented")
+            state->pc = rndata;
+            break;
+        }
+        case 0b0010: // BXJ
+            logfatal("BXJ: This implementation does not support Jazelle mode!")
+        case 0b0011: // BLX
+            logfatal("BLX unimplemented")
+        default:
+            logfatal("BRANCH_EXCHANGE: Unimplemented opcode %d", opcode)
+
+    }
+
+}
+
 void branch(arm7tdmi_t* state, word offset, bool link) {
     bool thumb = offset & 1u;
     unimplemented(thumb, "THUMB mode")

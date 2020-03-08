@@ -256,7 +256,9 @@ int arm7tdmi_step(arm7tdmi_t* state) {
             case SINGLE_DATA_SWAP:
                 logfatal("Unimplemented instruction type: SINGLE_DATA_SWAP")
             case BRANCH_EXCHANGE:
-                logfatal("Unimplemented instruction type: BRANCH_EXCHANGE")
+                branch_exchange(state, instr.parsed.BRANCH_EXCHANGE.opcode, instr.parsed.BRANCH_EXCHANGE.rn);
+                state->pc -= 4; // This is to correct for the state->pc+=4 that happens after this switch
+                break;
             case HALFWORD_DT_RO:
                 logfatal("Unimplemented instruction type: HALFWORD_DT_RO")
             case HALFWORD_DT_IO:

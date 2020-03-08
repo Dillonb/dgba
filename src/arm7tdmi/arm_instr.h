@@ -56,6 +56,12 @@ typedef union arminstr {
             // TODO MULTIPLY_LONG
             // TODO SINGLE_DATA_SWAP
             // TODO BRANCH_EXCHANGE
+            struct {
+                unsigned rn:4;
+                unsigned opcode:4;
+                unsigned:20;
+                arm_cond_t cond:4;
+            } BRANCH_EXCHANGE;
             // TODO HALFWORD_DT_RO
             // TODO HALFWORD_DT_IO
             struct {
