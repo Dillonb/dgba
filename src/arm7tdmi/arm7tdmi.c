@@ -199,7 +199,7 @@ void set_register(arm7tdmi_t* state, word index, word newvalue) {
     } else if (index == 14) {
         set_lr(state, newvalue);
     } else if (index == 15) {
-        state->pc = newvalue;
+        set_pc(state, newvalue);
     } else {
         logfatal("Attempted to write unknown register: r%d", index)
     }
