@@ -6,6 +6,6 @@ add_library(arm7tdmi
         single_data_transfer.c single_data_transfer.h
         block_data_transfer.c block_data_transfer.h
         shifts.c shifts.h
-        )
+        status_transfer.c status_transfer.h)
 
 target_link_libraries(arm7tdmi common)

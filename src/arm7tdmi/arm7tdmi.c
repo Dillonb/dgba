@@ -7,6 +7,7 @@
 #include "single_data_transfer.h"
 #include "branch.h"
 #include "block_data_transfer.h"
+#include "status_transfer.h"
 
 void fill_pipe(arm7tdmi_t* state) {
     state->pipeline[0] = state->read_word(state->pc);
@@ -223,10 +224,6 @@ word get_register(arm7tdmi_t* state, word index) {
     return value;
 }
 
-
-
-
-
 int arm7tdmi_step(arm7tdmi_t* state) {
     this_step_ticks = 0;
     arminstr_t instr = next_instr(state);
@@ -243,6 +240,14 @@ int arm7tdmi_step(arm7tdmi_t* state) {
                                 instr.parsed.DATA_PROCESSING.s,
                                 instr.parsed.DATA_PROCESSING.immediate,
                                 instr.parsed.DATA_PROCESSING.opcode);
+                break;
+            case STATUS_TRANSFER:
+                psr_transfer(state,
+                        instr.parsed.DATA_PROCESSING.immediate,
+                        instr.parsed.DATA_PROCESSING.opcode,
+                        instr.parsed.DATA_PROCESSING.rn,
+                        instr.parsed.DATA_PROCESSING.rd,
+                        instr.parsed.DATA_PROCESSING.operand2);
                 break;
             case MULTIPLY:
                 unimplemented(1, "MULTIPLY instruction type")
