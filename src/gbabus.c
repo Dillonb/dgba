@@ -84,6 +84,11 @@ void gba_write_byte(word addr, byte value) {
     } else if (addr < 0x05000000) {
         logwarn("Tried to write to 0x%08X", addr)
         unimplemented(1, "Tried to write to unused portion of general internal memory")
+    } else if (addr < 0x06000000) { // Palette RAM
+        word index = (addr - 0x5000000) % 0x400;
+        mem->pram[index] = value;
+    } else if (addr < 0x07000000) {
+        logfatal("VRAM write")
     } else if (addr < 0x08000000) {
         logwarn("Tried to write to 0x%08X", addr)
         unimplemented(1, "Write to internal display memory address")

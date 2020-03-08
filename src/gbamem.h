@@ -7,12 +7,14 @@
 
 #define EWRAM_SIZE 0x40000
 #define IWRAM_SIZE 0x8000
+#define PRAM_SIZE  0x400
 
 typedef struct gbamem {
     byte* rom;
     size_t rom_size;
     byte ewram[EWRAM_SIZE];
     byte iwram[IWRAM_SIZE];
+    byte pram[PRAM_SIZE];
 } gbamem_t;
 
 gbamem_t* init_mem();
