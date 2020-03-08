@@ -2,7 +2,7 @@
 #define __ARM7TDMI_H__
 
 #include "../common/util.h"
-
+#define MODE_USER 0b10000
 #define MODE_FIQ 0b10001
 #define MODE_SUPERVISOR 0b10011
 #define MODE_ABORT 0b10111
