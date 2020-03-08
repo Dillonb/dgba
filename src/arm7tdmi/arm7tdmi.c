@@ -8,6 +8,7 @@
 #include "branch.h"
 #include "block_data_transfer.h"
 #include "status_transfer.h"
+#include "halfword_data_transfer.h"
 
 void fill_pipe(arm7tdmi_t* state) {
     state->pipeline[0] = state->read_word(state->pc);
@@ -260,9 +261,31 @@ int arm7tdmi_step(arm7tdmi_t* state) {
                 state->pc -= 4; // This is to correct for the state->pc+=4 that happens after this switch
                 break;
             case HALFWORD_DT_RO:
-                logfatal("Unimplemented instruction type: HALFWORD_DT_RO")
-            case HALFWORD_DT_IO:
-                logfatal("Unimplemented instruction type: HALFWORD_DT_IO")
+                halfword_dt_ro(state,
+                               instr.parsed.HALFWORD_DT_RO.p,
+                               instr.parsed.HALFWORD_DT_RO.u,
+                               instr.parsed.HALFWORD_DT_RO.w,
+                               instr.parsed.HALFWORD_DT_RO.l,
+                               instr.parsed.HALFWORD_DT_RO.rn,
+                               instr.parsed.HALFWORD_DT_RO.rd,
+                               instr.parsed.HALFWORD_DT_RO.s,
+                               instr.parsed.HALFWORD_DT_RO.h,
+                               instr.parsed.HALFWORD_DT_RO.rm);
+                break;
+            case HALFWORD_DT_IO: {
+                byte offset = instr.parsed.HALFWORD_DT_IO.offset_low | (instr.parsed.HALFWORD_DT_IO.offset_high << 4u);
+                halfword_dt_io(state,
+                               instr.parsed.HALFWORD_DT_IO.p,
+                               instr.parsed.HALFWORD_DT_IO.u,
+                               instr.parsed.HALFWORD_DT_IO.w,
+                               instr.parsed.HALFWORD_DT_IO.l,
+                               instr.parsed.HALFWORD_DT_IO.rn,
+                               instr.parsed.HALFWORD_DT_IO.rd,
+                               offset,
+                               instr.parsed.HALFWORD_DT_IO.s,
+                               instr.parsed.HALFWORD_DT_IO.h);
+                break;
+            }
             case SINGLE_DATA_TRANSFER:
                 single_data_transfer(state,
                                      instr.parsed.SINGLE_DATA_TRANSFER.offset,

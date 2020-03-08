@@ -55,15 +55,45 @@ typedef union arminstr {
             } MULTIPLY;
             // TODO MULTIPLY_LONG
             // TODO SINGLE_DATA_SWAP
-            // TODO BRANCH_EXCHANGE
             struct {
                 unsigned rn:4;
                 unsigned opcode:4;
                 unsigned:20;
                 arm_cond_t cond:4;
             } BRANCH_EXCHANGE;
-            // TODO HALFWORD_DT_RO
-            // TODO HALFWORD_DT_IO
+            struct {
+                unsigned rm:4;
+                unsigned:1;
+                bool h:1;
+                bool s:1;
+                unsigned:5;
+                unsigned rd:4;
+                unsigned rn:4;
+                bool l:1;
+                bool w:1;
+                unsigned:1; // this is the immediate flag, always a 0 here, 1 in HALFWORD_DT_IO
+                bool u:1;
+                bool p:1;
+                unsigned:3;
+                arm_cond_t cond:4;
+            } HALFWORD_DT_RO;
+            struct {
+                unsigned offset_low:4; // low 4 bits of 8 bit offset
+                unsigned:1;
+                bool h:1;
+                bool s:1;
+                unsigned:1;
+                unsigned offset_high:4; // high 4 bits of 8 bit offset
+                unsigned rd:4;
+                unsigned rn:4;
+                bool l:1;
+                bool w:1;
+                unsigned:1; // this is the immediate flag, always a 1 here, 0 in HALFWORD_DT_RO
+                bool u:1;
+                bool p:1;
+                unsigned:3;
+                arm_cond_t cond:4;
+            } HALFWORD_DT_IO;
             struct {
                 unsigned offset:12;
                 unsigned rd:4;
@@ -78,7 +108,6 @@ typedef union arminstr {
                 arm_cond_t cond:4;
             } SINGLE_DATA_TRANSFER;
             // TODO UNDEFINED
-            // TODO BLOCK_DATA_TRANSFER
             struct {
                 unsigned rlist:16;
                 unsigned rn:4;
@@ -151,8 +180,11 @@ arm_instr_type_t get_instr_type(arminstr_t* instr) {
         if (opcode == 0b00){
             return UNDEFINED;
         }
+        else if (hash & 0x40u) {
+            return HALFWORD_DT_IO;
+        }
         else {
-            logfatal("Half signed data transfer.")
+           return HALFWORD_DT_RO;
         }
     }
     if ((hash & 0b110110010000u) == 0b000100000000u) {
