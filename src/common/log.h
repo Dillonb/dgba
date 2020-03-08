@@ -13,15 +13,14 @@
 int log_get_verbosity();
 void log_set_verbosity(unsigned int level);
 
-// TODO make these actually respect the verbosity
 #define logfatal(message,...) if (1) { \
     fprintf(stderr, COLOR_RED "[FATAL] at %s:%d ", __FILE__, __LINE__);\
     fprintf(stderr, message "\n" COLOR_END, ##__VA_ARGS__);\
     exit(EXIT_FAILURE);}
 
-#define logwarn(message,...) if (log_get_verbosity() >= 0) {printf(COLOR_YELLOW "[WARN]  " message "\n" COLOR_END, ##__VA_ARGS__);}
-#define loginfo(message,...) if (log_get_verbosity() >= 0) {printf(COLOR_CYAN "[INFO]  " message "\n" COLOR_END, ##__VA_ARGS__);}
-#define logdebug(message,...) if (log_get_verbosity() >= 0) {printf("[DEBUG] " message "\n", ##__VA_ARGS__);}
+#define logwarn(message,...) if (log_get_verbosity() >= 1) {printf(COLOR_YELLOW "[WARN]  " message "\n" COLOR_END, ##__VA_ARGS__);}
+#define loginfo(message,...) if (log_get_verbosity() >= 2) {printf(COLOR_CYAN "[INFO]  " message "\n" COLOR_END, ##__VA_ARGS__);}
+#define logdebug(message,...) if (log_get_verbosity() >= 3) {printf("[DEBUG] " message "\n", ##__VA_ARGS__);}
 
 #define unimplemented(condition, message) if (condition) { logfatal("UNIMPLEMENTED CASE DETECTED: %s", message) }
 #endif

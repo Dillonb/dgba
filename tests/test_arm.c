@@ -12,6 +12,7 @@ bool in_bios(arm7tdmi_t* state) {
 }
 
 int main(int argc, char** argv) {
+    log_set_verbosity(4);
     gbamem_t* mem = init_mem();
     init_gbabus(mem);
 
