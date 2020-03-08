@@ -5,10 +5,12 @@
 void branch_exchange(arm7tdmi_t* state, byte opcode, byte rn) {
     switch (opcode) {
         case 0b0001: {// BX
-            word rndata = get_register(state, rn);
-            bool thumb = rndata & 1u;
+            word newpc = get_register(state, rn);
+            bool thumb = newpc & 1u;
             unimplemented(thumb, "THUMB mode unimplemented")
-            state->pc = rndata;
+            logdebug("Hold on to your hats, we're jumping to 0x%02X", newpc)
+            set_pc(state, newpc);
+            state->pc = newpc;
             break;
         }
         case 0b0010: // BXJ
