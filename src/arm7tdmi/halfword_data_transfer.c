@@ -16,12 +16,12 @@ void halfword_dt_io(arm7tdmi_t* state, bool p, bool u, bool w, bool l, byte rn, 
     unimplemented(w, "writeback")
     unimplemented(!u, "up flag not set")
 
-    word source_addr = get_register(state, rn) + offset;
+    word addr = get_register(state, rn) + offset;
 
     if (l) {
         if (!s && h) { // Load unsigned halfword (zero extended)
-            half value = state->read_half(source_addr);
-            set_register(state, rd, rotate_right(value, (source_addr & 1u) << 3u));
+            half value = state->read_half(addr);
+            set_register(state, rd, rotate_right(value, (addr & 1u) << 3u));
             logdebug("ldrh")
         } else if (s && !h) { // Load signed byte (sign extended)
             logfatal("ldrsb unimplemented")
@@ -29,10 +29,17 @@ void halfword_dt_io(arm7tdmi_t* state, bool p, bool u, bool w, bool l, byte rn, 
             logfatal("ldrsh unimplemented")
         }
     } else {
-        unimplemented(!l, "!l, store case not implemented yet.")
+        logdebug("p: %d, u: %d, w: %d, l: %d, rn: %d, rd: %d, offset: %d, s: %d, h: %d", p, u, w, l, rn, rd, offset, s, h)
+        if (!s && h) { // Store halfword
+            unimplemented(rd == 15, "Special case for R15: PC")
+            state->write_half(addr, get_register(state, rd));
+        } else if (s && !h) { // Load doubleword
+            logfatal("ldrd unimplemented (is this caught by LDR?)")
+        } else if (s && h) { // Load halfword
+            logfatal("strd unimplemented (is this caught by STR?)")
+        }
     }
 
-    logdebug("p: %d, u: %d, w: %d, l: %d, rn: %d, rd: %d, offset: %d, s: %d, h: %d", p, u, w, l, rn, rd, offset, s, h)
 }
 
 void halfword_dt_ro(arm7tdmi_t* state, bool p, bool u, bool w, bool l, byte rn, byte rd, bool s, bool h, byte rm) {
