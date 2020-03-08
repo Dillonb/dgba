@@ -10,7 +10,6 @@ void branch_exchange(arm7tdmi_t* state, byte opcode, byte rn) {
             unimplemented(thumb, "THUMB mode unimplemented")
             logdebug("Hold on to your hats, we're jumping to 0x%02X", newpc)
             set_pc(state, newpc);
-            state->pc = newpc;
             break;
         }
         case 0b0010: // BXJ

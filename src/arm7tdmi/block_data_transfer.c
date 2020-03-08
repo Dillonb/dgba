@@ -10,14 +10,40 @@ void block_data_transfer(arm7tdmi_t* state,
                          bool u,
                          bool p) {
     unimplemented(l, "block data transfer: load from memory")
-    unimplemented(w, "block data transfer: write back")
-    unimplemented(!s, "block data transfer: s flag off")
+    unimplemented(u && w, "block data transfer: write back when u set")
     unimplemented(rlist == 0, "special case when rlist == 0")
 
     word address = get_register(state, rn);
 
+    int num_registers = popcount(rlist);
+
+    if (!u) {
+        // When the u flag is 0, we grow down from the base register.
+        // The CPU, however, still saves from the lowest numbered register first.
+        // This is important when we're writing to memory-mapped io registers.
+        // We simulate this behavior by setting the base to where it should _end_,
+        // and growing upwards.
+        // Also, flip the p flag since we'll be doing this in reverse.
+        p = !p;
+        address -= 4 * num_registers;
+        if (w) {
+            set_register(state, rn, address);
+        }
+    }
+
+    int before_inc;
+    int after_inc;
+    if (p) {
+        before_inc = 4;
+        after_inc = 0;
+    } else {
+        before_inc = 0;
+        after_inc = 4;
+    }
+
+
     byte original_mode = state->cpsr.mode;
-    if (u) {
+    if (s) {
         state->cpsr.mode = MODE_USER;
     }
 
@@ -25,15 +51,14 @@ void block_data_transfer(arm7tdmi_t* state,
         if ((rlist >> rt & 1) == 1) {
             unimplemented(rt == rn, "transferring rn in block data transfer")
             printf("Will transfer r%d\n", rt);
-            if (p) { address += 8; }
+            address += before_inc;
             logdebug("Transferring r%d to 0x%08X", rt, address)
             state->write_word(address, get_register(state, rt));
-            if (!p) { address += 8; }
+            address += after_inc;
         }
     }
 
-    if (u) {
+    if (s) {
         state->cpsr.mode = original_mode;
     }
-    logfatal("rlist: 0x%X rn: %X l: %d w: %d s: %d u: %d p: %d", rlist, rn, l, w, s, u, p)
 }

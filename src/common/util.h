@@ -6,4 +6,6 @@
 #define half uint16_t
 #define word uint32_t
 
+#define popcount(x) __builtin_popcountll(x)
+
 #endif
