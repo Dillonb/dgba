@@ -4,6 +4,7 @@ add_library(arm7tdmi
         data_processing.c data_processing.h
         branch.c branch.h
         single_data_transfer.c single_data_transfer.h
+        block_data_transfer.c block_data_transfer.h
         shifts.c shifts.h
         )
 

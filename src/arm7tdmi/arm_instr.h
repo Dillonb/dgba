@@ -110,6 +110,17 @@ typedef union arminstr {
             // TODO UNDEFINED
             // TODO BLOCK_DATA_TRANSFER
             struct {
+                unsigned rlist:16;
+                unsigned rn:4;
+                bool l:1;
+                bool w:1;
+                bool s:1;
+                bool u:1;
+                bool p:1;
+                unsigned:3;
+                arm_cond_t cond:4;
+            } BLOCK_DATA_TRANSFER;
+            struct {
                 unsigned offset:24; // This value is actually signed, but needs to be this way because of how C works
                 bool l:1;
                 unsigned:3;

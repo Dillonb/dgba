@@ -6,6 +6,7 @@
 #include "data_processing.h"
 #include "single_data_transfer.h"
 #include "branch.h"
+#include "block_data_transfer.h"
 
 void fill_pipe(arm7tdmi_t* state) {
     state->pipeline[0] = state->read_word(state->pc);
@@ -270,7 +271,15 @@ int arm7tdmi_step(arm7tdmi_t* state) {
             case UNDEFINED:
                 logfatal("Unimplemented instruction type: UNDEFINED")
             case BLOCK_DATA_TRANSFER:
-                logfatal("Unimplemented instruction type: BLOCK_DATA_TRANSFER")
+                block_data_transfer(state,
+                                    instr.parsed.BLOCK_DATA_TRANSFER.rlist,
+                                    instr.parsed.BLOCK_DATA_TRANSFER.rn,
+                                    instr.parsed.BLOCK_DATA_TRANSFER.l,
+                                    instr.parsed.BLOCK_DATA_TRANSFER.w,
+                                    instr.parsed.BLOCK_DATA_TRANSFER.s,
+                                    instr.parsed.BLOCK_DATA_TRANSFER.u,
+                                    instr.parsed.BLOCK_DATA_TRANSFER.p);
+                break;
             case BRANCH:
                 branch(state, instr.parsed.BRANCH.offset, instr.parsed.BRANCH.l);
                 state->pc -= 4; // This is to correct for the state->pc+=4 that happens after this switch
