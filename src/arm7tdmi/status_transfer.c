@@ -62,9 +62,9 @@ void psr_transfer(arm7tdmi_t* state,
             msr_immediate_flags_t flags;
             flags.raw = dt_operand2;
             source_data = flags.parsed.imm;
-            int shift = flags.parsed.shift * 2;
+            word shift = flags.parsed.shift * 2;
 
-            source_data &= 31u;
+            shift &= 31u;
             source_data = (source_data >> shift) | (source_data << (-shift & 31u));
         }
         else {
