@@ -230,16 +230,16 @@ word get_register(arm7tdmi_t* state, word index) {
 int arm7tdmi_step(arm7tdmi_t* state) {
     this_step_ticks = 0;
     arminstr_t instr = next_instr(state);
-    logdebug("r0: %08X   r1: %08X   r2: %08X   r3: %08X", state->r[0], state->r[1], state->r[2], state->r[3])
-    logdebug("r4: %08X   r5: %08X   r6: %08X   r7: %08X", state->r[4], state->r[5], state->r[6], state->r[7])
-    logdebug("r8: %08X   r9: %08X  r10: %08X  r11: %08X", state->r[8], state->r[9], state->r[10], state->r[11])
-    logdebug("r12: %08X r13: %08X  r14: %08X  r15: %08X", state->r[12], state->sp, state->lr, state->pc)
+    word adjusted_pc = state->pc - 8;
+    logdebug("r0:  %08X   r1: %08X   r2: %08X   r3: %08X", state->r[0], state->r[1], state->r[2], state->r[3])
+    logdebug("r4:  %08X   r5: %08X   r6: %08X   r7: %08X", state->r[4], state->r[5], state->r[6], state->r[7])
+    logdebug("r8:  %08X   r9: %08X  r10: %08X  r11: %08X", state->r[8], state->r[9], state->r[10], state->r[11])
+    logdebug("r12: %08X  r13: %08X  r14: %08X  r15: %08X", state->r[12], state->sp, state->lr, state->pc)
     logdebug("cpsr: %08X [%s%s%s%s%s%s%s]", state->cpsr.raw, cpsrflag(state->cpsr.N, "N"), cpsrflag(state->cpsr.Z, "Z"),
              cpsrflag(state->cpsr.C, "C"), cpsrflag(state->cpsr.V, "V"), cpsrflag(state->cpsr.disable_irq, "I"),
              cpsrflag(state->cpsr.disable_fiq, "F"), cpsrflag(state->cpsr.thumb, "T"))
-    logwarn("adjusted pc: 0x%04X read: 0x%04X", state->pc - 8, instr.raw)
+    logwarn("adjusted pc: 0x%04X read: 0x%04X", adjusted_pc, instr.raw)
     logdebug("cond: %d", instr.parsed.cond)
-    getchar();
     if (check_cond(state, &instr)) {
         arm_instr_type_t type = get_instr_type(&instr);
         switch (type) {
@@ -384,4 +384,24 @@ void set_flags_add(arm7tdmi_t* state, uint64_t op1, uint64_t op2) {
 
 void set_flags_sub(arm7tdmi_t* state, word op1, word op2) {
     state->cpsr.C = op2 <= op1;
+}
+
+void skip_bios(arm7tdmi_t* state) {
+    set_register(state, 0, 0x08000000);
+    set_register(state, 1, 0x000000EA);
+    set_register(state, 2, 0x00000000);
+    set_register(state, 3, 0x00000000);
+    set_register(state, 4, 0x00000000);
+    set_register(state, 5, 0x00000000);
+    set_register(state, 6, 0x00000000);
+    set_register(state, 7, 0x00000000);
+    set_register(state, 8, 0x00000000);
+    set_register(state, 9, 0x00000000);
+    set_register(state, 10, 0x00000000 );
+    set_register(state, 11, 0x00000000);
+    set_register(state, 12, 0x00000000);
+    set_register(state, 13, 0x03007F00);
+    set_register(state, 14, 0x00000000);
+    set_pc(state, 0x08000000);
+    state->cpsr.raw = 0x6000001F;
 }
