@@ -7,10 +7,10 @@
 
 typedef union field_masks {
     struct {
-        bool f:1; // Write to flags field
-        bool s:1; // Write to status field
-        bool x:1; // Write to extension field
         bool c:1; // Write to control field
+        bool x:1; // Write to extension field
+        bool s:1; // Write to status field
+        bool f:1; // Write to flags field
     };
     unsigned raw:4;
 } field_masks_t;
@@ -26,8 +26,8 @@ word get_mask(field_masks_t* masks) {
 
 typedef union msr_immediate_flags {
     struct {
-        unsigned shift:4;
         unsigned imm:8;
+        unsigned shift:4;
     } parsed;
     unsigned raw:12;
 } msr_immediate_flags_t;
