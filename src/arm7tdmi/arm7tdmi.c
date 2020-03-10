@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include "arm7tdmi.h"
 #include "../common/log.h"
+
 #include "arm_instr/arm_instr.h"
 #include "arm_instr/data_processing.h"
 #include "arm_instr/single_data_transfer.h"
@@ -9,6 +10,8 @@
 #include "arm_instr/block_data_transfer.h"
 #include "arm_instr/status_transfer.h"
 #include "arm_instr/halfword_data_transfer.h"
+
+#include "thumb_instr/thumb_instr.h"
 
 void fill_pipe(arm7tdmi_t* state) {
     if (state->cpsr.thumb) {
@@ -118,6 +121,15 @@ void tick(int ticks) {
 
 arminstr_t next_arm_instr(arm7tdmi_t* state) {
     arminstr_t instr;
+    instr.raw = state->pipeline[0];
+    state->pipeline[0] = state->pipeline[1];
+    state->pipeline[1] = state->read_word(state->pc);
+
+    return instr;
+}
+
+thumbinstr_t next_thumb_instr(arm7tdmi_t* state) {
+    thumbinstr_t instr;
     instr.raw = state->pipeline[0];
     state->pipeline[0] = state->pipeline[1];
     state->pipeline[1] = state->read_word(state->pc);
@@ -338,12 +350,67 @@ int arm_mode_step(arm7tdmi_t* state, arminstr_t* instr) {
                 logfatal("Unimplemented instruction type: COPROCESSOR_REGISTER_TRANSFER")
             case SOFTWARE_INTERRUPT:
                 logfatal("Unimplemented instruction type: SOFTWARE_INTERRUPT")
+            default:
+                logfatal("Hit default case in arm_mode_step switch. This should never happen!")
         }
     }
     else { // Cond told us not to execute this instruction
         logdebug("Skipping instr because cond %d was not met.", instr->parsed.cond)
         tick(1);
     }
+    state->pc += 4;
+    return this_step_ticks;
+}
+
+int thumb_mode_step(arm7tdmi_t* state, thumbinstr_t* instr) {
+    thumb_instr_type_t type = get_thumb_instr_type(instr);
+    logdebug("Thumb instr type: %d", type)
+
+    switch (type) {
+        case MOVE_SHIFTED_REGISTER:
+            logfatal("Unimplemented THUMB mode instruction type: MOVE_SHIFTED_REGISTER")
+        case ADD_SUBTRACT:
+            logfatal("Unimplemented THUMB mode instruction type: ADD_SUBTRACT")
+        case IMMEDIATE_OPERATIONS:
+            logfatal("Unimplemented THUMB mode instruction type: IMMEDIATE_OPERATIONS")
+        case ALU_OPERATIONS:
+            logfatal("Unimplemented THUMB mode instruction type: ALU_OPERATIONS")
+        case HIGH_REGISTER_OPERATIONS:
+            logfatal("Unimplemented THUMB mode instruction type: HIGH_REGISTER_OPERATIONS")
+        case PC_RELATIVE_LOAD:
+            logfatal("Unimplemented THUMB mode instruction type: PC_RELATIVE_LOAD")
+        case LOAD_STORE_RO:
+            logfatal("Unimplemented THUMB mode instruction type: LOAD_STORE_RO")
+        case LOAD_STORE_BYTE_HALFWORD:
+            logfatal("Unimplemented THUMB mode instruction type: LOAD_STORE_BYTE_HALFWORD")
+        case LOAD_STORE_IO:
+            logfatal("Unimplemented THUMB mode instruction type: LOAD_STORE_IO")
+        case LOAD_STORE_HALFWORD:
+            logfatal("Unimplemented THUMB mode instruction type: LOAD_STORE_HALFWORD")
+        case SP_RELATIVE_LOAD_STORE:
+            logfatal("Unimplemented THUMB mode instruction type: SP_RELATIVE_LOAD_STORE")
+        case LOAD_ADDRESS:
+            logfatal("Unimplemented THUMB mode instruction type: LOAD_ADDRESS")
+        case ADD_OFFSET_TO_STACK_POINTER:
+            logfatal("Unimplemented THUMB mode instruction type: ADD_OFFSET_TO_STACK_POINTER")
+        case PUSH_POP_REGISTERS:
+            logfatal("Unimplemented THUMB mode instruction type: PUSH_POP_REGISTERS")
+        case MULTIPLE_LOAD_STORE:
+            logfatal("Unimplemented THUMB mode instruction type: MULTIPLE_LOAD_STORE")
+        case CONDITIONAL_BRANCH:
+            logfatal("Unimplemented THUMB mode instruction type: CONDITIONAL_BRANCH")
+        case THUMB_SOFTWARE_INTERRUPT:
+            logfatal("Unimplemented THUMB mode instruction type: THUMB_SOFTWARE_INTERRUPT")
+        case UNCONDITIONAL_BRANCH:
+            logfatal("Unimplemented THUMB mode instruction type: UNCONDITIONAL_BRANCH")
+        case LONG_BRANCH_LINK:
+            logfatal("Unimplemented THUMB mode instruction type: LONG_BRANCH_LINK")
+        case THUMB_UNDEFINED:
+            logfatal("Unimplemented THUMB mode instruction type: THUMB_UNDEFINED")
+        default:
+            logfatal("Hit default case in arm_mode_step switch. This should never happen!")
+    }
+
     state->pc += 4;
     return this_step_ticks;
 }
@@ -358,11 +425,14 @@ int arm7tdmi_step(arm7tdmi_t* state) {
              cpsrflag(state->cpsr.C, "C"), cpsrflag(state->cpsr.V, "V"), cpsrflag(state->cpsr.disable_irq, "I"),
              cpsrflag(state->cpsr.disable_fiq, "F"), cpsrflag(state->cpsr.thumb, "T"))
      if (state->cpsr.thumb) {
-         logfatal("THUMB mode unimplemented")
+         thumbinstr_t instr = next_thumb_instr(state);
+         word adjusted_pc = state->pc - 4;
+         logwarn("adjusted pc: 0x%08X read: 0x%04X", adjusted_pc, instr.raw)
+         return thumb_mode_step(state, &instr);
      } else {
          arminstr_t instr = next_arm_instr(state);
          word adjusted_pc = state->pc - 8;
-         logwarn("adjusted pc: 0x%04X read: 0x%04X", adjusted_pc, instr.raw)
+         logwarn("adjusted pc: 0x%08X read: 0x%08X", adjusted_pc, instr.raw)
          return arm_mode_step(state, &instr);
      }
 }
