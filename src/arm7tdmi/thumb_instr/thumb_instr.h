@@ -22,6 +22,12 @@ typedef enum thumb_instr_type {
 } thumb_instr_type_t;
 
 typedef union thumbinstr {
+    struct {
+        unsigned offset:8;
+        unsigned rd:3;
+        unsigned opcode:2;
+        unsigned:3;
+    } IMMEDIATE_OPERATIONS;
     half raw;
 } thumbinstr_t;
 

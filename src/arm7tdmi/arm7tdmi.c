@@ -12,6 +12,7 @@
 #include "arm_instr/halfword_data_transfer.h"
 
 #include "thumb_instr/thumb_instr.h"
+#include "thumb_instr/immediate_operations.h"
 
 void fill_pipe(arm7tdmi_t* state) {
     if (state->cpsr.thumb) {
@@ -372,7 +373,11 @@ int thumb_mode_step(arm7tdmi_t* state, thumbinstr_t* instr) {
         case ADD_SUBTRACT:
             logfatal("Unimplemented THUMB mode instruction type: ADD_SUBTRACT")
         case IMMEDIATE_OPERATIONS:
-            logfatal("Unimplemented THUMB mode instruction type: IMMEDIATE_OPERATIONS")
+            immediate_operations(state,
+                                 instr->IMMEDIATE_OPERATIONS.opcode,
+                                 instr->IMMEDIATE_OPERATIONS.rd,
+                                 instr->IMMEDIATE_OPERATIONS.offset);
+            break;
         case ALU_OPERATIONS:
             logfatal("Unimplemented THUMB mode instruction type: ALU_OPERATIONS")
         case HIGH_REGISTER_OPERATIONS:

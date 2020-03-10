@@ -1,6 +1,8 @@
 #ifndef __ARM7TDMI_H__
 #define __ARM7TDMI_H__
 
+#include <stdbool.h>
+
 #include "../common/util.h"
 #define MODE_USER 0b10000
 #define MODE_FIQ 0b10001
