@@ -19,6 +19,7 @@ int main(int argc, char** argv) {
                                     gba_write_byte,
                                     gba_write_half,
                                     gba_write_word);
+    skip_bios(cpu);
 
     loginfo("ROM loaded: %lu bytes", mem->rom_size)
     loginfo("Beginning CPU loop")
