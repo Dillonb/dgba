@@ -247,7 +247,7 @@ word get_register(arm7tdmi_t* state, word index) {
 int arm_mode_step(arm7tdmi_t* state, arminstr_t* instr) {
     logdebug("cond: %d", instr->parsed.cond)
     if (check_cond(state, instr)) {
-        arm_instr_type_t type = get_instr_type(instr);
+        arm_instr_type_t type = get_arm_instr_type(instr);
         switch (type) {
             case DATA_PROCESSING:
                 data_processing(state,

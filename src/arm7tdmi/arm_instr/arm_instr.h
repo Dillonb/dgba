@@ -133,7 +133,7 @@ typedef union arminstr {
     } parsed;
 } arminstr_t;
 
-arm_instr_type_t get_instr_type(arminstr_t* instr) {
+arm_instr_type_t get_arm_instr_type(arminstr_t* instr) {
     word hash = instr->raw;
     hash = ((hash >> 16u) & 0xFF0u) | ((hash >> 4u) & 0xFu);
 
