@@ -34,10 +34,13 @@ void data_processing(arm7tdmi_t* state,
         logfatal("This is actually a PSR transfer OP that got incorrectly detected as a data processing op!")
     }
 
-    unimplemented(rd == 15, "r15 is a special case")
-    unimplemented(rn == 15, "r15 is a special case")
+    if (rd == 15) {
+        s = false; // Don't update flags if we're dealing with the program counter
+    }
 
     word operand2;
+
+    word rndata = get_register(state, rn);
 
     if (immediate) { // Operand2 comes from an immediate value
         operand2 = immediate_operand2 & 0xFFu; // Last 8 bits of operand2 are the pre-shift value
@@ -53,7 +56,9 @@ void data_processing(arm7tdmi_t* state,
         operand2 = (operand2 >> shift) | (operand2 << (-shift & 31u));
     }
     else { // Operand2 comes from another register
-
+        if (rn == 15) {
+            rn += 4;
+        }
         byte shift_amount;
 
         nonimmediate_flags_t flags;
@@ -61,6 +66,9 @@ void data_processing(arm7tdmi_t* state,
 
         unimplemented(flags.rm == 15, "r15 is a special case")
         operand2 = get_register(state, flags.rm);
+        if (flags.rm == 15u) {
+            operand2 += 4; // Special case for R15 when immediate
+        }
 
         // Shift by register
         if (flags.r) {
@@ -86,7 +94,6 @@ void data_processing(arm7tdmi_t* state,
     logdebug("Operand after shift: 0x%08X", operand2)
 
 
-    word rndata = get_register(state, rn);
     switch(opcode) {
         case 0x0: { // AND logical: Rd = Rn AND Op2
             word newvalue = rndata & operand2;
