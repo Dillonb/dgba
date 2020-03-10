@@ -22,12 +22,23 @@ typedef enum thumb_instr_type {
 } thumb_instr_type_t;
 
 typedef union thumbinstr {
+    // TODO MOVE_SHIFTED_REGISTER
+    // TODO ADD_SUBTRACT
     struct {
         unsigned offset:8;
         unsigned rd:3;
         unsigned opcode:2;
         unsigned:3;
     } IMMEDIATE_OPERATIONS;
+    // TODO ALU_OPERATIONS
+    struct {
+        unsigned rdhd:3;
+        unsigned rshs:3;
+        bool h2:1;
+        bool h1:1;
+        unsigned opcode:2;
+        unsigned:6;
+    } HIGH_REGISTER_OPERATIONS;
     half raw;
 } thumbinstr_t;
 

@@ -11,6 +11,7 @@ add_library(arm7tdmi
         arm_instr/halfword_data_transfer.c arm_instr/halfword_data_transfer.h
 
         thumb_instr/thumb_instr.h
-        thumb_instr/immediate_operations.c thumb_instr/immediate_operations.h)
+        thumb_instr/immediate_operations.c thumb_instr/immediate_operations.h
+        thumb_instr/high_register_operations.c thumb_instr/high_register_operations.h)
 
 target_link_libraries(arm7tdmi common)
