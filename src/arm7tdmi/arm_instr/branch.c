@@ -7,8 +7,8 @@ void branch_exchange(arm7tdmi_t* state, byte opcode, byte rn) {
         case 0b0001: {// BX
             word newpc = get_register(state, rn);
             bool thumb = newpc & 1u;
-            unimplemented(thumb, "THUMB mode unimplemented")
             logdebug("Hold on to your hats, we're jumping to 0x%02X", newpc)
+            if (thumb) logdebug("REALLY hang on, we're entering THUMB mode!")
             set_pc(state, newpc);
             break;
         }
@@ -24,15 +24,13 @@ void branch_exchange(arm7tdmi_t* state, byte opcode, byte rn) {
 }
 
 void branch(arm7tdmi_t* state, word offset, bool link) {
-    bool thumb = offset & 1u;
-    unimplemented(thumb, "THUMB mode")
     bool negative = (offset & 0x800000u) > 0;
     if (negative) {
         // Since this is a 24 bit value stored in a 32 bit int, need to mask away the top 8 bits
         // after doing the two's complement thingy
         offset = (~offset + 1) & 0xFFFFFFu;
     }
-    offset <<= 2u;
+    offset <<= 2u; // This means we can never enter thumb mode through this instruction
 
     int signed_offset = negative ? -1 * (int)offset : (int)offset;
 

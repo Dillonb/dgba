@@ -11,19 +11,38 @@
 #include "arm_instr/halfword_data_transfer.h"
 
 void fill_pipe(arm7tdmi_t* state) {
-    state->pipeline[0] = state->read_word(state->pc);
-    state->pc += 4;
-    state->pipeline[1] = state->read_word(state->pc);
-    state->pc += 4;
+    if (state->cpsr.thumb) {
+        state->pipeline[0] = state->read_half(state->pc);
+        state->pc += 2;
+        state->pipeline[1] = state->read_half(state->pc);
+        state->pc += 2;
 
-    logdebug("Filling the instruction pipeline: 0x%08X = 0x%08X / 0x%08X = 0x%08X",
-             state->pc - 8,
-             state->pipeline[0],
-             state->pc - 4,
-             state->pipeline[1])
+        logdebug("[THM] Filling the instruction pipeline: 0x%08X = 0x%04X / 0x%08X = 0x%04X",
+                 state->pc - 4,
+                 state->pipeline[0],
+                 state->pc - 2,
+                 state->pipeline[1])
+    } else {
+        state->pipeline[0] = state->read_word(state->pc);
+        state->pc += 4;
+        state->pipeline[1] = state->read_word(state->pc);
+        state->pc += 4;
+
+        logdebug("[ARM] Filling the instruction pipeline: 0x%08X = 0x%08X / 0x%08X = 0x%08X",
+                 state->pc - 8,
+                 state->pipeline[0],
+                 state->pc - 4,
+                 state->pipeline[1])
+    }
 }
 
 void set_pc(arm7tdmi_t* state, word new_pc) {
+    if (new_pc & 1u) {
+        state->cpsr.thumb = true;
+        new_pc &= ~1u; // Unset thumb bit
+    } else if (state->cpsr.thumb && (new_pc & 1u) == 0u) {
+        logfatal("Seems to me like we're exiting thumb mode. Make sure that's what's supposed to be happening.")
+    }
     state->pc = new_pc;
     fill_pipe(state);
 }
@@ -97,9 +116,7 @@ void tick(int ticks) {
     this_step_ticks += ticks;
 }
 
-arminstr_t next_instr(arm7tdmi_t* state) {
-    // TODO handle thumb mode
-
+arminstr_t next_arm_instr(arm7tdmi_t* state) {
     arminstr_t instr;
     instr.raw = state->pipeline[0];
     state->pipeline[0] = state->pipeline[1];
@@ -227,38 +244,27 @@ word get_register(arm7tdmi_t* state, word index) {
 
 #define cpsrflag(f, c) (f == 1?c:"-")
 
-int arm7tdmi_step(arm7tdmi_t* state) {
-    this_step_ticks = 0;
-    arminstr_t instr = next_instr(state);
-    word adjusted_pc = state->pc - 8;
-    logdebug("r0:  %08X   r1: %08X   r2: %08X   r3: %08X", state->r[0], state->r[1], state->r[2], state->r[3])
-    logdebug("r4:  %08X   r5: %08X   r6: %08X   r7: %08X", state->r[4], state->r[5], state->r[6], state->r[7])
-    logdebug("r8:  %08X   r9: %08X  r10: %08X  r11: %08X", state->r[8], state->r[9], state->r[10], state->r[11])
-    logdebug("r12: %08X  r13: %08X  r14: %08X  r15: %08X", state->r[12], state->sp, state->lr, state->pc)
-    logdebug("cpsr: %08X [%s%s%s%s%s%s%s]", state->cpsr.raw, cpsrflag(state->cpsr.N, "N"), cpsrflag(state->cpsr.Z, "Z"),
-             cpsrflag(state->cpsr.C, "C"), cpsrflag(state->cpsr.V, "V"), cpsrflag(state->cpsr.disable_irq, "I"),
-             cpsrflag(state->cpsr.disable_fiq, "F"), cpsrflag(state->cpsr.thumb, "T"))
-    logwarn("adjusted pc: 0x%04X read: 0x%04X", adjusted_pc, instr.raw)
-    logdebug("cond: %d", instr.parsed.cond)
-    if (check_cond(state, &instr)) {
-        arm_instr_type_t type = get_instr_type(&instr);
+int arm_mode_step(arm7tdmi_t* state, arminstr_t* instr) {
+    logdebug("cond: %d", instr->parsed.cond)
+    if (check_cond(state, instr)) {
+        arm_instr_type_t type = get_instr_type(instr);
         switch (type) {
             case DATA_PROCESSING:
                 data_processing(state,
-                                instr.parsed.DATA_PROCESSING.operand2,
-                                instr.parsed.DATA_PROCESSING.rd,
-                                instr.parsed.DATA_PROCESSING.rn,
-                                instr.parsed.DATA_PROCESSING.s,
-                                instr.parsed.DATA_PROCESSING.immediate,
-                                instr.parsed.DATA_PROCESSING.opcode);
+                                instr->parsed.DATA_PROCESSING.operand2,
+                                instr->parsed.DATA_PROCESSING.rd,
+                                instr->parsed.DATA_PROCESSING.rn,
+                                instr->parsed.DATA_PROCESSING.s,
+                                instr->parsed.DATA_PROCESSING.immediate,
+                                instr->parsed.DATA_PROCESSING.opcode);
                 break;
             case STATUS_TRANSFER:
                 psr_transfer(state,
-                        instr.parsed.DATA_PROCESSING.immediate,
-                        instr.parsed.DATA_PROCESSING.opcode,
-                        instr.parsed.DATA_PROCESSING.rn,
-                        instr.parsed.DATA_PROCESSING.rd,
-                        instr.parsed.DATA_PROCESSING.operand2);
+                             instr->parsed.DATA_PROCESSING.immediate,
+                             instr->parsed.DATA_PROCESSING.opcode,
+                             instr->parsed.DATA_PROCESSING.rn,
+                             instr->parsed.DATA_PROCESSING.rd,
+                             instr->parsed.DATA_PROCESSING.operand2);
                 break;
             case MULTIPLY:
                 unimplemented(1, "MULTIPLY instruction type")
@@ -267,61 +273,61 @@ int arm7tdmi_step(arm7tdmi_t* state) {
             case SINGLE_DATA_SWAP:
                 logfatal("Unimplemented instruction type: SINGLE_DATA_SWAP")
             case BRANCH_EXCHANGE:
-                branch_exchange(state, instr.parsed.BRANCH_EXCHANGE.opcode, instr.parsed.BRANCH_EXCHANGE.rn);
+                branch_exchange(state, instr->parsed.BRANCH_EXCHANGE.opcode, instr->parsed.BRANCH_EXCHANGE.rn);
                 state->pc -= 4; // This is to correct for the state->pc+=4 that happens after this switch
                 break;
             case HALFWORD_DT_RO:
                 halfword_dt_ro(state,
-                               instr.parsed.HALFWORD_DT_RO.p,
-                               instr.parsed.HALFWORD_DT_RO.u,
-                               instr.parsed.HALFWORD_DT_RO.w,
-                               instr.parsed.HALFWORD_DT_RO.l,
-                               instr.parsed.HALFWORD_DT_RO.rn,
-                               instr.parsed.HALFWORD_DT_RO.rd,
-                               instr.parsed.HALFWORD_DT_RO.s,
-                               instr.parsed.HALFWORD_DT_RO.h,
-                               instr.parsed.HALFWORD_DT_RO.rm);
+                               instr->parsed.HALFWORD_DT_RO.p,
+                               instr->parsed.HALFWORD_DT_RO.u,
+                               instr->parsed.HALFWORD_DT_RO.w,
+                               instr->parsed.HALFWORD_DT_RO.l,
+                               instr->parsed.HALFWORD_DT_RO.rn,
+                               instr->parsed.HALFWORD_DT_RO.rd,
+                               instr->parsed.HALFWORD_DT_RO.s,
+                               instr->parsed.HALFWORD_DT_RO.h,
+                               instr->parsed.HALFWORD_DT_RO.rm);
                 break;
             case HALFWORD_DT_IO: {
-                byte offset = instr.parsed.HALFWORD_DT_IO.offset_low | (instr.parsed.HALFWORD_DT_IO.offset_high << 4u);
+                byte offset = instr->parsed.HALFWORD_DT_IO.offset_low | (instr->parsed.HALFWORD_DT_IO.offset_high << 4u);
                 halfword_dt_io(state,
-                               instr.parsed.HALFWORD_DT_IO.p,
-                               instr.parsed.HALFWORD_DT_IO.u,
-                               instr.parsed.HALFWORD_DT_IO.w,
-                               instr.parsed.HALFWORD_DT_IO.l,
-                               instr.parsed.HALFWORD_DT_IO.rn,
-                               instr.parsed.HALFWORD_DT_IO.rd,
+                               instr->parsed.HALFWORD_DT_IO.p,
+                               instr->parsed.HALFWORD_DT_IO.u,
+                               instr->parsed.HALFWORD_DT_IO.w,
+                               instr->parsed.HALFWORD_DT_IO.l,
+                               instr->parsed.HALFWORD_DT_IO.rn,
+                               instr->parsed.HALFWORD_DT_IO.rd,
                                offset,
-                               instr.parsed.HALFWORD_DT_IO.s,
-                               instr.parsed.HALFWORD_DT_IO.h);
+                               instr->parsed.HALFWORD_DT_IO.s,
+                               instr->parsed.HALFWORD_DT_IO.h);
                 break;
             }
             case SINGLE_DATA_TRANSFER:
                 single_data_transfer(state,
-                                     instr.parsed.SINGLE_DATA_TRANSFER.offset,
-                                     instr.parsed.SINGLE_DATA_TRANSFER.rd,
-                                     instr.parsed.SINGLE_DATA_TRANSFER.rn,
-                                     instr.parsed.SINGLE_DATA_TRANSFER.l,
-                                     instr.parsed.SINGLE_DATA_TRANSFER.w,
-                                     instr.parsed.SINGLE_DATA_TRANSFER.b,
-                                     instr.parsed.SINGLE_DATA_TRANSFER.u,
-                                     instr.parsed.SINGLE_DATA_TRANSFER.p,
-                                     instr.parsed.SINGLE_DATA_TRANSFER.i);
+                                     instr->parsed.SINGLE_DATA_TRANSFER.offset,
+                                     instr->parsed.SINGLE_DATA_TRANSFER.rd,
+                                     instr->parsed.SINGLE_DATA_TRANSFER.rn,
+                                     instr->parsed.SINGLE_DATA_TRANSFER.l,
+                                     instr->parsed.SINGLE_DATA_TRANSFER.w,
+                                     instr->parsed.SINGLE_DATA_TRANSFER.b,
+                                     instr->parsed.SINGLE_DATA_TRANSFER.u,
+                                     instr->parsed.SINGLE_DATA_TRANSFER.p,
+                                     instr->parsed.SINGLE_DATA_TRANSFER.i);
                 break;
             case UNDEFINED:
                 logfatal("Unimplemented instruction type: UNDEFINED")
             case BLOCK_DATA_TRANSFER:
                 block_data_transfer(state,
-                                    instr.parsed.BLOCK_DATA_TRANSFER.rlist,
-                                    instr.parsed.BLOCK_DATA_TRANSFER.rn,
-                                    instr.parsed.BLOCK_DATA_TRANSFER.l,
-                                    instr.parsed.BLOCK_DATA_TRANSFER.w,
-                                    instr.parsed.BLOCK_DATA_TRANSFER.s,
-                                    instr.parsed.BLOCK_DATA_TRANSFER.u,
-                                    instr.parsed.BLOCK_DATA_TRANSFER.p);
+                                    instr->parsed.BLOCK_DATA_TRANSFER.rlist,
+                                    instr->parsed.BLOCK_DATA_TRANSFER.rn,
+                                    instr->parsed.BLOCK_DATA_TRANSFER.l,
+                                    instr->parsed.BLOCK_DATA_TRANSFER.w,
+                                    instr->parsed.BLOCK_DATA_TRANSFER.s,
+                                    instr->parsed.BLOCK_DATA_TRANSFER.u,
+                                    instr->parsed.BLOCK_DATA_TRANSFER.p);
                 break;
             case BRANCH:
-                branch(state, instr.parsed.BRANCH.offset, instr.parsed.BRANCH.l);
+                branch(state, instr->parsed.BRANCH.offset, instr->parsed.BRANCH.l);
                 state->pc -= 4; // This is to correct for the state->pc+=4 that happens after this switch
                 break;
             case COPROCESSOR_DATA_TRANSFER:
@@ -335,11 +341,30 @@ int arm7tdmi_step(arm7tdmi_t* state) {
         }
     }
     else { // Cond told us not to execute this instruction
-        logdebug("Skipping instr because cond %d was not met.", instr.parsed.cond)
+        logdebug("Skipping instr because cond %d was not met.", instr->parsed.cond)
         tick(1);
     }
     state->pc += 4;
     return this_step_ticks;
+}
+
+int arm7tdmi_step(arm7tdmi_t* state) {
+    this_step_ticks = 0;
+    logdebug("r0:  %08X   r1: %08X   r2: %08X   r3: %08X", state->r[0], state->r[1], state->r[2], state->r[3])
+    logdebug("r4:  %08X   r5: %08X   r6: %08X   r7: %08X", state->r[4], state->r[5], state->r[6], state->r[7])
+    logdebug("r8:  %08X   r9: %08X  r10: %08X  r11: %08X", state->r[8], state->r[9], state->r[10], state->r[11])
+    logdebug("r12: %08X  r13: %08X  r14: %08X  r15: %08X", state->r[12], state->sp, state->lr, state->pc)
+    logdebug("cpsr: %08X [%s%s%s%s%s%s%s]", state->cpsr.raw, cpsrflag(state->cpsr.N, "N"), cpsrflag(state->cpsr.Z, "Z"),
+             cpsrflag(state->cpsr.C, "C"), cpsrflag(state->cpsr.V, "V"), cpsrflag(state->cpsr.disable_irq, "I"),
+             cpsrflag(state->cpsr.disable_fiq, "F"), cpsrflag(state->cpsr.thumb, "T"))
+     if (state->cpsr.thumb) {
+         logfatal("THUMB mode unimplemented")
+     } else {
+         arminstr_t instr = next_arm_instr(state);
+         word adjusted_pc = state->pc - 8;
+         logwarn("adjusted pc: 0x%04X read: 0x%04X", adjusted_pc, instr.raw)
+         return arm_mode_step(state, &instr);
+     }
 }
 
 status_register_t* get_psr(arm7tdmi_t* state) {
