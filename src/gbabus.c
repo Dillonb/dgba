@@ -52,7 +52,8 @@ byte gba_read_byte(word addr) {
         // Cartridge
         word adjusted = addr - 0x08000000;
         if (adjusted > mem->rom_size) {
-            logfatal("Attempted out of range read");
+            logwarn("In valid cartridge space, but read past the end of the ROM. Returning a 0.")
+            return 0x00;
         } else {
             return mem->rom[adjusted];
         }

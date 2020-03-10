@@ -11,6 +11,8 @@ bool in_bios(arm7tdmi_t* state) {
     return state->pc < GBA_BIOS_SIZE;
 }
 
+#define TEST_FAILED_ADDRESS 0x1B94
+
 int main(int argc, char** argv) {
     log_set_verbosity(4);
     gbamem_t* mem = init_mem();
@@ -37,8 +39,8 @@ int main(int argc, char** argv) {
         }
 
         if (bios_complete) {
-            word failed_test = cpu->r[12];
-            if (failed_test != 0) {
+            if (cpu->pc == TEST_FAILED_ADDRESS + 8) {
+                word failed_test = cpu->r[12];
                 logfatal("test_arm: FAILED TEST: %d", failed_test)
             }
         }
