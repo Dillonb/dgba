@@ -1,6 +1,6 @@
 #include <stdbool.h>
-#include "arm7tdmi.h"
-#include "../common/log.h"
+#include "../arm7tdmi.h"
+#include "../../common/log.h"
 
 void branch_exchange(arm7tdmi_t* state, byte opcode, byte rn) {
     switch (opcode) {

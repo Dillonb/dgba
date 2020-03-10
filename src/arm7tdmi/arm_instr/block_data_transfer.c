@@ -1,5 +1,5 @@
 #include "block_data_transfer.h"
-#include "../common/log.h"
+#include "../../common/log.h"
 
 void block_data_transfer(arm7tdmi_t* state,
                          word rlist,

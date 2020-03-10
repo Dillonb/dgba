@@ -1,7 +1,7 @@
 #include <stdbool.h>
-#include "arm7tdmi.h"
-#include "../common/log.h"
-#include "shifts.h"
+#include "../arm7tdmi.h"
+#include "../../common/log.h"
+#include "../shifts.h"
 
 typedef union immediate_as_offset_flags {
     struct {

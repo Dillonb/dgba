@@ -2,13 +2,13 @@
 #include <stdbool.h>
 #include "arm7tdmi.h"
 #include "../common/log.h"
-#include "arm_instr.h"
-#include "data_processing.h"
-#include "single_data_transfer.h"
-#include "branch.h"
-#include "block_data_transfer.h"
-#include "status_transfer.h"
-#include "halfword_data_transfer.h"
+#include "arm_instr/arm_instr.h"
+#include "arm_instr/data_processing.h"
+#include "arm_instr/single_data_transfer.h"
+#include "arm_instr/branch.h"
+#include "arm_instr/block_data_transfer.h"
+#include "arm_instr/status_transfer.h"
+#include "arm_instr/halfword_data_transfer.h"
 
 void fill_pipe(arm7tdmi_t* state) {
     state->pipeline[0] = state->read_word(state->pc);

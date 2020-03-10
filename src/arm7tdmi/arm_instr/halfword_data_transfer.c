@@ -3,7 +3,7 @@
 //
 
 #include "halfword_data_transfer.h"
-#include "../common/log.h"
+#include "../../common/log.h"
 
 word rotate_right(word value, word amount) {
     amount &= 31u;

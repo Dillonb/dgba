@@ -1,6 +1,6 @@
 #include <stdbool.h>
 
-#include "arm7tdmi.h"
+#include "../arm7tdmi.h"
 
 #ifndef GBA_HALFWORD_DATA_TRANSFER_H
 #define GBA_HALFWORD_DATA_TRANSFER_H

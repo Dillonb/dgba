@@ -2,7 +2,7 @@
 #define __GBA_SINGLE_DATA_TRANSFER_H__
 
 #include <stdbool.h>
-#include "arm7tdmi.h"
+#include "../arm7tdmi.h"
 
 void single_data_transfer(arm7tdmi_t* state,
                           unsigned int offset,
