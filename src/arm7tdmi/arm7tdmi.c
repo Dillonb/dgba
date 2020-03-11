@@ -402,7 +402,7 @@ int thumb_mode_step(arm7tdmi_t* state, thumbinstr_t* instr) {
             logfatal("Hit default case in arm_mode_step switch. This should never happen!")
     }
 
-    state->pc += 4;
+    state->pc += 2;
     return this_step_ticks;
 }
 
