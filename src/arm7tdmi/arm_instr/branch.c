@@ -1,11 +1,12 @@
 #include <stdbool.h>
+#include "branch.h"
 #include "../arm7tdmi.h"
 #include "../../common/log.h"
 
-void branch_exchange(arm7tdmi_t* state, byte opcode, byte rn) {
-    switch (opcode) {
+void branch_exchange(arm7tdmi_t* state, branch_exchange_t* instr) {
+    switch (instr->opcode) {
         case 0b0001: {// BX
-            word newpc = get_register(state, rn);
+            word newpc = get_register(state, instr->rn);
             bool thumb = newpc & 1u;
             logdebug("Hold on to your hats, we're jumping to 0x%02X", newpc)
             if (thumb) logdebug("REALLY hang on, we're entering THUMB mode!")
@@ -17,18 +18,21 @@ void branch_exchange(arm7tdmi_t* state, byte opcode, byte rn) {
         case 0b0011: // BLX
             logfatal("BLX unimplemented")
         default:
-            logfatal("BRANCH_EXCHANGE: Unimplemented opcode %d", opcode)
+            logfatal("BRANCH_EXCHANGE: Unimplemented opcode %d", instr->opcode)
 
     }
 
 }
 
-void branch(arm7tdmi_t* state, word offset, bool link) {
-    bool negative = (offset & 0x800000u) > 0;
+void branch(arm7tdmi_t* state, branch_t* instr) {
+    bool negative = (instr->offset & 0x800000u) > 0;
+
+    word offset = instr->offset;
+
     if (negative) {
         // Since this is a 24 bit value stored in a 32 bit int, need to mask away the top 8 bits
         // after doing the two's complement thingy
-        offset = (~offset + 1) & 0xFFFFFFu;
+        offset = (~instr->offset + 1u) & 0xFFFFFFu;
     }
     offset <<= 2u; // This means we can never enter thumb mode through this instruction
 
@@ -36,7 +40,7 @@ void branch(arm7tdmi_t* state, word offset, bool link) {
 
     loginfo("My offset is %d", signed_offset)
 
-    if (link) {
+    if (instr->link) {
         word returnaddress = state->pc - 4; // PC is 3 bytes ahead, need to make it just 1 byte ahead for returning.
         state->lr = returnaddress;
     }

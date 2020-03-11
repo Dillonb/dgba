@@ -2,7 +2,7 @@ add_library(arm7tdmi
         arm7tdmi.c arm7tdmi.h
         shifts.c shifts.h
 
-        arm_instr/arm_instr.h
+        arm_instr/arm_instr.c arm_instr/arm_instr.h
         arm_instr/data_processing.c arm_instr/data_processing.h
         arm_instr/branch.c arm_instr/branch.h
         arm_instr/single_data_transfer.c arm_instr/single_data_transfer.h

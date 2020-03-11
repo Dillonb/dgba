@@ -7,14 +7,8 @@
 
 #include <stdbool.h>
 #include "../arm7tdmi.h"
+#include "arm_instr.h"
 
-void block_data_transfer(arm7tdmi_t* state,
-                         word rlist,
-                         word rn,
-                         bool l,
-                         bool w,
-                         bool s,
-                         bool u,
-                         bool p);
+void block_data_transfer(arm7tdmi_t* state, block_data_transfer_t* instr);
 
 #endif //GBA_BLOCK_DATA_TRANSFER_H

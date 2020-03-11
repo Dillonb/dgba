@@ -3,6 +3,8 @@
 
 #include <stdbool.h>
 #include "../arm7tdmi.h"
-void branch_exchange(arm7tdmi_t* state, byte opcode, byte rn);
-void branch(arm7tdmi_t* state, word offset, bool link);
+#include "arm_instr.h"
+
+void branch_exchange(arm7tdmi_t* state, branch_exchange_t* instr);
+void branch(arm7tdmi_t* state, branch_t* instr);
 #endif

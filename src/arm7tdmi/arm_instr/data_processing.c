@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include "data_processing.h"
 #include "../arm7tdmi.h"
 #include "../../common/log.h"
 #include "../shifts.h"
@@ -22,19 +23,18 @@ typedef union nonimmediate_flags {
 } nonimmediate_flags_t;
 
 // http://problemkaputt.de/gbatek.htm#armopcodesdataprocessingalu
-void data_processing(arm7tdmi_t* state,
-                     word immediate_operand2,
-                     word rd,
-                     word rn,
-                     bool s,
-                     bool immediate,
-                     word opcode) {
+void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
     // If it's one of these opcodes, and the s flag isn't set, this is actually a psr transfer op.
-    if (!s && opcode >= 0x8 && opcode <= 0xb) { // TODO optimize with masks (opcode>>8) & 0b1100 == 0b1100 ?
+    if (!instr->s && instr->opcode >= 0x8 && instr->opcode <= 0xb) { // TODO optimize with masks (opcode>>8) & 0b1100 == 0b1100 ?
         logfatal("This is actually a PSR transfer OP that got incorrectly detected as a data processing op!")
     }
 
-    if (rd == 15) {
+    bool s = instr->s;
+    byte rn = instr->rn;
+    byte rd = instr->rd;
+
+
+    if (instr->rd == 15) {
         s = false; // Don't update flags if we're dealing with the program counter
     }
 
@@ -42,12 +42,12 @@ void data_processing(arm7tdmi_t* state,
 
     word rndata = get_register(state, rn);
 
-    if (immediate) { // Operand2 comes from an immediate value
-        operand2 = immediate_operand2 & 0xFFu; // Last 8 bits of operand2 are the pre-shift value
+    if (instr->immediate) { // Operand2 comes from an immediate value
+        operand2 = instr->operand2 & 0xFFu; // Last 8 bits of operand2 are the pre-shift value
 
         // first 4 bytes * 7 are the shift value
         // Only shift by 7 because we were going to multiply it by 2 anyway
-        word shift = (immediate_operand2 & 0xF00u) >> 7u;
+        word shift = (instr->operand2 & 0xF00u) >> 7u;
 
         logdebug("Shift amount: %d", shift)
         logdebug("Operand2 before shift: %d", operand2)
@@ -62,7 +62,7 @@ void data_processing(arm7tdmi_t* state,
         byte shift_amount;
 
         nonimmediate_flags_t flags;
-        flags.raw = immediate_operand2;
+        flags.raw = instr->operand2;
 
         unimplemented(flags.rm == 15, "r15 is a special case")
         operand2 = get_register(state, flags.rm);
@@ -94,7 +94,7 @@ void data_processing(arm7tdmi_t* state,
     logdebug("Operand after shift: 0x%08X", operand2)
 
 
-    switch(opcode) {
+    switch(instr->opcode) {
         case 0x0: { // AND logical: Rd = Rn AND Op2
             word newvalue = rndata & operand2;
             if (s) { set_flags_nz(state, newvalue); }
@@ -164,6 +164,6 @@ void data_processing(arm7tdmi_t* state,
             break;
         }
         default:
-            logfatal("DATA_PROCESSING: unknown opcode: 0x%X", opcode)
+            logfatal("DATA_PROCESSING: unknown opcode: 0x%X", instr->opcode)
     }
 }

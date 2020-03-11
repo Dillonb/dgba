@@ -264,13 +264,7 @@ int arm_mode_step(arm7tdmi_t* state, arminstr_t* instr) {
         arm_instr_type_t type = get_arm_instr_type(instr);
         switch (type) {
             case DATA_PROCESSING:
-                data_processing(state,
-                                instr->parsed.DATA_PROCESSING.operand2,
-                                instr->parsed.DATA_PROCESSING.rd,
-                                instr->parsed.DATA_PROCESSING.rn,
-                                instr->parsed.DATA_PROCESSING.s,
-                                instr->parsed.DATA_PROCESSING.immediate,
-                                instr->parsed.DATA_PROCESSING.opcode);
+                data_processing(state, &instr->parsed.DATA_PROCESSING);
                 break;
             case STATUS_TRANSFER:
                 psr_transfer(state,
@@ -287,7 +281,7 @@ int arm_mode_step(arm7tdmi_t* state, arminstr_t* instr) {
             case SINGLE_DATA_SWAP:
                 logfatal("Unimplemented instruction type: SINGLE_DATA_SWAP")
             case BRANCH_EXCHANGE:
-                branch_exchange(state, instr->parsed.BRANCH_EXCHANGE.opcode, instr->parsed.BRANCH_EXCHANGE.rn);
+                branch_exchange(state, &instr->parsed.BRANCH_EXCHANGE);
                 state->pc -= 4; // This is to correct for the state->pc+=4 that happens after this switch
                 break;
             case HALFWORD_DT_RO:
@@ -331,17 +325,10 @@ int arm_mode_step(arm7tdmi_t* state, arminstr_t* instr) {
             case UNDEFINED:
                 logfatal("Unimplemented instruction type: UNDEFINED")
             case BLOCK_DATA_TRANSFER:
-                block_data_transfer(state,
-                                    instr->parsed.BLOCK_DATA_TRANSFER.rlist,
-                                    instr->parsed.BLOCK_DATA_TRANSFER.rn,
-                                    instr->parsed.BLOCK_DATA_TRANSFER.l,
-                                    instr->parsed.BLOCK_DATA_TRANSFER.w,
-                                    instr->parsed.BLOCK_DATA_TRANSFER.s,
-                                    instr->parsed.BLOCK_DATA_TRANSFER.u,
-                                    instr->parsed.BLOCK_DATA_TRANSFER.p);
+                block_data_transfer(state, &instr->parsed.BLOCK_DATA_TRANSFER);
                 break;
             case BRANCH:
-                branch(state, instr->parsed.BRANCH.offset, instr->parsed.BRANCH.l);
+                branch(state, &instr->parsed.BRANCH);
                 state->pc -= 4; // This is to correct for the state->pc+=4 that happens after this switch
                 break;
             case COPROCESSOR_DATA_TRANSFER:
