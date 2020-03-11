@@ -361,22 +361,13 @@ int thumb_mode_step(arm7tdmi_t* state, thumbinstr_t* instr) {
         case ADD_SUBTRACT:
             logfatal("Unimplemented THUMB mode instruction type: ADD_SUBTRACT")
         case IMMEDIATE_OPERATIONS:
-            immediate_operations(state,
-                                 instr->IMMEDIATE_OPERATIONS.opcode,
-                                 instr->IMMEDIATE_OPERATIONS.rd,
-                                 instr->IMMEDIATE_OPERATIONS.offset);
+            immediate_operations(state, &instr->IMMEDIATE_OPERATIONS);
             break;
         case ALU_OPERATIONS:
             logfatal("Unimplemented THUMB mode instruction type: ALU_OPERATIONS")
         case HIGH_REGISTER_OPERATIONS:
-            high_register_operations(state,
-                                     instr->HIGH_REGISTER_OPERATIONS.opcode,
-                                     instr->HIGH_REGISTER_OPERATIONS.h1,
-                                     instr->HIGH_REGISTER_OPERATIONS.h2,
-                                     instr->HIGH_REGISTER_OPERATIONS.rshs,
-                                     instr->HIGH_REGISTER_OPERATIONS.rdhd);
+            high_register_operations(state, &instr->HIGH_REGISTER_OPERATIONS);
             break;
-            logfatal("Unimplemented THUMB mode instruction type: HIGH_REGISTER_OPERATIONS")
         case PC_RELATIVE_LOAD:
             logfatal("Unimplemented THUMB mode instruction type: PC_RELATIVE_LOAD")
         case LOAD_STORE_RO:
