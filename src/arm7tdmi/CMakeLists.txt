@@ -12,6 +12,7 @@ add_library(arm7tdmi
 
         thumb_instr/thumb_instr.c thumb_instr/thumb_instr.h
         thumb_instr/immediate_operations.c thumb_instr/immediate_operations.h
-        thumb_instr/high_register_operations.c thumb_instr/high_register_operations.h)
+        thumb_instr/high_register_operations.c thumb_instr/high_register_operations.h
+        thumb_instr/load_address.c thumb_instr/load_address.h)
 
 target_link_libraries(arm7tdmi common)

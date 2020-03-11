@@ -14,6 +14,7 @@
 #include "thumb_instr/thumb_instr.h"
 #include "thumb_instr/immediate_operations.h"
 #include "thumb_instr/high_register_operations.h"
+#include "thumb_instr/load_address.h"
 
 void fill_pipe(arm7tdmi_t* state) {
     if (state->cpsr.thumb) {
@@ -46,7 +47,8 @@ void set_pc(arm7tdmi_t* state, word new_pc) {
         state->cpsr.thumb = true;
         new_pc &= ~1u; // Unset thumb bit
     } else if (state->cpsr.thumb && (new_pc & 1u) == 0u) {
-        logfatal("Seems to me like we're exiting thumb mode. Make sure that's what's supposed to be happening.")
+        // logfatal("Seems to me like we're exiting thumb mode. Make sure that's what's supposed to be happening.")
+        state->cpsr.thumb = false;
     }
     state->pc = new_pc;
     fill_pipe(state);
@@ -110,8 +112,10 @@ bool check_cond(arm7tdmi_t* state, arminstr_t* instr) {
             return (state->cpsr.Z || !state->cpsr.N != !state->cpsr.V);
         case AL:
             return true;
+        case NV:
+            return false;
         default:
-            logfatal("Unimplemented COND: %d", instr->parsed.cond);
+            logfatal("Unimplemented COND: %d", instr->parsed.cond)
     }
 }
 
@@ -381,7 +385,8 @@ int thumb_mode_step(arm7tdmi_t* state, thumbinstr_t* instr) {
         case SP_RELATIVE_LOAD_STORE:
             logfatal("Unimplemented THUMB mode instruction type: SP_RELATIVE_LOAD_STORE")
         case LOAD_ADDRESS:
-            logfatal("Unimplemented THUMB mode instruction type: LOAD_ADDRESS")
+            load_address(state, &instr->LOAD_ADDRESS);
+            break;
         case ADD_OFFSET_TO_STACK_POINTER:
             logfatal("Unimplemented THUMB mode instruction type: ADD_OFFSET_TO_STACK_POINTER")
         case PUSH_POP_REGISTERS:

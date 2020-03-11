@@ -38,7 +38,7 @@ void high_register_operations(arm7tdmi_t* state, high_register_operations_t* ins
             }
 
             bool thumb = newpc & 1u;
-            logfatal("Hold on to your hats, we're jumping to 0x%02X", newpc)
+            loginfo("Hold on to your hats, we're jumping to 0x%02X", newpc)
             if (!thumb) logdebug("REALLY hang on, we're exiting THUMB mode!")
             set_pc(state, newpc);
             break;

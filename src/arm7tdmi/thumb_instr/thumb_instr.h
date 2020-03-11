@@ -41,12 +41,20 @@ typedef struct high_register_operations {
     unsigned:6;
 } high_register_operations_t;
 
+typedef struct load_address {
+    unsigned word8:8;
+    unsigned rd:3;
+    bool sp:1;
+    unsigned:4;
+} load_address_t;
+
 typedef union thumbinstr {
     // TODO MOVE_SHIFTED_REGISTER
     // TODO ADD_SUBTRACT
     immediate_operations_t IMMEDIATE_OPERATIONS;
     // TODO ALU_OPERATIONS
     high_register_operations_t HIGH_REGISTER_OPERATIONS;
+    load_address_t LOAD_ADDRESS;
     half raw;
 } thumbinstr_t;
 
