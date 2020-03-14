@@ -101,9 +101,14 @@ void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
                 case ASR:
                     operand2 = arm_shift(cpsr, ASR, operand2, 32);
                     break;
-                case ROR:
-                    logfatal("ROR#0 unimplemented")
+                case ROR: {
+                    word oldc = state->cpsr.C;
+                    if (cpsr) {
+                        cpsr->C = operand2 & 1u;
+                        operand2 = (oldc << 31u) | (operand2 >> 1u);
+                    }
                     break;
+                }
             }
         } else {
             operand2 = arm_shift(cpsr, flags.shift_type, operand2, shift_amount);

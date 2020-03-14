@@ -79,12 +79,14 @@ word arm_asr(status_register_t* cpsr, word data, word shift_amount) {
     }
 
     return result;
-    logfatal("ASR shift type unimplemented")
 }
 
 word arm_ror(status_register_t* cpsr, word data, word shift_amount) {
     unimplemented(shift_amount == 0, "shift amount 0 is a special case! see docs.")
-    logfatal("ROR shift type unimplemented")
+    shift_amount &= 31u;
+    word result = (data >> shift_amount) | (data << (-shift_amount & 31u));
+    if (cpsr) cpsr->C = result >> 31u;
+    return result;
 }
 
 word arm_shift(status_register_t* cpsr, shift_type_t type, word data, word shift_amount) {
