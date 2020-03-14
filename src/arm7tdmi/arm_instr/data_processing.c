@@ -134,6 +134,16 @@ void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
             set_register(state, rd, newvalue);
             break;
         }
+        case 0x5: { // ADC: Rd = Rn+Op2+C
+            uint64_t op2c = operand2 + state->cpsr.C;
+            uint64_t newvalue = rndata + op2c;
+            if (s) {
+                set_flags_nz(state, newvalue);
+                set_flags_add(state, op2c, rndata);
+            }
+            set_register(state, rd, newvalue);
+            break;
+        }
         case 0xA: { // CMP: Void = Rn-Op2
             unimplemented(!s, "BUG DETECTED: s flag must be set for opcodes 0x8-0xB")
             set_flags_nz(state, rndata - operand2);
