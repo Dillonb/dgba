@@ -48,9 +48,11 @@ void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
         logdebug("Operand2 before shift: %d", operand2)
 
         shift &= 31u;
-        operand2 = (operand2 >> shift) | (operand2 << (-shift & 31u));
-        if (s) {
-            state->cpsr.C = operand2 >> 31;
+        if (shift != 0) {
+            operand2 = (operand2 >> shift) | (operand2 << (-shift & 31u));
+            if (s) {
+                state->cpsr.C = operand2 >> 31u;
+            }
         }
     }
     else { // Operand2 comes from another register
@@ -80,6 +82,8 @@ void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
         }
 
         logdebug("Shift amount: 0x%02X", shift_amount)
+
+        unimplemented(shift_amount != 0, "When shift amount != 0, need to set C flag")
 
         // Needed when s == true - set condition codes on status register
         // status_register_t* psr = get_psr(state);
