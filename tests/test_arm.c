@@ -85,14 +85,14 @@ int main(int argc, char** argv) {
         logdebug("Checking registers against step %d (line %d in log)", step, step + 1)
         ASSERT_EQUAL("Address", lines[step].address, cpu->pc - (cpu->cpsr.thumb ? 2 : 4))
 
-        printf("Expected cpsr: ");
-        printcpsr(lines[step].cpsr);
-        printf(" Actual cpsr: ");
-        printcpsr(cpu->cpsr);
-        printf("\n");
+        if (lines[step].cpsr.raw != cpu->cpsr.raw) {
+            printf("Expected cpsr: ");
+            printcpsr(lines[step].cpsr);
+            printf(" Actual cpsr: ");
+            printcpsr(cpu->cpsr);
+            printf("\n");
+        }
 
-
-        ASSERT_EQUAL("CPSR", lines[step].cpsr.raw, cpu->cpsr.raw)
         ASSERT_EQUAL("r0",   lines[step].r[0],     get_register(cpu, 0))
         ASSERT_EQUAL("r1",   lines[step].r[1],     get_register(cpu, 1))
         ASSERT_EQUAL("r2",   lines[step].r[2],     get_register(cpu, 2))
@@ -109,6 +109,7 @@ int main(int argc, char** argv) {
         ASSERT_EQUAL("r13",  lines[step].r[13],    get_register(cpu, 13))
         ASSERT_EQUAL("r14",  lines[step].r[14],    get_register(cpu, 14))
         ASSERT_EQUAL("r15",  lines[step].r[15],    get_register(cpu, 15))
+        ASSERT_EQUAL("CPSR", lines[step].cpsr.raw, cpu->cpsr.raw)
 
         arm7tdmi_step(cpu);
         ASSERT_EQUAL("instruction", lines[step].instruction, cpu->instr)

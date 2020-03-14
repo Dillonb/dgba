@@ -74,13 +74,14 @@ void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
         if (flags.r) {
             unimplemented(flags.shift_register.rs == 15, "r15 is a special case")
             shift_amount = get_register(state, flags.shift_register.rs) & 0xFFu; // Only lowest 8 bits used
+            logdebug("Shift amount (r%d): 0x%02X", flags.shift_register.rs, shift_amount)
         }
         // Shift by immediate
         else {
             shift_amount = flags.shift_immediate.shift_amount;
+            logdebug("Shift amount (immediate): 0x%02X", shift_amount)
         }
 
-        logdebug("Shift amount: 0x%02X", shift_amount)
 
 
         logdebug("Operand before shift: 0x%08X", operand2)
@@ -90,6 +91,7 @@ void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
 
         // Special case when shifting by immediate 0
         if (!flags.r && shift_amount == 0) {
+            logdebug("----handling special case, immediate shift amount 0----")
             switch (flags.shift_type) {
                 case LSL:
                     break; // Not affected.

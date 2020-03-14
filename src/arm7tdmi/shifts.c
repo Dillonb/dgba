@@ -5,6 +5,11 @@
 word arm_lsr(status_register_t* cpsr, word data, word shift_amount) {
     logdebug("LSR shift")
     word result;
+
+    if (shift_amount == 0) {
+        return data;
+    }
+
     if (shift_amount < 32) {
         result = data >> shift_amount;
         if (cpsr) {
@@ -82,7 +87,10 @@ word arm_asr(status_register_t* cpsr, word data, word shift_amount) {
 }
 
 word arm_ror(status_register_t* cpsr, word data, word shift_amount) {
-    unimplemented(shift_amount == 0, "shift amount 0 is a special case! see docs.")
+    if (shift_amount == 0) {
+        return data;
+    }
+
     shift_amount &= 31u;
     word result = (data >> shift_amount) | (data << (-shift_amount & 31u));
     if (cpsr) cpsr->C = result >> 31u;
