@@ -93,6 +93,7 @@ void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
 
     logdebug("Operand after shift: 0x%08X", operand2)
 
+    logdebug("Doing data processing opcode %X", instr->opcode)
 
     switch(instr->opcode) {
         case 0x0: { // AND logical: Rd = Rn AND Op2
