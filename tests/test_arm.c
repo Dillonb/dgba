@@ -72,7 +72,8 @@ int main(int argc, char** argv) {
     int step = 0;
 
     while(true) {
-        ASSERT_EQUAL("Address", lines[step].address, cpu->pc - 4)
+        logdebug("Checking registers against step %d (line %d in log)", step, step + 1)
+        ASSERT_EQUAL("Address", lines[step].address, cpu->pc - (cpu->cpsr.thumb ? 2 : 4))
         ASSERT_EQUAL("r0", lines[step].r[0], get_register(cpu, 0))
         ASSERT_EQUAL("r1", lines[step].r[1], get_register(cpu, 1))
         ASSERT_EQUAL("r2", lines[step].r[2], get_register(cpu, 2))
@@ -91,7 +92,7 @@ int main(int argc, char** argv) {
         ASSERT_EQUAL("r15", lines[step].r[15], get_register(cpu, 15))
 
         arm7tdmi_step(cpu);
-        ASSERT_EQUAL("instruction", lines[step].instruction, cpu->instr);
+        ASSERT_EQUAL("instruction", lines[step].instruction, cpu->instr)
         step++;
 
         if (cpu->pc == TEST_FAILED_ADDRESS + 8) {
