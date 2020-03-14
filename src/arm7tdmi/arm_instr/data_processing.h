@@ -1,7 +1,3 @@
-//
-// Created by Dillon Beliveau on 2/25/20.
-//
-
 #ifndef GBA_DATA_PROCESSING_H
 #define GBA_DATA_PROCESSING_H
 

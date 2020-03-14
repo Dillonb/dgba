@@ -1,7 +1,3 @@
-//
-// Created by dillon on 3/10/20.
-//
-
 #ifndef GBA_LOAD_ADDRESS_H
 #define GBA_LOAD_ADDRESS_H
 

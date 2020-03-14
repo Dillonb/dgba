@@ -1,7 +1,3 @@
-//
-// Created by dillon on 3/10/20.
-//
-
 #include "high_register_operations.h"
 #include "../../common/log.h"
 

@@ -1,7 +1,3 @@
-//
-// Created by dillon on 3/8/20.
-//
-
 #include "halfword_data_transfer.h"
 #include "../../common/log.h"
 

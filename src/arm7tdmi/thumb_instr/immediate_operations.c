@@ -1,7 +1,3 @@
-//
-// Created by dillon on 3/10/20.
-//
-
 #include "immediate_operations.h"
 #include "../../common/log.h"
 

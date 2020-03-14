@@ -1,7 +1,3 @@
-//
-// Created by dillon on 3/7/20.
-//
-
 #include "shifts.h"
 #include "../common/log.h"
 

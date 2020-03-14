@@ -1,7 +1,3 @@
-//
-// Created by dillon on 3/8/20.
-//
-
 #ifndef GBA_STATUS_TRANSFER_H
 #define GBA_STATUS_TRANSFER_H
 

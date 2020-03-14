@@ -1,7 +1,3 @@
-//
-// Created by dillon on 3/8/20.
-//
-
 #include "status_transfer.h"
 #include "../../common/log.h"
 

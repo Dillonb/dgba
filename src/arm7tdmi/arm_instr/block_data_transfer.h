@@ -1,7 +1,3 @@
-//
-// Created by dillon on 3/7/20.
-//
-
 #ifndef GBA_BLOCK_DATA_TRANSFER_H
 #define GBA_BLOCK_DATA_TRANSFER_H
 

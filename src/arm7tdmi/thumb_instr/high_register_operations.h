@@ -1,7 +1,3 @@
-//
-// Created by dillon on 3/10/20.
-//
-
 #ifndef GBA_HIGH_REGISTER_OPERATIONS_H
 #define GBA_HIGH_REGISTER_OPERATIONS_H
 
