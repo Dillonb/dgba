@@ -43,7 +43,7 @@ void fill_pipe(arm7tdmi_t* state) {
 void set_pc(arm7tdmi_t* state, word new_pc) {
     if (new_pc & 1u) {
         state->cpsr.thumb = true;
-        new_pc &= ~1u; // Unset thumb bit
+        new_pc &= ~1u; // Unset thumb bit as it's a flag, not really part of the address
     } else if (state->cpsr.thumb && (new_pc & 1u) == 0u) {
         state->cpsr.thumb = false;
     }
@@ -51,7 +51,9 @@ void set_pc(arm7tdmi_t* state, word new_pc) {
     if (state->cpsr.thumb && new_pc % 2 != 0) {
         logfatal("Attempted to jump in THUMB mode to a non-half aligned address 0x%08X!", new_pc)
     } else if (!state->cpsr.thumb && new_pc % 4 != 0) {
-        logfatal("Attempted to jump in ARM mode to a non-word aligned address 0x%08X!", new_pc)
+        logwarn("Attempted to jump in ARM mode to a non-word aligned address 0x%08X!", new_pc)
+        new_pc &= 0xFFFFFFFC; // Correct alignment
+        logwarn("Corrected it to 0x%08X!", new_pc)
     }
 
     state->pc = new_pc;
