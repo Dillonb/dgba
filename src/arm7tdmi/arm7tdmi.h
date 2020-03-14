@@ -80,6 +80,7 @@ typedef struct arm7tdmi {
     // Other state
     word pipeline[2];
 
+    word instr; // last instr the CPU executed
 } arm7tdmi_t;
 
 arm7tdmi_t* init_arm7tdmi(byte (*read_byte)(word),

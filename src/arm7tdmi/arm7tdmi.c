@@ -422,12 +422,12 @@ int arm7tdmi_step(arm7tdmi_t* state) {
              cpsrflag(state->cpsr.disable_fiq, "F"), cpsrflag(state->cpsr.thumb, "T"))
      if (state->cpsr.thumb) {
          thumbinstr_t instr = next_thumb_instr(state);
-         word adjusted_pc = state->pc - 4;
+         state->instr = instr.raw;
          logwarn("adjusted pc: 0x%08X read: 0x%04X", adjusted_pc, instr.raw)
          return thumb_mode_step(state, &instr);
      } else {
          arminstr_t instr = next_arm_instr(state);
-         word adjusted_pc = state->pc - 8;
+         state->instr = instr.raw;
          logwarn("adjusted pc: 0x%08X read: 0x%08X", adjusted_pc, instr.raw)
          return arm_mode_step(state, &instr);
      }
