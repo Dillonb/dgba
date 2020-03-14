@@ -8,7 +8,7 @@ void branch_exchange(arm7tdmi_t* state, branch_exchange_t* instr) {
         case 0b0001: {// BX
             word newpc = get_register(state, instr->rn);
             bool thumb = newpc & 1u;
-            logdebug("Hold on to your hats, we're jumping to 0x%02X", newpc)
+            logdebug("[BX] Hold on to your hats, we're jumping to 0x%02X - from r%d", newpc, instr->rn)
             if (thumb) logdebug("REALLY hang on, we're entering THUMB mode!")
             set_pc(state, newpc);
             break;
@@ -46,7 +46,7 @@ void branch(arm7tdmi_t* state, branch_t* instr) {
     }
 
     word newpc = (state->pc) + signed_offset;
-    logdebug("Hold on to your hats, we're jumping to 0x%02X", newpc)
+    logdebug("[B] Hold on to your hats, we're jumping to 0x%02X", newpc)
     set_pc(state, newpc);
 }
 
