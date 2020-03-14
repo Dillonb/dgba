@@ -17,7 +17,7 @@ typedef union nonimmediate_flags {
     struct {
         unsigned rm:4;
         bool r:1; // 1: shift by register, 0, shift by immediate.
-        unsigned shift_type:2;
+        shift_type_t shift_type:2;
     };
     unsigned raw:12;
 } nonimmediate_flags_t;
@@ -84,13 +84,30 @@ void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
         logdebug("Shift amount: 0x%02X", shift_amount)
 
 
-        // Needed when s == true - set condition codes on status register
-        // status_register_t* psr = get_psr(state);
-
         logdebug("Operand before shift: 0x%08X", operand2)
 
         // Only pass cpsr if it should be updated
-        operand2 = arm_shift(s?&state->cpsr:NULL, flags.shift_type, operand2, shift_amount);
+        status_register_t* cpsr = s?&state->cpsr:NULL;
+
+        // Special case when shifting by immediate 0
+        if (!flags.r && shift_amount == 0) {
+            switch (flags.shift_type) {
+                case LSL:
+                    break; // Not affected.
+                case LSR:
+                    // Treat it as LSR#32
+                    operand2 = arm_shift(cpsr, LSR, operand2, 32);
+                    break;
+                case ASR:
+                    operand2 = arm_shift(cpsr, ASR, operand2, 32);
+                    break;
+                case ROR:
+                    logfatal("ROR#0 unimplemented")
+                    break;
+            }
+        } else {
+            operand2 = arm_shift(cpsr, flags.shift_type, operand2, shift_amount);
+        }
     }
 
     logdebug("Operand after shift: 0x%08X", operand2)
