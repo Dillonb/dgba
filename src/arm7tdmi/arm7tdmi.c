@@ -423,11 +423,13 @@ int arm7tdmi_step(arm7tdmi_t* state) {
      if (state->cpsr.thumb) {
          thumbinstr_t instr = next_thumb_instr(state);
          state->instr = instr.raw;
+         word adjusted_pc = state->pc - 2 - 2 - 2;
          logwarn("adjusted pc: 0x%08X read: 0x%04X", adjusted_pc, instr.raw)
          return thumb_mode_step(state, &instr);
      } else {
          arminstr_t instr = next_arm_instr(state);
          state->instr = instr.raw;
+         word adjusted_pc = state->pc - 4 - 4 - 4;
          logwarn("adjusted pc: 0x%08X read: 0x%08X", adjusted_pc, instr.raw)
          return arm_mode_step(state, &instr);
      }
