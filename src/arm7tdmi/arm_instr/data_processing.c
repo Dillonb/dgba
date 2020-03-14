@@ -54,6 +54,9 @@ void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
 
         shift &= 31u;
         operand2 = (operand2 >> shift) | (operand2 << (-shift & 31u));
+        if (s) {
+            state->cpsr.C = operand2 >> 31;
+        }
     }
     else { // Operand2 comes from another register
         if (rn == 15) {
