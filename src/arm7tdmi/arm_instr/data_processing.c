@@ -182,11 +182,40 @@ void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
             set_register(state, rd, newvalue);
             break;
         }
+        case 0x7: { // RSC: RD = Op2-Rn+C-1
+            uint64_t tmp = rndata;
+            tmp -= state->cpsr.C;
+            tmp += 1;
+            word newvalue = operand2 - tmp;
+            if (s) {
+                set_flags_nz(state, newvalue);
+                set_flags_sbc(state, operand2, rndata, tmp, newvalue);
+            }
+            set_register(state, rd, newvalue);
+            break;
+        }
+        case 0x8: { // TST: Void = Rn AND Op2
+            unimplemented(!s, "BUG DETECTED: s flag must be set for opcodes 0x8-0xB")
+            set_flags_nz(state, rndata & operand2);
+            break;
+        }
+        case 0x9: { // TEQ: Void = Rn XOR Op2
+            unimplemented(!s, "BUG DETECTED: s flag must be set for opcodes 0x8-0xB")
+            set_flags_nz(state, rndata ^ operand2);
+            break;
+        }
         case 0xA: { // CMP: Void = Rn-Op2
             unimplemented(!s, "BUG DETECTED: s flag must be set for opcodes 0x8-0xB")
             word newvalue = rndata - operand2;
             set_flags_nz(state, newvalue);
             set_flags_sub(state, rndata, operand2, newvalue);
+            break;
+        }
+        case 0xB: { // Void = Rn+Op2
+            unimplemented(!s, "BUG DETECTED: s flag must be set for opcodes 0x8-0xB")
+            word newvalue = rndata + operand2;
+            set_flags_nz(state, newvalue);
+            set_flags_add(state, rndata, operand2);
             break;
         }
         case 0xC: { // OR logical: Rd = Rn OR Op2
