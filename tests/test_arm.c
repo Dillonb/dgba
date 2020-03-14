@@ -13,12 +13,12 @@ bool in_bios(arm7tdmi_t* state) {
 
 #define TEST_FAILED_ADDRESS 0x1B94
 #define NUM_LOG_LINES 1107
-#define LOG_LINE_LENGTH 198
 #define LOG_FILE "arm.log"
 
 typedef struct cpu_log {
     word address;
     word instruction;
+    word cpsr;
     word r[16];
 } cpu_log_t;
 
@@ -34,6 +34,10 @@ void load_log(const char* filename, int lines, cpu_log_t* buffer) {
         fseek(fp, 3, SEEK_CUR); // skip ,0x
         fgets(buf, 9, fp);
         log.instruction = strtol(buf, NULL, 16);
+
+        fseek(fp, 3, SEEK_CUR); // skip ,0x
+        fgets(buf, 9, fp);
+        log.cpsr = strtol(buf, NULL, 16);
 
         for (int r = 0; r < 16; r++) {
             fseek(fp, 3, SEEK_CUR); // skip ,0x
@@ -74,6 +78,7 @@ int main(int argc, char** argv) {
     while(true) {
         logdebug("Checking registers against step %d (line %d in log)", step, step + 1)
         ASSERT_EQUAL("Address", lines[step].address, cpu->pc - (cpu->cpsr.thumb ? 2 : 4))
+        ASSERT_EQUAL("CPSR", lines[step].cpsr, cpu->cpsr.raw)
         ASSERT_EQUAL("r0", lines[step].r[0], get_register(cpu, 0))
         ASSERT_EQUAL("r1", lines[step].r[1], get_register(cpu, 1))
         ASSERT_EQUAL("r2", lines[step].r[2], get_register(cpu, 2))
