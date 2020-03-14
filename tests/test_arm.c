@@ -49,7 +49,7 @@ void load_log(const char* filename, int lines, cpu_log_t* buffer) {
 
 #define ASSERT_EQUAL(message, expected, actual) \
     if (expected != actual) { \
-        printf("ASSERTION FAILED: " message " expected: 0x%08X != actual: 0x%08X\n", expected, actual); exit(1); }
+        logfatal("ASSERTION FAILED: " message " expected: 0x%08X != actual: 0x%08X\n", expected, actual); }
 
 int main(int argc, char** argv) {
     log_set_verbosity(4);
@@ -72,7 +72,7 @@ int main(int argc, char** argv) {
     int step = 0;
 
     while(true) {
-        // ASSERT_EQUAL("Address", lines[step].address, cpu->pc - 8);
+        ASSERT_EQUAL("Address", lines[step].address, cpu->pc - 4)
         ASSERT_EQUAL("r0", lines[step].r[0], get_register(cpu, 0))
         ASSERT_EQUAL("r1", lines[step].r[1], get_register(cpu, 1))
         ASSERT_EQUAL("r2", lines[step].r[2], get_register(cpu, 2))
