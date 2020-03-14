@@ -74,7 +74,6 @@ void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
         if (flags.r) {
             unimplemented(flags.shift_register.rs == 15, "r15 is a special case")
             shift_amount = get_register(state, flags.shift_register.rs) & 0xFFu; // Only lowest 8 bits used
-            unimplemented(shift_amount == 0, "shift amount 0 is a special case! see docs.")
         }
         // Shift by immediate
         else {
