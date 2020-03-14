@@ -64,9 +64,9 @@ void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
         nonimmediate_flags_t flags;
         flags.raw = instr->operand2;
 
-        unimplemented(flags.rm == 15, "r15 is a special case")
+        //unimplemented(flags.rm == 15, "r15 is a special case")
         operand2 = get_register(state, flags.rm);
-        if (flags.rm == 15u) {
+        if (flags.r && flags.rm == 15u) {
             operand2 += 4; // Special case for R15 when immediate
         }
 
