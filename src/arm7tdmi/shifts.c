@@ -4,7 +4,6 @@
 
 word arm_lsr(status_register_t* cpsr, word data, word shift_amount) {
     logdebug("LSR shift")
-    unimplemented(shift_amount == 0, "shift amount 0 is a special case! see docs.")
     word result;
     if (shift_amount < 32) {
         result = data >> shift_amount;
@@ -56,7 +55,30 @@ word arm_lsl(status_register_t* cpsr, word data, word shift_amount) {
 }
 
 word arm_asr(status_register_t* cpsr, word data, word shift_amount) {
-    unimplemented(shift_amount == 0, "shift amount 0 is a special case! see docs.")
+    word result;
+    if (shift_amount == 0) {
+        result = data;
+    } else {
+        if (shift_amount < 32) {
+            if (cpsr) {
+                cpsr->C = (data >> (shift_amount - 1u)) & 1u;
+            }
+            int32_t signed_data = data;
+            signed_data >>= shift_amount;
+            result = signed_data;
+        }
+        else {
+            int32_t signed_data = data;
+            signed_data >>= 31u;
+            result = signed_data;
+
+            if (cpsr) {
+                cpsr->C = result & 1u;
+            }
+        }
+    }
+
+    return result;
     logfatal("ASR shift type unimplemented")
 }
 
