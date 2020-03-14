@@ -18,7 +18,7 @@ bool in_bios(arm7tdmi_t* state) {
 typedef struct cpu_log {
     word address;
     word instruction;
-    word cpsr;
+    status_register_t cpsr;
     word r[16];
 } cpu_log_t;
 
@@ -37,7 +37,7 @@ void load_log(const char* filename, int lines, cpu_log_t* buffer) {
 
         fseek(fp, 3, SEEK_CUR); // skip ,0x
         fgets(buf, 9, fp);
-        log.cpsr = strtol(buf, NULL, 16);
+        log.cpsr.raw = strtol(buf, NULL, 16);
 
         for (int r = 0; r < 16; r++) {
             fseek(fp, 3, SEEK_CUR); // skip ,0x
@@ -54,6 +54,11 @@ void load_log(const char* filename, int lines, cpu_log_t* buffer) {
 #define ASSERT_EQUAL(message, expected, actual) \
     if (expected != actual) { \
         logfatal("ASSERTION FAILED: " message " expected: 0x%08X != actual: 0x%08X\n", expected, actual); }
+
+#define cpsrflag(f, c) (f == 1?c:"-")
+#define printcpsr(cpsr) printf("[%s%s%s%s%s%s%s]", cpsrflag(cpsr.N, "N"), cpsrflag(cpsr.Z, "Z"), \
+         cpsrflag(cpsr.C, "C"), cpsrflag(cpsr.V, "V"), cpsrflag(cpsr.disable_irq, "I"), \
+         cpsrflag(cpsr.disable_fiq, "F"), cpsrflag(cpsr.thumb, "T"))
 
 int main(int argc, char** argv) {
     log_set_verbosity(4);
@@ -76,9 +81,18 @@ int main(int argc, char** argv) {
     int step = 0;
 
     while(true) {
+        // Register values in the log are BEFORE EXECUTING the instruction on that line
         logdebug("Checking registers against step %d (line %d in log)", step, step + 1)
         ASSERT_EQUAL("Address", lines[step].address, cpu->pc - (cpu->cpsr.thumb ? 2 : 4))
-        ASSERT_EQUAL("CPSR", lines[step].cpsr, cpu->cpsr.raw)
+
+        printf("Expected cpsr: ");
+        printcpsr(lines[step].cpsr);
+        printf(" Actual cpsr: ");
+        printcpsr(cpu->cpsr);
+        printf("\n");
+
+
+        ASSERT_EQUAL("CPSR", lines[step].cpsr.raw, cpu->cpsr.raw)
         ASSERT_EQUAL("r0", lines[step].r[0], get_register(cpu, 0))
         ASSERT_EQUAL("r1", lines[step].r[1], get_register(cpu, 1))
         ASSERT_EQUAL("r2", lines[step].r[2], get_register(cpu, 2))
