@@ -21,23 +21,21 @@ void fill_pipe(arm7tdmi_t* state) {
         state->pipeline[0] = state->read_half(state->pc);
         state->pc += 2;
         state->pipeline[1] = state->read_half(state->pc);
-        state->pc += 2;
 
         logdebug("[THM] Filling the instruction pipeline: 0x%08X = 0x%04X / 0x%08X = 0x%04X",
-                 state->pc - 4,
-                 state->pipeline[0],
                  state->pc - 2,
+                 state->pipeline[0],
+                 state->pc,
                  state->pipeline[1])
     } else {
         state->pipeline[0] = state->read_word(state->pc);
         state->pc += 4;
         state->pipeline[1] = state->read_word(state->pc);
-        state->pc += 4;
 
         logdebug("[ARM] Filling the instruction pipeline: 0x%08X = 0x%08X / 0x%08X = 0x%08X",
-                 state->pc - 8,
-                 state->pipeline[0],
                  state->pc - 4,
+                 state->pipeline[0],
+                 state->pc,
                  state->pipeline[1])
     }
 }
@@ -47,9 +45,15 @@ void set_pc(arm7tdmi_t* state, word new_pc) {
         state->cpsr.thumb = true;
         new_pc &= ~1u; // Unset thumb bit
     } else if (state->cpsr.thumb && (new_pc & 1u) == 0u) {
-        // logfatal("Seems to me like we're exiting thumb mode. Make sure that's what's supposed to be happening.")
         state->cpsr.thumb = false;
     }
+
+    if (state->cpsr.thumb && new_pc % 2 != 0) {
+        logfatal("Attempted to jump in THUMB mode to a non-half aligned address 0x%08X!", new_pc)
+    } else if (!state->cpsr.thumb && new_pc % 4 != 0) {
+        logfatal("Attempted to jump in ARM mode to a non-word aligned address 0x%08X!", new_pc)
+    }
+
     state->pc = new_pc;
     fill_pipe(state);
 }
@@ -129,6 +133,7 @@ arminstr_t next_arm_instr(arm7tdmi_t* state) {
     arminstr_t instr;
     instr.raw = state->pipeline[0];
     state->pipeline[0] = state->pipeline[1];
+    state->pc += 4;
     state->pipeline[1] = state->read_word(state->pc);
 
     return instr;
@@ -138,7 +143,8 @@ thumbinstr_t next_thumb_instr(arm7tdmi_t* state) {
     thumbinstr_t instr;
     instr.raw = state->pipeline[0];
     state->pipeline[0] = state->pipeline[1];
-    state->pipeline[1] = state->read_word(state->pc);
+    state->pc += 2;
+    state->pipeline[1] = state->read_half(state->pc);
 
     return instr;
 }
@@ -256,7 +262,6 @@ word get_register(arm7tdmi_t* state, word index) {
         logfatal("Attempted to read unknown register: r%d", index)
     }
 
-    logdebug("Read the value of r%d: 0x%08X", index, value)
     return value;
 }
 
@@ -286,7 +291,6 @@ int arm_mode_step(arm7tdmi_t* state, arminstr_t* instr) {
                 logfatal("Unimplemented instruction type: SINGLE_DATA_SWAP")
             case BRANCH_EXCHANGE:
                 branch_exchange(state, &instr->parsed.BRANCH_EXCHANGE);
-                state->pc -= 4; // This is to correct for the state->pc+=4 that happens after this switch
                 break;
             case HALFWORD_DT_RO:
                 halfword_dt_ro(state,
@@ -333,7 +337,6 @@ int arm_mode_step(arm7tdmi_t* state, arminstr_t* instr) {
                 break;
             case BRANCH:
                 branch(state, &instr->parsed.BRANCH);
-                state->pc -= 4; // This is to correct for the state->pc+=4 that happens after this switch
                 break;
             case COPROCESSOR_DATA_TRANSFER:
                 logfatal("Unimplemented instruction type: COPROCESSOR_DATA_TRANSFER")
@@ -351,13 +354,11 @@ int arm_mode_step(arm7tdmi_t* state, arminstr_t* instr) {
         logdebug("Skipping instr because cond %d was not met.", instr->parsed.cond)
         tick(1);
     }
-    state->pc += 4;
     return this_step_ticks;
 }
 
 int thumb_mode_step(arm7tdmi_t* state, thumbinstr_t* instr) {
     thumb_instr_type_t type = get_thumb_instr_type(instr);
-    logdebug("Thumb instr type: %d", type)
 
     switch (type) {
         case MOVE_SHIFTED_REGISTER:
@@ -407,7 +408,6 @@ int thumb_mode_step(arm7tdmi_t* state, thumbinstr_t* instr) {
             logfatal("Hit default case in arm_mode_step switch. This should never happen!")
     }
 
-    state->pc += 2;
     return this_step_ticks;
 }
 
