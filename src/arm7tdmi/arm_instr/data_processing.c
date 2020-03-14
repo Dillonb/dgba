@@ -24,11 +24,6 @@ typedef union nonimmediate_flags {
 
 // http://problemkaputt.de/gbatek.htm#armopcodesdataprocessingalu
 void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
-    // If it's one of these opcodes, and the s flag isn't set, this is actually a psr transfer op.
-    if (!instr->s && instr->opcode >= 0x8 && instr->opcode <= 0xb) { // TODO optimize with masks (opcode>>8) & 0b1100 == 0b1100 ?
-        logfatal("This is actually a PSR transfer OP that got incorrectly detected as a data processing op!")
-    }
-
     bool s = instr->s;
     byte rn = instr->rn;
     byte rd = instr->rd;
