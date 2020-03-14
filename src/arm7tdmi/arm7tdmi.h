@@ -109,7 +109,8 @@ void set_spsr(arm7tdmi_t* state, word value);
 
 void set_flags_nz(arm7tdmi_t* state, word newvalue);
 void set_flags_add(arm7tdmi_t* state, uint64_t op1, uint64_t op2);
-void set_flags_sub(arm7tdmi_t* state, word op1, word op2);
+void set_flags_sub(arm7tdmi_t* state, word op1, word op2, word result);
+void set_flags_sbc(arm7tdmi_t* state, word op1, word op2, uint64_t tmp, word result);
 
 void skip_bios(arm7tdmi_t* state);
 

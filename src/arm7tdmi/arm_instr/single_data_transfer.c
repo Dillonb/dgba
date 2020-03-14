@@ -41,7 +41,7 @@ void single_data_transfer(arm7tdmi_t* state,
         flags.raw = offset;
         unimplemented(flags.rm == 15, "Can't use r15 here!")
 
-        actual_offset = arm_shift(flags.shift_type, get_register(state, flags.rm), flags.shift_amount);
+        actual_offset = arm_shift(NULL, flags.shift_type, get_register(state, flags.rm), flags.shift_amount);
     } else {
         actual_offset = offset;
     }

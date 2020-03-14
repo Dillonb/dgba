@@ -83,14 +83,14 @@ void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
 
         logdebug("Shift amount: 0x%02X", shift_amount)
 
-        unimplemented(shift_amount != 0, "When shift amount != 0, need to set C flag")
 
         // Needed when s == true - set condition codes on status register
         // status_register_t* psr = get_psr(state);
 
         logdebug("Operand before shift: 0x%08X", operand2)
 
-        operand2 = arm_shift(flags.shift_type, operand2, shift_amount);
+        // Only pass cpsr if it should be updated
+        operand2 = arm_shift(s?&state->cpsr:NULL, flags.shift_type, operand2, shift_amount);
     }
 
     logdebug("Operand after shift: 0x%08X", operand2)
@@ -114,7 +114,7 @@ void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
             word newvalue = rndata - operand2;
             if (s) {
                 set_flags_nz(state, newvalue);
-                set_flags_sub(state, rndata, operand2);
+                set_flags_sub(state, rndata, operand2, newvalue);
             }
             set_register(state, rd, newvalue);
             break;
@@ -123,7 +123,7 @@ void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
             word newvalue = operand2 - rndata;
             if (s) {
                 set_flags_nz(state, newvalue);
-                set_flags_sub(state, operand2, rndata);
+                set_flags_sub(state, operand2, rndata, newvalue);
             }
             set_register(state, rd, newvalue);
             break;
@@ -147,10 +147,23 @@ void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
             set_register(state, rd, newvalue);
             break;
         }
+        case 0x6: { // SBC: Rd = Rn-Op2+C-1
+            uint64_t tmp = operand2;
+            tmp -= state->cpsr.C;
+            tmp += 1;
+            word newvalue = rndata - tmp;
+            if (s) {
+                set_flags_nz(state, newvalue);
+                set_flags_sbc(state, rndata, operand2, tmp, newvalue);
+            }
+            set_register(state, rd, newvalue);
+            break;
+        }
         case 0xA: { // CMP: Void = Rn-Op2
             unimplemented(!s, "BUG DETECTED: s flag must be set for opcodes 0x8-0xB")
-            set_flags_nz(state, rndata - operand2);
-            set_flags_sub(state, rndata, operand2);
+            word newvalue = rndata - operand2;
+            set_flags_nz(state, newvalue);
+            set_flags_sub(state, rndata, operand2, newvalue);
             break;
         }
         case 0xC: { // OR logical: Rd = Rn OR Op2
