@@ -15,6 +15,7 @@
 #include "thumb_instr/immediate_operations.h"
 #include "thumb_instr/high_register_operations.h"
 #include "thumb_instr/load_address.h"
+#include "arm_instr/multiply.h"
 
 const char MODE_NAMES[32][11] = {
 "UNKNOWN",    // 0b00000
@@ -332,9 +333,10 @@ int arm_mode_step(arm7tdmi_t* state, arminstr_t* instr) {
                              instr->parsed.DATA_PROCESSING.operand2);
                 break;
             case MULTIPLY:
-                unimplemented(1, "MULTIPLY instruction type")
+                multiply(state, &instr->parsed.MULTIPLY);
+                break;
             case MULTIPLY_LONG:
-                logfatal("Unimplemented instruction type: MULTIPLY_LONG")
+                multiply_long(state, &instr->parsed.MULTIPLY_LONG);
             case SINGLE_DATA_SWAP:
                 logfatal("Unimplemented instruction type: SINGLE_DATA_SWAP")
             case BRANCH_EXCHANGE:

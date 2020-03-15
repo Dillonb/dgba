@@ -9,6 +9,7 @@ add_library(arm7tdmi
         arm_instr/block_data_transfer.c arm_instr/block_data_transfer.h
         arm_instr/status_transfer.c arm_instr/status_transfer.h
         arm_instr/halfword_data_transfer.c arm_instr/halfword_data_transfer.h
+        arm_instr/multiply.c arm_instr/multiply.h
 
         thumb_instr/thumb_instr.c thumb_instr/thumb_instr.h
         thumb_instr/immediate_operations.c thumb_instr/immediate_operations.h
