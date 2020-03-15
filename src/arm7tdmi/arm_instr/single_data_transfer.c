@@ -69,6 +69,7 @@ void single_data_transfer(arm7tdmi_t* state,
         else { // Read a word
             logdebug("I'm gonna load r%d with a word from 0x%08X", rd, address)
             source = state->read_word(address);
+            source = arm_ror(NULL, source, (address & 3u) << 3);
         }
         logdebug("And that value is 0x%08X", source)
         set_register(state, rd, source);
