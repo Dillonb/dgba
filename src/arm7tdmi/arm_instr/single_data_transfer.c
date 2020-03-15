@@ -5,8 +5,8 @@
 
 typedef union immediate_as_offset_flags {
     struct {
-        unsigned rm:3; // Offset register
-        unsigned:1; // Must be 0
+        unsigned rm:4; // Offset register
+        bool reg_op:1; // Must be 0?
         unsigned shift_type:2;
         unsigned shift_amount:5;
     };
@@ -27,26 +27,37 @@ void single_data_transfer(arm7tdmi_t* state,
     //  When 1, Register shifted by Immediate as Offset
     logdebug("l: %d w: %d b: %d u: %d p: %d i: %d", l, w, b, up, pre, immediate_offset_type)
     logdebug("rn: %d rd: %d, offset: 0x%03X", rn, rd, offset)
+    if (!pre) {
+        w = true;
+    }
     if (w && rn == 15) {
         logfatal("Write-back must not be specified when Rn == R15")
     }
-    unimplemented(w, "w flag")
-    unimplemented(!up, "down (subtract from base)")
-    unimplemented(!pre, "post-transfer offset")
 
-    word actual_offset;
+    int actual_offset;
 
     if (immediate_offset_type) {
         immediate_as_offset_flags_t flags;
         flags.raw = offset;
         unimplemented(flags.rm == 15, "Can't use r15 here!")
 
+        unimplemented(flags.reg_op != 0, "The documentation told me this was always going to be 0")
+
+        logdebug("Doing a shift type %d to the value of r%d by amount %d", flags.shift_type, flags.rm, flags.shift_amount)
         actual_offset = arm_shift(NULL, flags.shift_type, get_register(state, flags.rm), flags.shift_amount);
     } else {
-        actual_offset = offset;
+        actual_offset = (int) offset;
     }
 
-    word address = get_register(state, rn) + actual_offset;
+    if (!up) {
+        actual_offset = -actual_offset;
+    }
+
+    word address = get_register(state, rn);
+
+    if (pre) {
+        address += actual_offset;
+    }
 
 
     if (l) { // LDR
@@ -72,5 +83,13 @@ void single_data_transfer(arm7tdmi_t* state,
         } else {
             state->write_word(address, get_register(state, rd));
         }
+    }
+
+    if (w && (!l || rd != rn)) {
+        if (!pre) {
+            address += actual_offset;
+        }
+        logdebug("Writing back 0x%08X to r%d", address, rn)
+        set_register(state, rn, address);
     }
 }
