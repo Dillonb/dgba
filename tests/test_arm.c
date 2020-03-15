@@ -66,13 +66,13 @@ void load_log(const char* filename, int lines, cpu_log_t* buffer) {
 int main(int argc, char** argv) {
     log_set_verbosity(4);
     gbamem_t* mem = init_mem();
-    init_gbabus(mem);
 
     load_gbarom("arm.gba", mem);
 
     // Initialize the CPU, hook it up to the GBA bus
     arm7tdmi_t* cpu = init_arm7tdmi(gba_read_byte, gba_read_half, gba_read_word,
                                     gba_write_byte, gba_write_half, gba_write_word);
+    init_gbabus(mem, cpu);
     skip_bios(cpu);
 
     cpu_log_t lines[NUM_LOG_LINES];

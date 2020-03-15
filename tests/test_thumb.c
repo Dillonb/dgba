@@ -8,7 +8,6 @@
 
 int main(int argc, char** argv) {
     gbamem_t* mem = init_mem();
-    init_gbabus(mem);
 
     load_gbarom("thumb.gba", mem);
 
@@ -19,6 +18,8 @@ int main(int argc, char** argv) {
                                     gba_write_byte,
                                     gba_write_half,
                                     gba_write_word);
+
+    init_gbabus(mem, cpu);
     skip_bios(cpu);
 
     loginfo("ROM loaded: %lu bytes", mem->rom_size)

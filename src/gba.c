@@ -29,7 +29,6 @@ int main(int argc, char** argv) {
     }
 
     gbamem_t* mem = init_mem();
-    init_gbabus(mem);
 
     char* romfile = flags->argv[0];
     load_gbarom(romfile, mem);
@@ -41,6 +40,7 @@ int main(int argc, char** argv) {
                                     gba_write_byte,
                                     gba_write_half,
                                     gba_write_word);
+    init_gbabus(mem, cpu);
 
     loginfo("ROM loaded: %lu bytes", mem->rom_size)
     loginfo("Beginning CPU loop")

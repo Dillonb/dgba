@@ -5,9 +5,11 @@
 #include "gbabios.h"
 
 gbamem_t* mem;
+arm7tdmi_t* cpu;
 
-void init_gbabus(gbamem_t* new_mem) {
+void init_gbabus(gbamem_t* new_mem, arm7tdmi_t* new_cpu) {
     mem = new_mem;
+    cpu = new_cpu;
 }
 
 void write_byte_ioreg(word addr, byte value) {
