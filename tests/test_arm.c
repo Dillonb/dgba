@@ -51,9 +51,12 @@ void load_log(const char* filename, int lines, cpu_log_t* buffer) {
     }
 }
 
-#define ASSERT_EQUAL(message, expected, actual) \
+#define ASSERT_EQUAL(adjpc, message, expected, actual) \
     if (expected != actual) { \
-        logfatal("ASSERTION FAILED: " message " expected: 0x%08X != actual: 0x%08X\n", expected, actual); }
+        logfatal("ASSERTION FAILED: " message \
+        " expected: 0x%08X != actual: 0x%08X" \
+        " adjPC: 0x%08X" \
+        "\n", expected, actual, adjpc); }
 
 #define cpsrflag(f, c) (f == 1?c:"-")
 #define printcpsr(cpsr) printf("[%s%s%s%s%s%s%s]", cpsrflag(cpsr.N, "N"), cpsrflag(cpsr.Z, "Z"), \
@@ -81,9 +84,10 @@ int main(int argc, char** argv) {
     int step = 0;
 
     while(true) {
+        word adjusted_pc = cpu->pc - (cpu->cpsr.thumb ? 4 : 8);
         // Register values in the log are BEFORE EXECUTING the instruction on that line
         logdebug("Checking registers against step %d (line %d in log)", step, step + 1)
-        ASSERT_EQUAL("Address", lines[step].address, cpu->pc - (cpu->cpsr.thumb ? 2 : 4))
+        ASSERT_EQUAL(adjusted_pc, "Address", lines[step].address, cpu->pc - (cpu->cpsr.thumb ? 2 : 4))
 
         if (lines[step].cpsr.raw != cpu->cpsr.raw) {
             printf("Expected cpsr: ");
@@ -93,26 +97,26 @@ int main(int argc, char** argv) {
             printf("\n");
         }
 
-        ASSERT_EQUAL("r0",   lines[step].r[0],     get_register(cpu, 0))
-        ASSERT_EQUAL("r1",   lines[step].r[1],     get_register(cpu, 1))
-        ASSERT_EQUAL("r2",   lines[step].r[2],     get_register(cpu, 2))
-        ASSERT_EQUAL("r3",   lines[step].r[3],     get_register(cpu, 3))
-        ASSERT_EQUAL("r4",   lines[step].r[4],     get_register(cpu, 4))
-        ASSERT_EQUAL("r5",   lines[step].r[5],     get_register(cpu, 5))
-        ASSERT_EQUAL("r6",   lines[step].r[6],     get_register(cpu, 6))
-        ASSERT_EQUAL("r7",   lines[step].r[7],     get_register(cpu, 7))
-        ASSERT_EQUAL("r8",   lines[step].r[8],     get_register(cpu, 8))
-        ASSERT_EQUAL("r9",   lines[step].r[9],     get_register(cpu, 9))
-        ASSERT_EQUAL("r10",  lines[step].r[10],    get_register(cpu, 10))
-        ASSERT_EQUAL("r11",  lines[step].r[11],    get_register(cpu, 11))
-        ASSERT_EQUAL("r12",  lines[step].r[12],    get_register(cpu, 12))
-        ASSERT_EQUAL("r13",  lines[step].r[13],    get_register(cpu, 13))
-        ASSERT_EQUAL("r14",  lines[step].r[14],    get_register(cpu, 14))
-        ASSERT_EQUAL("r15",  lines[step].r[15],    get_register(cpu, 15))
-        ASSERT_EQUAL("CPSR", lines[step].cpsr.raw, cpu->cpsr.raw)
+        ASSERT_EQUAL(adjusted_pc, "r0",   lines[step].r[0],     get_register(cpu, 0))
+        ASSERT_EQUAL(adjusted_pc, "r1",   lines[step].r[1],     get_register(cpu, 1))
+        ASSERT_EQUAL(adjusted_pc, "r2",   lines[step].r[2],     get_register(cpu, 2))
+        ASSERT_EQUAL(adjusted_pc, "r3",   lines[step].r[3],     get_register(cpu, 3))
+        ASSERT_EQUAL(adjusted_pc, "r4",   lines[step].r[4],     get_register(cpu, 4))
+        ASSERT_EQUAL(adjusted_pc, "r5",   lines[step].r[5],     get_register(cpu, 5))
+        ASSERT_EQUAL(adjusted_pc, "r6",   lines[step].r[6],     get_register(cpu, 6))
+        ASSERT_EQUAL(adjusted_pc, "r7",   lines[step].r[7],     get_register(cpu, 7))
+        ASSERT_EQUAL(adjusted_pc, "r8",   lines[step].r[8],     get_register(cpu, 8))
+        ASSERT_EQUAL(adjusted_pc, "r9",   lines[step].r[9],     get_register(cpu, 9))
+        ASSERT_EQUAL(adjusted_pc, "r10",  lines[step].r[10],    get_register(cpu, 10))
+        ASSERT_EQUAL(adjusted_pc, "r11",  lines[step].r[11],    get_register(cpu, 11))
+        ASSERT_EQUAL(adjusted_pc, "r12",  lines[step].r[12],    get_register(cpu, 12))
+        ASSERT_EQUAL(adjusted_pc, "r13",  lines[step].r[13],    get_register(cpu, 13))
+        ASSERT_EQUAL(adjusted_pc, "r14",  lines[step].r[14],    get_register(cpu, 14))
+        ASSERT_EQUAL(adjusted_pc, "r15",  lines[step].r[15],    get_register(cpu, 15))
+        ASSERT_EQUAL(adjusted_pc, "CPSR", lines[step].cpsr.raw, cpu->cpsr.raw)
 
         arm7tdmi_step(cpu);
-        ASSERT_EQUAL("instruction", lines[step].instruction, cpu->instr)
+        ASSERT_EQUAL(adjusted_pc, "instruction", lines[step].instruction, cpu->instr)
         step++;
 
         if (cpu->pc == TEST_FAILED_ADDRESS + 8) {
