@@ -75,6 +75,7 @@ typedef struct arm7tdmi {
     word r14_abt;
 
     status_register_t cpsr;
+    status_register_t spsr;
     status_register_t spsr_fiq;
     status_register_t spsr_svc;
     status_register_t spsr_abt;

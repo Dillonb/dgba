@@ -511,7 +511,7 @@ status_register_t* get_spsr(arm7tdmi_t* state) {
         case MODE_UNDEFINED:
             return &state->spsr_und;
         default:
-            logfatal("Getting SPSR for mode: 0x%02X is unsupported (and maybe should be?)", state->cpsr.mode)
+            return &state->spsr;
     }
 }
 
