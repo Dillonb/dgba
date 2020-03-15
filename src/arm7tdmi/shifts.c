@@ -111,3 +111,25 @@ word arm_shift(status_register_t* cpsr, shift_type_t type, word data, word shift
             logfatal("Unknown shift type: %d", type)
     }
 }
+word arm_shift_special_zero_behavior(arm7tdmi_t* state, status_register_t* cpsr, shift_type_t type, word data) {
+    logdebug("----handling special case, immediate shift amount 0----")
+    switch (type) {
+        case LSL:
+            return data; // Not affected.
+        case LSR:
+            // Treat it as LSR#32
+            return arm_shift(cpsr, LSR, data, 32);
+        case ASR:
+            // Treat it as ASR#32
+            return arm_shift(cpsr, ASR, data, 32);
+        case ROR: {
+            word oldc = state->cpsr.C;
+            if (cpsr) {
+                cpsr->C = data & 1u;
+            }
+            return (oldc << 31u) | (data >> 1u);
+        }
+        default:
+            logfatal("Unknown shift type: %d (this should never happen)", type)
+    }
+}

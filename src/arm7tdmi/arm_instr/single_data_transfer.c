@@ -44,7 +44,11 @@ void single_data_transfer(arm7tdmi_t* state,
         unimplemented(flags.reg_op != 0, "The documentation told me this was always going to be 0")
 
         logdebug("Doing a shift type %d to the value of r%d by amount %d", flags.shift_type, flags.rm, flags.shift_amount)
-        actual_offset = arm_shift(NULL, flags.shift_type, get_register(state, flags.rm), flags.shift_amount);
+        if (flags.shift_amount == 0) {
+            actual_offset = arm_shift_special_zero_behavior(state, NULL, flags.shift_type, get_register(state, flags.rm));
+        } else {
+            actual_offset = arm_shift(NULL, flags.shift_type, get_register(state, flags.rm), flags.shift_amount);
+        }
     } else {
         actual_offset = (int) offset;
     }

@@ -91,26 +91,7 @@ void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
 
         // Special case when shifting by immediate 0
         if (!flags.r && shift_amount == 0) {
-            logdebug("----handling special case, immediate shift amount 0----")
-            switch (flags.shift_type) {
-                case LSL:
-                    break; // Not affected.
-                case LSR:
-                    // Treat it as LSR#32
-                    operand2 = arm_shift(cpsr, LSR, operand2, 32);
-                    break;
-                case ASR:
-                    operand2 = arm_shift(cpsr, ASR, operand2, 32);
-                    break;
-                case ROR: {
-                    word oldc = state->cpsr.C;
-                    if (cpsr) {
-                        cpsr->C = operand2 & 1u;
-                        operand2 = (oldc << 31u) | (operand2 >> 1u);
-                    }
-                    break;
-                }
-            }
+            operand2 = arm_shift_special_zero_behavior(state, cpsr, flags.shift_type, operand2);
         } else {
             operand2 = arm_shift(cpsr, flags.shift_type, operand2, shift_amount);
         }
