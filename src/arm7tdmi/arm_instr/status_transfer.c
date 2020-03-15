@@ -45,8 +45,6 @@ void psr_transfer(arm7tdmi_t* state,
     } opcode;
     opcode.raw = dt_opcode;
 
-    unimplemented(!opcode.msr, "MRS mode unimplemented.")
-
     if (opcode.msr) {
         field_masks_t field_masks;
         field_masks.raw = dt_rn; // field masks come from the "rn" field in data processing
@@ -94,7 +92,8 @@ void psr_transfer(arm7tdmi_t* state,
     }
     else {
         // MRS
-        logfatal("Hello! This is an MRS instruction!")
+        status_register_t* psr = opcode.spsr ? get_spsr(state) : get_psr(state);
+        set_register(state, dt_rd, psr->raw);
     }
 
 }
