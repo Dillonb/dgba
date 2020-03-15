@@ -28,13 +28,16 @@ void write_word_ioreg(word addr, word value) {
     unimplemented(1, "io register write")
 }
 
+byte open_bus(word addr) {
+    logfatal("Open bus unimplemented")
+}
+
 byte gba_read_byte(word addr) {
     addr &= ~(sizeof(byte) - 1);
     if (addr < GBA_BIOS_SIZE) { // BIOS
         return gbabios_read_byte(addr);
     } else if (addr < 0x01FFFFFF) {
-        logwarn("Tried to read from 0x%08X", addr)
-        logfatal("Tried to read from unused section of RAM in between bios and WRAM")
+        return open_bus(addr);
     } else if (addr < 0x03000000) { // EWRAM
         word index = (addr - 0x02000000) % 0x40000;
         return mem->ewram[index];
@@ -53,14 +56,13 @@ byte gba_read_byte(word addr) {
         // Cartridge
         word adjusted = addr - 0x08000000;
         if (adjusted > mem->rom_size) {
-            logwarn("In valid cartridge space, but read past the end of the ROM. Returning a 0.")
-            return 0x00;
+            return open_bus(addr);
         } else {
             return mem->rom[adjusted];
         }
     }
 
-    logfatal("Something's up, we reached the end of gba_read_byte without getting a value! addr: 0x%08X", addr)
+    return open_bus(addr);
 }
 
 half gba_read_half(word addr) {
