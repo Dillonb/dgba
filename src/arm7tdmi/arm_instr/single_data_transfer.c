@@ -74,15 +74,15 @@ void single_data_transfer(arm7tdmi_t* state,
         logdebug("And that value is 0x%08X", source)
         set_register(state, rd, source);
     } else { // STR
-        unimplemented(rd == 15,
-                      "When R15 is the source register (rd) of a register"
-                      " store operation, the stored value will be the address of"
-                      " the instruction plus 12. Make sure this is happening!")
         logdebug("I'm gonna save r%d to 0x%08X", rd, address)
+        word rddata = get_register(state, rd);
+        if (rd == 15) {
+            rddata += 4;
+        }
         if (b) {
-            state->write_byte(address, get_register(state, rd));
+            state->write_byte(address, rddata);
         } else {
-            state->write_word(address, get_register(state, rd));
+            state->write_word(address, rddata);
         }
     }
 
