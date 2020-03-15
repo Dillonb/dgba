@@ -24,5 +24,27 @@ void multiply(arm7tdmi_t* state, multiply_t* instr) {
 }
 
 void multiply_long(arm7tdmi_t* state, multiply_long_t* instr) {
-    logfatal("Unimplemented: multiply_long")
+    unimplemented(instr->s, "status codes")
+    uint64_t result;
+    if (instr->u) {
+        if (instr->a) { // SMLAL
+            logfatal("SMLAL: u == 1 && a == 1")
+        } else { // SMULL
+            logfatal("SMULL: u == 1 && a == 0")
+        }
+    } else {
+        if (instr->a) { // UMLAL
+            logfatal("UMLAL: u == 0 && a == 1")
+        } else { // UMULL
+            logdebug("UMULL: u == 0 && a == 0")
+            result = get_register(state, instr->rm);
+            result *= get_register(state, instr->rs);
+        }
+    }
+
+    word high = (result >> 32u) & 0xFFFFFFFF;
+    word low = result & 0xFFFFFFFF;
+
+    set_register(state, instr->rdlo, low);
+    set_register(state, instr->rdhi, high);
 }

@@ -50,7 +50,16 @@ typedef struct multiply {
 } multiply_t;
 
 typedef struct multiply_long {
-    unsigned TODO:32;
+    unsigned rm:4;
+    unsigned:4;
+    unsigned rs:4;
+    unsigned rdlo:4;
+    unsigned rdhi:4;
+    bool s:1;
+    bool a:1;
+    bool u:1;
+    unsigned:5;
+    arm_cond_t cond:4;
 } multiply_long_t;
 
 typedef struct single_data_swap {
