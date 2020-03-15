@@ -29,6 +29,7 @@ void write_word_ioreg(word addr, word value) {
 }
 
 byte gba_read_byte(word addr) {
+    addr &= ~(sizeof(byte) - 1);
     if (addr < GBA_BIOS_SIZE) { // BIOS
         return gbabios_read_byte(addr);
     } else if (addr < 0x01FFFFFF) {
@@ -63,6 +64,7 @@ byte gba_read_byte(word addr) {
 }
 
 half gba_read_half(word addr) {
+    addr &= ~(sizeof(half) - 1);
     byte lower = gba_read_byte(addr);
     byte upper = gba_read_byte(addr + 1);
 
@@ -70,6 +72,7 @@ half gba_read_half(word addr) {
 }
 
 void gba_write_byte(word addr, byte value) {
+    addr &= ~(sizeof(byte) - 1);
     if (addr < GBA_BIOS_SIZE) {
         logfatal("Tried to write to the BIOS!")
     } else if (addr < 0x01FFFFFF) {
@@ -102,6 +105,7 @@ void gba_write_byte(word addr, byte value) {
 }
 
 void gba_write_half(word address, half value) {
+    address &= ~(sizeof(half) - 1);
     if (is_ioreg(address)) {
         byte ioreg_size = get_ioreg_size_for_addr(address);
         unimplemented(ioreg_size > sizeof(half), "writing to a too-large ioreg from gba_write_half")
@@ -122,6 +126,7 @@ void gba_write_half(word address, half value) {
 }
 
 word gba_read_word(word addr) {
+    addr &= ~(sizeof(word) - 1);
     word lower = gba_read_half(addr);
     word upper = gba_read_half(addr + 2);
 
@@ -129,6 +134,7 @@ word gba_read_word(word addr) {
 }
 
 void gba_write_word(word address, word value) {
+    address &= ~(sizeof(word) - 1);
     if (is_ioreg(address)) {
         byte ioreg_size = get_ioreg_size_for_addr(address);
         if(ioreg_size == sizeof(word)) {
