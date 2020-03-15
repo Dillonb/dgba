@@ -23,23 +23,41 @@ void multiply(arm7tdmi_t* state, multiply_t* instr) {
     set_register(state, instr->rd, wordresult);
 }
 
+uint64_t sign_extend(uint64_t v, int old, int new) {
+    unimplemented(new < old, "Can't downsize signed values with this function!")
+
+    uint64_t mask = v & (1 << (old - 1));
+    bool s = mask > 0;
+    if (s) {
+        return (v ^ mask) - mask;
+    }
+    else {
+        return v; // No sign bit set, don't need to sign extend
+    }
+}
+
 void multiply_long(arm7tdmi_t* state, multiply_long_t* instr) {
-    unimplemented(instr->s, "status codes")
+    uint64_t rmdata = get_register(state, instr->rm);
+    uint64_t rsdata = get_register(state, instr->rs);
     uint64_t result;
     if (instr->u) {
-        if (instr->a) { // SMLAL
-            logfatal("SMLAL: u == 1 && a == 1")
-        } else { // SMULL
-            logfatal("SMULL: u == 1 && a == 0")
-        }
-    } else {
-        if (instr->a) { // UMLAL
-            logfatal("UMLAL: u == 0 && a == 1")
-        } else { // UMULL
-            logdebug("UMULL: u == 0 && a == 0")
-            result = get_register(state, instr->rm);
-            result *= get_register(state, instr->rs);
-        }
+        rmdata = sign_extend(rmdata, 32, 64);
+        rsdata = sign_extend(rsdata, 32, 64);
+    }
+
+    result = rmdata * rsdata;
+
+    if (instr->a) { // accumulate (add on to what's already set)
+        uint64_t existing = get_register(state, instr->rdhi);
+        existing <<= 32;
+        existing |= get_register(state, instr->rdlo) & 0xFFFFFFFF;
+        result += existing;
+    }
+
+    if (instr->s) {
+        status_register_t* psr = get_psr(state);
+        psr->Z = result == 0;
+        psr->N = result >> 63;
     }
 
     word high = (result >> 32u) & 0xFFFFFFFF;
