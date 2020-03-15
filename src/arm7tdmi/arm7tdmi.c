@@ -337,6 +337,7 @@ int arm_mode_step(arm7tdmi_t* state, arminstr_t* instr) {
                 break;
             case MULTIPLY_LONG:
                 multiply_long(state, &instr->parsed.MULTIPLY_LONG);
+                break;
             case SINGLE_DATA_SWAP:
                 logfatal("Unimplemented instruction type: SINGLE_DATA_SWAP")
             case BRANCH_EXCHANGE:
