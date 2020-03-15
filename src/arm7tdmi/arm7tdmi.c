@@ -16,6 +16,41 @@
 #include "thumb_instr/high_register_operations.h"
 #include "thumb_instr/load_address.h"
 
+const char MODE_NAMES[32][11] = {
+"UNKNOWN",    // 0b00000
+"UNKNOWN",    // 0b00001
+"UNKNOWN",    // 0b00010
+"UNKNOWN",    // 0b00011
+"UNKNOWN",    // 0b00100
+"UNKNOWN",    // 0b00101
+"UNKNOWN",    // 0b00110
+"UNKNOWN",    // 0b00111
+"UNKNOWN",    // 0b01000
+"UNKNOWN",    // 0b01001
+"UNKNOWN",    // 0b01010
+"UNKNOWN",    // 0b01011
+"UNKNOWN",    // 0b01100
+"UNKNOWN",    // 0b01101
+"UNKNOWN",    // 0b01110
+"UNKNOWN",    // 0b01111
+"USER",       // 0b10000
+"FIQ",        // 0b10001
+"IRQ",        // 0b10010
+"SUPERVISOR", // 0b10011
+"UNKNOWN",    // 0b10100
+"UNKNOWN",    // 0b10101
+"UNKNOWN",    // 0b10110
+"ABORT",      // 0b10111
+"UNKNOWN",    // 0b11000
+"UNKNOWN",    // 0b11001
+"UNKNOWN",    // 0b11010
+"UNDEFINED",  // 0b11011
+"UNKNOWN",    // 0b11100
+"UNKNOWN",    // 0b11101
+"UNKNOWN",    // 0b11110
+"SYS",        // 0b11111
+};
+
 void fill_pipe(arm7tdmi_t* state) {
     if (state->cpsr.thumb) {
         state->pipeline[0] = state->read_half(state->pc);
@@ -79,6 +114,16 @@ arm7tdmi_t* init_arm7tdmi(byte (*read_byte)(word),
     state->sp       = 0x03007F00;
     state->lr       = 0x08000000;
     state->cpsr.raw = 0x0000005F;
+
+    for (int r = 0; r < 16; r++) {
+        state->r[r] = 0;
+    }
+    state->highreg_fiq[0] = 0;
+    state->highreg_fiq[1] = 0;
+    state->highreg_fiq[2] = 0;
+    state->highreg_fiq[3] = 0;
+    state->highreg_fiq[4] = 0;
+
     // SPSR raw = 0x00000000;
 
     fill_pipe(state);
@@ -232,10 +277,11 @@ word get_lr(arm7tdmi_t* state) {
 }
 
 void set_register(arm7tdmi_t* state, word index, word newvalue) {
-    unimplemented(state->cpsr.mode == MODE_FIQ && index >= 8 && index <= 12, "Accessing one of R8 - R12 while in FIQ mode - this needs to be banked")
-
     logdebug("Set r%d to 0x%08X", index, newvalue)
-    if (index < 13) {
+
+    if (state->cpsr.mode == MODE_FIQ && index >= 8 && index <= 12) {
+        state->highreg_fiq[index - 8] = newvalue;
+    } else if (index < 13) {
         state->r[index] = newvalue;
     } else if (index == 13) {
         set_sp(state, newvalue);
@@ -249,10 +295,10 @@ void set_register(arm7tdmi_t* state, word index, word newvalue) {
 }
 
 word get_register(arm7tdmi_t* state, word index) {
-    unimplemented(state->cpsr.mode == MODE_FIQ && index >= 8 && index <= 12, "Accessing one of R8 - R12 while in FIQ mode - this needs to be banked")
-
     word value;
-    if (index < 13) {
+    if (state->cpsr.mode == MODE_FIQ && index >= 8 && index <= 12) {
+        value = state->highreg_fiq[index - 8];
+    } else if (index < 13) {
         value = state->r[index];
     } else if (index == 13) {
         value = get_sp(state);
@@ -413,26 +459,33 @@ int thumb_mode_step(arm7tdmi_t* state, thumbinstr_t* instr) {
     return this_step_ticks;
 }
 
+#define FAKELITTLE_HALF(h) ((((h) >> 8u) & 0xFFu) | (((h) << 8u) & 0xFF00u))
+#define FAKELITTLE_WORD(w) (FAKELITTLE_HALF((w) >> 16u) | (FAKELITTLE_HALF((w) & 0xFFFFu)) << 16u)
+
 int arm7tdmi_step(arm7tdmi_t* state) {
     this_step_ticks = 0;
-    logdebug("r0:  %08X   r1: %08X   r2: %08X   r3: %08X", state->r[0], state->r[1], state->r[2], state->r[3])
-    logdebug("r4:  %08X   r5: %08X   r6: %08X   r7: %08X", state->r[4], state->r[5], state->r[6], state->r[7])
-    logdebug("r8:  %08X   r9: %08X  r10: %08X  r11: %08X", state->r[8], state->r[9], state->r[10], state->r[11])
-    logdebug("r12: %08X  r13: %08X  r14: %08X  r15: %08X", state->r[12], state->sp, state->lr, state->pc)
+    logdebug("r0:  %08X   r1: %08X   r2: %08X   r3: %08X", get_register(state, 0), get_register(state, 1), get_register(state, 2), get_register(state, 3))
+    logdebug("r4:  %08X   r5: %08X   r6: %08X   r7: %08X", get_register(state, 4), get_register(state, 5), get_register(state, 6), get_register(state, 7))
+    logdebug("r8:  %08X   r9: %08X  r10: %08X  r11: %08X", get_register(state, 8), get_register(state, 9), get_register(state, 10), get_register(state, 11))
+    logdebug("r12: %08X  r13: %08X  r14: %08X  r15: %08X", get_register(state, 12), get_register(state, 13), get_register(state, 14), get_register(state, 15))
     logdebug("cpsr: %08X [%s%s%s%s%s%s%s]", state->cpsr.raw, cpsrflag(state->cpsr.N, "N"), cpsrflag(state->cpsr.Z, "Z"),
              cpsrflag(state->cpsr.C, "C"), cpsrflag(state->cpsr.V, "V"), cpsrflag(state->cpsr.disable_irq, "I"),
              cpsrflag(state->cpsr.disable_fiq, "F"), cpsrflag(state->cpsr.thumb, "T"))
+
+     logdebug("mode: %s [0x%2X]", MODE_NAMES[state->cpsr.mode], state->cpsr.mode)
      if (state->cpsr.thumb) {
          thumbinstr_t instr = next_thumb_instr(state);
          state->instr = instr.raw;
          word adjusted_pc = state->pc - 4;
-         logwarn("adjusted pc: 0x%08X read: 0x%04X", adjusted_pc, instr.raw)
+         half fakelittleendian = FAKELITTLE_HALF(instr.raw);
+         logwarn("adjusted pc: 0x%08X read: (big: 0x%04X) (little: 0x%04X)", adjusted_pc, instr.raw, fakelittleendian)
          return thumb_mode_step(state, &instr);
      } else {
          arminstr_t instr = next_arm_instr(state);
          state->instr = instr.raw;
          word adjusted_pc = state->pc - 8;
-         logwarn("adjusted pc: 0x%08X read: 0x%08X", adjusted_pc, instr.raw)
+         word fakelittleendian = FAKELITTLE_WORD(instr.raw);
+         logwarn("adjusted pc: 0x%08X read: (big: 0x%08X) (little: 0x%08X)", adjusted_pc, instr.raw, fakelittleendian)
          return arm_mode_step(state, &instr);
      }
 }

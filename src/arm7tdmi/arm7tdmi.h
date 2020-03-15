@@ -10,6 +10,7 @@
 #define MODE_ABORT 0b10111
 #define MODE_IRQ 0b10010
 #define MODE_UNDEFINED 0b11011
+#define MODE_SYSTEM 0b11111
 
 typedef union status_register {
     word raw;
@@ -42,9 +43,12 @@ typedef struct arm7tdmi {
     // Registers
     // http://problemkaputt.de/gbatek.htm#armcpuflagsconditionfieldcond
     word r[13]; // General registers. Shared between modes.
+
     // !!!!! NOTE !!!!!
     // r8-r12 have separate values for FIQ mode, but that's only called by hardware debuggers
-    // There is no way to trigger it from software, so they have been omitted.
+    // There is no way to trigger it from software, other than setting the mode bits directly.
+    word highreg_fiq[5];
+
     // These are technically r13, r14, and r15.
     word sp;
     word sp_fiq;

@@ -56,9 +56,6 @@ void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
         }
     }
     else { // Operand2 comes from another register
-        if (rn == 15) {
-            rn += 4;
-        }
         byte shift_amount;
 
         nonimmediate_flags_t flags;
@@ -75,6 +72,9 @@ void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
             unimplemented(flags.shift_register.rs == 15, "r15 is a special case")
             shift_amount = get_register(state, flags.shift_register.rs) & 0xFFu; // Only lowest 8 bits used
             logdebug("Shift amount (r%d): 0x%02X", flags.shift_register.rs, shift_amount)
+            if (rn == 15) {
+                rndata += 4;
+            }
         }
         // Shift by immediate
         else {
@@ -243,5 +243,13 @@ void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
         }
         default:
             logfatal("DATA_PROCESSING: unknown opcode: 0x%X", instr->opcode)
+    }
+
+    // Because above we always set s to false if rd == 15, we have to use the original one from the instruction
+    if (rd == 15 && instr->s) {
+        if (state->cpsr.mode == MODE_USER) {
+            logfatal("rd == 15 with s bit set should not be used in user mode!")
+        }
+        set_psr(state, get_spsr(state)->raw);
     }
 }
