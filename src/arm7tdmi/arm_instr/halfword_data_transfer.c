@@ -8,12 +8,18 @@ word rotate_right(word value, word amount) {
 }
 
 void halfword_dt_io(arm7tdmi_t* state, bool p, bool u, bool w, bool l, byte rn, byte rd, word offset, bool s, bool h) {
-    unimplemented(p == 0 && w == 1, "When p is 0, w must be 1!")
+    unimplemented(p == 0 && w == 1, "When p is 0, this bit must also always be 0!")
+    if (p == 0) { w = true; } // Writeback always enabled when p == 0
     unimplemented(s == 0 && h == 0, "This is actually a SWP instruction, something went wrong and execution shouldn't be here")
-    unimplemented(w, "writeback")
-    unimplemented(!u, "up flag not set")
 
-    word addr = get_register(state, rn) + offset;
+    word addr = get_register(state, rn);
+    if (p) {
+        if (u) {
+            addr += offset;
+        } else {
+            addr -= offset;
+        }
+    }
 
     if (l) {
         if (!s && h) { // LDRH: Load unsigned halfword (zero extended)
@@ -45,6 +51,16 @@ void halfword_dt_io(arm7tdmi_t* state, bool p, bool u, bool w, bool l, byte rn, 
         }
     }
 
+    if (w && (!l || rd != rn)) {
+        if (!p) {
+            if (u) {
+                addr += offset;
+            } else {
+                addr -= offset;
+            }
+        }
+        set_register(state, rn, addr);
+    }
 }
 
 void halfword_dt_ro(arm7tdmi_t* state, bool p, bool u, bool w, bool l, byte rn, byte rd, bool s, bool h, byte rm) {
