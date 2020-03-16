@@ -120,17 +120,17 @@ arm7tdmi_t* init_arm7tdmi(byte (*read_byte)(word),
         state->r[r] = 0;
     }
 
-    state->sp_fiq = 0x03007F00;
-    state->sp_svc = 0x03007F00;
-    state->sp_abt = 0x03007F00;
-    state->sp_irq = 0x03007F00;
-    state->sp_und = 0x03007F00;
+    state->sp_fiq = 0x00000000;
+    state->sp_svc = 0x00000000;
+    state->sp_abt = 0x00000000;
+    state->sp_irq = 0x00000000;
+    state->sp_und = 0x00000000;
 
-    state->lr_fiq = 0x08000000;
-    state->lr_svc = 0x08000000;
-    state->lr_abt = 0x08000000;
-    state->lr_irq = 0x08000000;
-    state->lr_und = 0x08000000;
+    state->lr_fiq = 0x00000000;
+    state->lr_svc = 0x00000000;
+    state->lr_abt = 0x00000000;
+    state->lr_irq = 0x00000000;
+    state->lr_und = 0x00000000;
 
     state->highreg_fiq[0] = 0;
     state->highreg_fiq[1] = 0;
