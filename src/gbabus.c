@@ -49,6 +49,7 @@ word open_bus(word addr) {
     word result = cpu->pipeline[1];
     result >>= ((addr & 0b11u) << 3u);
 
+    logwarn("RETURNING FROM OPEN BUS AT ADDRESS 0x%08X: 0x%08X", addr, result);
     return result;
 }
 
