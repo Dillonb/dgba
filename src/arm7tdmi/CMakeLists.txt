@@ -1,6 +1,7 @@
 add_library(arm7tdmi
         arm7tdmi.c arm7tdmi.h
         shifts.c shifts.h
+        sign_extension.c sign_extension.h
 
         arm_instr/arm_instr.c arm_instr/arm_instr.h
         arm_instr/data_processing.c arm_instr/data_processing.h

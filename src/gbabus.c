@@ -30,8 +30,26 @@ void write_word_ioreg(word addr, word value) {
     unimplemented(1, "io register write")
 }
 
-byte open_bus(word addr) {
-    logfatal("Open bus unimplemented")
+bool is_open_bus(word address) {
+    if (address < GBA_BIOS_SIZE) {
+        return false;
+    } else if (address < 0x01FFFFFF) {
+        return true;
+    } else if (address < 0x08000000) {
+        return false;
+    } else if (address < 0x08000000 + mem->rom_size) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
+word open_bus(word addr) {
+    unimplemented(cpu->cpsr.thumb, "Open bus unimplemented in thumb mode")
+    word result = cpu->pipeline[1];
+    result >>= ((addr & 0b11u) << 3u);
+
+    return result;
 }
 
 byte gba_read_byte(word addr) {
@@ -69,6 +87,9 @@ byte gba_read_byte(word addr) {
 
 half gba_read_half(word addr) {
     addr &= ~(sizeof(half) - 1);
+    if (is_open_bus(addr)) {
+        return open_bus(addr);
+    }
     byte lower = gba_read_byte(addr);
     byte upper = gba_read_byte(addr + 1);
 
@@ -131,6 +152,9 @@ void gba_write_half(word address, half value) {
 
 word gba_read_word(word addr) {
     addr &= ~(sizeof(word) - 1);
+    if (is_open_bus(addr)) {
+        return open_bus(addr);
+    }
     word lower = gba_read_half(addr);
     word upper = gba_read_half(addr + 2);
 
