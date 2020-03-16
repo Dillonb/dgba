@@ -63,7 +63,14 @@ typedef struct multiply_long {
 } multiply_long_t;
 
 typedef struct single_data_swap {
-    unsigned TODO:32;
+    unsigned rm:4;
+    unsigned:8;
+    unsigned rd:4;
+    unsigned rn:4;
+    unsigned:2;
+    bool b:1;
+    unsigned:5;
+    arm_cond_t cond:4;
 } single_data_swap_t;
 
 typedef struct branch_exchange {
