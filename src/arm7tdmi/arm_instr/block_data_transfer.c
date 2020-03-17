@@ -3,7 +3,6 @@
 
 void block_data_transfer(arm7tdmi_t* state, block_data_transfer_t* instr) {
     unimplemented(instr->l, "block data transfer: load from memory")
-    unimplemented(instr->u && instr->w, "block data transfer: write back when u set")
     unimplemented(instr->rlist == 0, "special case when rlist == 0")
 
     word address = get_register(state, instr->rn);
@@ -18,7 +17,9 @@ void block_data_transfer(arm7tdmi_t* state, block_data_transfer_t* instr) {
         // This is important when we're writing to memory-mapped io registers.
         // We simulate this behavior by setting the base to where it should _end_,
         // and growing upwards.
-        // Also, flip the p flag since we'll be doing this in reverse.
+
+        // Also, since we'll be doing everything in reverse, do the writeback operation now,
+        // and flip the p flag.
         p = !p;
         address -= 4 * num_registers;
         if (instr->w) {
@@ -51,6 +52,12 @@ void block_data_transfer(arm7tdmi_t* state, block_data_transfer_t* instr) {
             state->write_word(address, get_register(state, rt));
             address += after_inc;
         }
+    }
+
+    // If we're growing up, that means we just hit the highest address, and should writeback if that flag is also set.
+    // If we're growing down, we wrote back at the beginning.
+    if (instr->u && instr->w) {
+        set_register(state, instr->rn, address);
     }
 
     if (instr->s) {
