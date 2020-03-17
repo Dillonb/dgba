@@ -46,7 +46,21 @@ void block_data_transfer(arm7tdmi_t* state, block_data_transfer_t* instr) {
         if (instr->l) {
             set_pc(state, state->read_word(address));
         } else {
-            unimplemented(!instr->l, "special case when rlist == 0 (str)")
+            word weird_address;
+            if (instr->u) {
+                if (instr->p) {
+                    weird_address = address + 0x4;
+                } else {
+                    weird_address = address;
+                }
+            } else {
+                if (instr->p) {
+                    weird_address = address - 0x40;
+                } else {
+                    weird_address = address - 0x3C;
+                }
+            }
+            state->write_word(weird_address, get_register(state, 15) + 4);
         }
         if (instr->u) {
             address += 0x40;
