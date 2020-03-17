@@ -12,14 +12,17 @@ void single_data_swap(arm7tdmi_t* state, single_data_swap_t* instr) {
             get_register(state, instr->rm), get_register(state, instr->rd), get_register(state, instr->rn));
 
     word address = get_register(state, instr->rn);
+    word rmdata = get_register(state, instr->rm);
 
     if (instr->b) {
         set_register(state, instr->rd, state->read_byte(address));
-        state->write_byte(address, get_register(state, instr->rm));
+        logdebug("Saving the value of r%d [0x%08X] to 0x%08X", instr->rm, rmdata, address);
+        state->write_byte(address, rmdata);
     } else {
         word temp = state->read_word(address);
         temp = arm_ror(NULL, temp, (address & 3u) << 3);
         set_register(state, instr->rd, temp);
-        state->write_word(address, get_register(state, instr->rm));
+        logdebug("Saving the value of r%d [0x%08X] to 0x%08X", instr->rm, rmdata, address);
+        state->write_word(address, rmdata);
     }
 }
