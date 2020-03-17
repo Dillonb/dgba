@@ -60,7 +60,11 @@ void block_data_transfer(arm7tdmi_t* state, block_data_transfer_t* instr) {
                 printf("Will transfer r%d\n", rt);
                 address += before_inc;
                 logdebug("Transferring r%d to 0x%08X", rt, address)
-                state->write_word(address, get_register(state, rt));
+                word rtdata = get_register(state, rt);
+                if (rt == 15) {
+                    rtdata += 4;
+                }
+                state->write_word(address, rtdata);
                 address += after_inc;
             }
         }
