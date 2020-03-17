@@ -2,7 +2,6 @@
 #include "../../common/log.h"
 
 void block_data_transfer(arm7tdmi_t* state, block_data_transfer_t* instr) {
-    unimplemented(instr->rlist == 0, "special case when rlist == 0")
 
     word address = get_register(state, instr->rn);
 
@@ -42,30 +41,44 @@ void block_data_transfer(arm7tdmi_t* state, block_data_transfer_t* instr) {
         state->cpsr.mode = MODE_USER;
     }
 
-    if (instr->l) {
-        for (unsigned int rt = 0; rt <= 15; rt++) {
-            if ((instr->rlist >> rt & 1) == 1) {
-                unimplemented(rt == instr->rn, "transferring rn in block data transfer")
-                printf("Will transfer r%d\n", rt);
-                address += before_inc;
-                logdebug("Transferring 0x%08X to r%d", address, rt)
-                set_register(state, rt, state->read_word(address));
-                address += after_inc;
-            }
+    if (instr->rlist == 0u) {
+        // Weird stuff happens when you don't specify any registers to transfer
+        if (instr->l) {
+            set_pc(state, state->read_word(address));
+        } else {
+            unimplemented(!instr->l, "special case when rlist == 0 (str)")
+        }
+        if (instr->u) {
+            address += 0x40;
+        } else {
+            address -= 0x40;
         }
     } else {
-        for (unsigned int rt = 0; rt <= 15; rt++) {
-            if ((instr->rlist >> rt & 1) == 1) {
-                unimplemented(rt == instr->rn, "transferring rn in block data transfer")
-                printf("Will transfer r%d\n", rt);
-                address += before_inc;
-                logdebug("Transferring r%d to 0x%08X", rt, address)
-                word rtdata = get_register(state, rt);
-                if (rt == 15) {
-                    rtdata += 4;
+        if (instr->l) {
+            for (unsigned int rt = 0; rt <= 15; rt++) {
+                if ((instr->rlist >> rt & 1) == 1) {
+                    unimplemented(rt == instr->rn, "transferring rn in block data transfer")
+                    printf("Will transfer r%d\n", rt);
+                    address += before_inc;
+                    logdebug("Transferring 0x%08X to r%d", address, rt)
+                    set_register(state, rt, state->read_word(address));
+                    address += after_inc;
                 }
-                state->write_word(address, rtdata);
-                address += after_inc;
+            }
+        } else {
+            for (unsigned int rt = 0; rt <= 15; rt++) {
+                if ((instr->rlist >> rt & 1) == 1) {
+                    unimplemented(rt == instr->rn, "transferring rn in block data transfer")
+                    printf("Will transfer r%d\n", rt);
+                    address += before_inc;
+                    logdebug("Transferring r%d to 0x%08X", rt, address)
+                    word rtdata = get_register(state, rt);
+                    if (rt == 15) {
+                        rtdata += 4;
+                    }
+                    state->write_word(address, rtdata);
+                    address += after_inc;
+                }
             }
         }
     }
