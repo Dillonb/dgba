@@ -7,17 +7,39 @@
 gbamem_t* mem;
 arm7tdmi_t* cpu;
 
+bool interrupt_master_enable = false;
+
 void init_gbabus(gbamem_t* new_mem, arm7tdmi_t* new_cpu) {
     mem = new_mem;
     cpu = new_cpu;
 }
 
 void write_byte_ioreg(word addr, byte value) {
-    logwarn("Write to unknown (but valid) byte ioreg addr 0x%08X == 0x%02X", addr, value)
+    word regnum = addr & 0xFFF;
+    switch (regnum) {
+        case IO_IME: {
+            interrupt_master_enable = value & 1;
+            if (interrupt_master_enable) {
+                logwarn("Enabled interrupts!")
+            } else {
+                logwarn("Disabled all interrupts")
+            }
+            break;
+        }
+        default:
+            logfatal("Write to unknown (but valid) byte ioreg addr 0x%08X == 0x%02X", addr, value)
+    }
 }
 
 void write_half_ioreg(word addr, half value) {
-    logwarn("Write to unknown (but valid) half ioreg addr 0x%08X == 0x%04X", addr, value)
+    word regnum = addr & 0xFFF;
+    switch (regnum) {
+        case IO_BG0CNT:
+            logwarn("Ignoring write to BG0CNT register")
+            break;
+        default:
+            logfatal("Write to unknown (but valid) half ioreg addr 0x%08X == 0x%04X", addr, value)
+    }
 }
 
 void write_word_ioreg(word addr, word value) {
@@ -70,6 +92,13 @@ byte gba_read_byte(word addr) {
     } else if (addr < 0x05000000) {
         logwarn("Tried to read from 0x%08X", addr)
         unimplemented(1, "Tried to read from unused portion of general internal memory")
+    } else if (addr < 0x06000000) { // Palette RAM
+        word index = (addr - 0x5000000) % 0x400;
+        return mem->pram[index];
+    } else if (addr < 0x07000000) {
+        word index = addr - 0x06000000;
+        unimplemented(index > 0x17FFF, "VRAM mirroring")
+        return mem->vram[index];
     } else if (addr < 0x08000000) {
         logwarn("Tried to read from 0x%08X", addr)
         unimplemented(1, "Read from internal display memory address")
@@ -118,7 +147,9 @@ void gba_write_byte(word addr, byte value) {
         word index = (addr - 0x5000000) % 0x400;
         mem->pram[index] = value;
     } else if (addr < 0x07000000) {
-        logfatal("VRAM write")
+        word index = addr - 0x06000000;
+        unimplemented(index > 0x17FFF, "VRAM mirroring")
+        mem->vram[index] = value;
     } else if (addr < 0x08000000) {
         logwarn("Tried to write to 0x%08X", addr)
         unimplemented(1, "Write to internal display memory address")
