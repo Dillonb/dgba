@@ -7,9 +7,9 @@
 
 void init_gbabus(gbamem_t* new_mem, arm7tdmi_t* new_cpu);
 byte gba_read_byte(word addr);
-half gba_read_half(word addr);
+half gba_read_half(word address);
 void gba_write_byte(word addr, byte value);
 void gba_write_half(word address, half value);
-word gba_read_word(word addr);
+word gba_read_word(word address);
 void gba_write_word(word address, word value);
 #endif

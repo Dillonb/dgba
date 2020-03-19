@@ -58,6 +58,21 @@ void write_word_ioreg(word addr, word value) {
     unimplemented(1, "io register write")
 }
 
+word read_word_ioreg(word addr) {
+    logfatal("read from unknown (but valid) word ioreg addr 0x%08x", addr)
+}
+
+half read_half_ioreg(word addr) {
+    word regnum = addr & 0xFFF;
+    switch (regnum) {
+        case IO_VCOUNT:
+            logfatal("Read from VCount register. This is supposed to return what scanline we're on")
+            break;
+        default:
+            logfatal("read from unknown (but valid) half ioreg addr 0x%08x", addr)
+    }
+}
+
 bool is_open_bus(word address) {
     if (address < GBA_BIOS_SIZE) {
         return false;
@@ -121,13 +136,24 @@ byte gba_read_byte(word addr) {
     return open_bus(addr);
 }
 
-half gba_read_half(word addr) {
-    addr &= ~(sizeof(half) - 1);
-    if (is_open_bus(addr)) {
-        return open_bus(addr);
+half gba_read_half(word address) {
+    address &= ~(sizeof(half) - 1);
+    if (is_ioreg(address)) {
+        byte ioreg_size = get_ioreg_size_for_addr(address);
+        unimplemented(ioreg_size > sizeof(half), "Reading from a too-large ioreg from gba_read_half")
+        if (ioreg_size == sizeof(half)) {
+            return read_half_ioreg(address);
+        } else if (ioreg_size == 0) {
+            // Unused io register
+            logfatal("Read from unused half size ioregister!")
+        }
     }
-    byte lower = gba_read_byte(addr);
-    byte upper = gba_read_byte(addr + 1);
+
+    if (is_open_bus(address)) {
+        return open_bus(address);
+    }
+    byte lower = gba_read_byte(address);
+    byte upper = gba_read_byte(address + 1);
 
     return (upper << 8u) | lower;
 }
@@ -188,13 +214,23 @@ void gba_write_half(word address, half value) {
     gba_write_byte(address + 1, upper);
 }
 
-word gba_read_word(word addr) {
-    addr &= ~(sizeof(word) - 1);
-    if (is_open_bus(addr)) {
-        return open_bus(addr);
+word gba_read_word(word address) {
+    address &= ~(sizeof(word) - 1);
+
+    if (is_ioreg(address)) {
+        byte ioreg_size = get_ioreg_size_for_addr(address);
+        if(ioreg_size == sizeof(word)) {
+            return read_word_ioreg(address);
+        } else if (ioreg_size == 0) {
+            logfatal("Read from unused word size ioregister!")
+        }
+        // Otherwise, it'll be smaller than a word, and we'll read each part from the respective registers.
     }
-    word lower = gba_read_half(addr);
-    word upper = gba_read_half(addr + 2);
+    if (is_open_bus(address)) {
+        return open_bus(address);
+    }
+    word lower = gba_read_half(address);
+    word upper = gba_read_half(address + 2);
 
     return (upper << 16u) | lower;
 }

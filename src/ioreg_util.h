@@ -8,9 +8,10 @@
 #define mirror_ioreg(addr) ( ((addr & 0xFF00FFFFu) == 0x04000800u) ? 0x04000800u : addr )
 #define ioreg_size_index(addr) (mirror_ioreg(addr) - 0x04000000u)
 
-#define IO_IME     0x208
-#define IO_BG0CNT  0x008
 #define IO_DISPCNT 0x000
+#define IO_VCOUNT  0x006
+#define IO_BG0CNT  0x008
+#define IO_IME     0x208
 
 #define IO_UNDOCUMENTED_GREEN_SWAP 0x002
 
