@@ -34,6 +34,12 @@ void write_byte_ioreg(word addr, byte value) {
 void write_half_ioreg(word addr, half value) {
     word regnum = addr & 0xFFF;
     switch (regnum) {
+        case IO_DISPCNT:
+            logwarn("Ignoring write to DISPCNT register")
+            break;
+        case IO_UNDOCUMENTED_GREEN_SWAP:
+            logwarn("Ignoring write to Green Swap register")
+            break;
         case IO_BG0CNT:
             logwarn("Ignoring write to BG0CNT register")
             break;

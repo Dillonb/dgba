@@ -8,8 +8,11 @@
 #define mirror_ioreg(addr) ( ((addr & 0xFF00FFFFu) == 0x04000800u) ? 0x04000800u : addr )
 #define ioreg_size_index(addr) (mirror_ioreg(addr) - 0x04000000u)
 
-#define IO_IME    0x208
-#define IO_BG0CNT 0x8
+#define IO_IME     0x208
+#define IO_BG0CNT  0x008
+#define IO_DISPCNT 0x000
+
+#define IO_UNDOCUMENTED_GREEN_SWAP 0x002
 
 // Offset by 0x4000000 - subtract that to get the index to this array
 // In the case of >1 sizes, % by the value returned to get the base.
