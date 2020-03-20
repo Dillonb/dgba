@@ -122,8 +122,9 @@ byte gba_read_byte(word addr) {
         unimplemented(index > 0x17FFF, "VRAM mirroring")
         return mem->vram[index];
     } else if (addr < 0x08000000) {
-        logwarn("Tried to read from 0x%08X", addr)
-        unimplemented(1, "Read from internal display memory address")
+        word index = addr - 0x08000000;
+        index %= OAM_SIZE;
+        return mem->oam[index];
     } else if (addr < 0x0E00FFFF) {
         // Cartridge
         word adjusted = addr - 0x08000000;
@@ -184,8 +185,9 @@ void gba_write_byte(word addr, byte value) {
         unimplemented(index > 0x17FFF, "VRAM mirroring")
         mem->vram[index] = value;
     } else if (addr < 0x08000000) {
-        logwarn("Tried to write to 0x%08X", addr)
-        unimplemented(1, "Write to internal display memory address")
+        word index = addr - 0x08000000;
+        index %= OAM_SIZE;
+        mem->oam[index] = value;
     } else if (addr < 0x0E00FFFF) {
         logwarn("Tried to write to 0x%08X", addr)
         unimplemented(1, "Write to cartridge address")
