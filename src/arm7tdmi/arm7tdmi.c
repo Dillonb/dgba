@@ -491,21 +491,25 @@ int arm7tdmi_step(arm7tdmi_t* state) {
              cpsrflag(state->cpsr.disable_fiq, "F"), cpsrflag(state->cpsr.thumb, "T"))
 
      logdebug("mode: %s [0x%2X]", MODE_NAMES[state->cpsr.mode], state->cpsr.mode)
+     int cycles;
      if (state->cpsr.thumb) {
          thumbinstr_t instr = next_thumb_instr(state);
          state->instr = instr.raw;
          word adjusted_pc = state->pc - 4;
          half fakelittleendian = FAKELITTLE_HALF(instr.raw);
          logwarn("adjusted pc: 0x%08X read: (big: 0x%04X) (little: 0x%04X)", adjusted_pc, instr.raw, fakelittleendian)
-         return thumb_mode_step(state, &instr);
+         cycles = thumb_mode_step(state, &instr);
      } else {
          arminstr_t instr = next_arm_instr(state);
          state->instr = instr.raw;
          word adjusted_pc = state->pc - 8;
          word fakelittleendian = FAKELITTLE_WORD(instr.raw);
          logwarn("adjusted pc: 0x%08X read: (big: 0x%08X) (little: 0x%08X)", adjusted_pc, instr.raw, fakelittleendian)
-         return arm_mode_step(state, &instr);
+         cycles = arm_mode_step(state, &instr);
      }
+
+    // Assume a step of 0 cycles is an unknown number of cycles. Consider it 1 cycle
+     return cycles == 0 ? 1 : cycles;
 }
 
 status_register_t* get_psr(arm7tdmi_t* state) {

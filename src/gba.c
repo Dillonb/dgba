@@ -40,7 +40,8 @@ int main(int argc, char** argv) {
                                     gba_write_byte,
                                     gba_write_half,
                                     gba_write_word);
-    init_gbabus(mem, cpu);
+    gba_ppu_t* ppu = init_ppu();
+    init_gbabus(mem, cpu, ppu);
 
     loginfo("ROM loaded: %lu bytes", mem->rom_size)
     loginfo("Beginning CPU loop")

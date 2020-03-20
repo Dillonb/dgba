@@ -19,7 +19,9 @@ int main(int argc, char** argv) {
                                     gba_write_half,
                                     gba_write_word);
 
-    init_gbabus(mem, cpu);
+    gba_ppu_t* ppu = init_ppu();
+
+    init_gbabus(mem, cpu, ppu);
     skip_bios(cpu);
 
     loginfo("ROM loaded: %lu bytes", mem->rom_size)

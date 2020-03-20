@@ -6,12 +6,14 @@
 
 gbamem_t* mem;
 arm7tdmi_t* cpu;
+gba_ppu_t* ppu;
 
 bool interrupt_master_enable = false;
 
-void init_gbabus(gbamem_t* new_mem, arm7tdmi_t* new_cpu) {
+void init_gbabus(gbamem_t* new_mem, arm7tdmi_t* new_cpu, gba_ppu_t* new_ppu) {
     mem = new_mem;
     cpu = new_cpu;
+    ppu = new_ppu;
 }
 
 void write_byte_ioreg(word addr, byte value) {
@@ -35,7 +37,8 @@ void write_half_ioreg(word addr, half value) {
     word regnum = addr & 0xFFF;
     switch (regnum) {
         case IO_DISPCNT:
-            logwarn("Ignoring write to DISPCNT register")
+            write_dispcnt(ppu, value);
+            logwarn("Write to DISPCNT register")
             break;
         case IO_UNDOCUMENTED_GREEN_SWAP:
             logwarn("Ignoring write to Green Swap register")

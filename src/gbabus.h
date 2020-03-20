@@ -4,8 +4,9 @@
 #include "common/util.h"
 #include "gbamem.h"
 #include "arm7tdmi/arm7tdmi.h"
+#include "ppu.h"
 
-void init_gbabus(gbamem_t* new_mem, arm7tdmi_t* new_cpu);
+void init_gbabus(gbamem_t* new_mem, arm7tdmi_t* new_cpu, gba_ppu_t* new_ppu);
 byte gba_read_byte(word addr);
 half gba_read_half(word address);
 void gba_write_byte(word addr, byte value);
