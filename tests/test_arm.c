@@ -20,6 +20,7 @@ typedef struct cpu_log {
     word instruction;
     status_register_t cpsr;
     word r[16];
+    word cycles;
 } cpu_log_t;
 
 void load_log(const char* filename, int lines, cpu_log_t* buffer) {
@@ -44,6 +45,10 @@ void load_log(const char* filename, int lines, cpu_log_t* buffer) {
             fgets(buf, 9, fp);
             log.r[r] = strtol(buf, NULL, 16);
         }
+
+        fseek(fp, 1, SEEK_CUR); // skip ,
+        fgets(buf, 4, fp);
+        log.cycles = strtol(buf, NULL, 10);
 
         fseek(fp, 1, SEEK_CUR); // Skip newline character
 
@@ -83,6 +88,8 @@ int main(int argc, char** argv) {
     loginfo("Beginning CPU loop")
     int step = 0;
 
+    int cycles = 0;
+
     while(true) {
         word adjusted_pc = cpu->pc - (cpu->cpsr.thumb ? 4 : 8);
         // Register values in the log are BEFORE EXECUTING the instruction on that line
@@ -115,7 +122,9 @@ int main(int argc, char** argv) {
         ASSERT_EQUAL(adjusted_pc, "r15",  lines[step].r[15],    get_register(cpu, 15))
         ASSERT_EQUAL(adjusted_pc, "CPSR", lines[step].cpsr.raw, cpu->cpsr.raw)
 
-        arm7tdmi_step(cpu);
+        ASSERT_EQUAL(adjusted_pc, "cycles", lines[step].cycles, cycles)
+
+        cycles = arm7tdmi_step(cpu);
         ASSERT_EQUAL(adjusted_pc, "instruction", lines[step].instruction, cpu->instr)
         step++;
 
