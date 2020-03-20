@@ -16,3 +16,14 @@ gba_ppu_t* init_ppu() {
 
     return ppu;
 }
+
+void ppu_step(gba_ppu_t* ppu) {
+    ppu->x++;
+    if (ppu->x >= GBA_SCREEN_X + GBA_SCREEN_HBLANK) {
+        ppu->x = 0;
+        ppu->y++;
+        if (ppu->y > GBA_SCREEN_Y + GBA_SCREEN_VBLANK) {
+            ppu->y = 0;
+        }
+    }
+}

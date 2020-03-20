@@ -69,8 +69,7 @@ half read_half_ioreg(word addr) {
     word regnum = addr & 0xFFF;
     switch (regnum) {
         case IO_VCOUNT:
-            logfatal("Read from VCount register. This is supposed to return what scanline we're on")
-            break;
+            return ppu->y;
         default:
             logfatal("read from unknown (but valid) half ioreg addr 0x%08x", addr)
     }

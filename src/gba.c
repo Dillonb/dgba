@@ -46,11 +46,14 @@ int main(int argc, char** argv) {
     loginfo("ROM loaded: %lu bytes", mem->rom_size)
     loginfo("Beginning CPU loop")
 
+    int cycles = 0;
+
     while(true) {
-        arm7tdmi_step(cpu);
+        cycles = (cycles + arm7tdmi_step(cpu)) % 4;
+        if (cycles == 0) {
+            ppu_step(ppu);
+        }
     }
-
-
 
     cflags_free(flags);
     return 0;
