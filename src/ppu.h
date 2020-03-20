@@ -28,6 +28,10 @@ typedef union DISPCNT {
     half raw;
 } DISPCNT_t;
 
+typedef union BG0CNT {
+    half raw;
+} BG0CNT_t;
+
 typedef struct color {
     byte r;
     byte g;
@@ -41,9 +45,11 @@ typedef struct gba_ppu {
     color_t screen[GBA_SCREEN_X][GBA_SCREEN_Y];
     // Registers
     DISPCNT_t DISPCNT;
+    BG0CNT_t BG0CNT;
 } gba_ppu_t;
 
 void write_dispcnt(gba_ppu_t* state, half value);
+void write_bg0cnt(gba_ppu_t* state, half value);
 gba_ppu_t* init_ppu();
 void ppu_step(gba_ppu_t* ppu);
 

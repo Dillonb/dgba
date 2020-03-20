@@ -38,13 +38,12 @@ void write_half_ioreg(word addr, half value) {
     switch (regnum) {
         case IO_DISPCNT:
             write_dispcnt(ppu, value);
-            logwarn("Write to DISPCNT register")
             break;
         case IO_UNDOCUMENTED_GREEN_SWAP:
             logwarn("Ignoring write to Green Swap register")
             break;
         case IO_BG0CNT:
-            logwarn("Ignoring write to BG0CNT register")
+            write_bg0cnt(ppu, value);
             break;
         default:
             logfatal("Write to unknown (but valid) half ioreg addr 0x%08X == 0x%04X", addr, value)

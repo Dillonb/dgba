@@ -6,6 +6,11 @@ void write_dispcnt(gba_ppu_t* state, half value) {
     logwarn("DISPCNT write!")
 }
 
+void write_bg0cnt(gba_ppu_t* state, half value) {
+    state->BG0CNT.raw = value;
+    logwarn("BG0CNT write!")
+}
+
 gba_ppu_t* init_ppu() {
     gba_ppu_t* ppu = malloc(sizeof(gba_ppu_t));
 
