@@ -72,12 +72,64 @@ typedef struct pc_relative_load {
     unsigned:5;
 } pc_relative_load_t;
 
+typedef struct load_store_ro {
+    unsigned todo:16;
+} load_store_ro_t;
+
+typedef struct load_store_byte_halfword {
+    unsigned todo:16;
+} load_store_byte_halfword_t;
+
+typedef struct load_store_io {
+    unsigned todo:16;
+} load_store_io_t;
+
+typedef struct load_store_halfword {
+    unsigned todo:16;
+} load_store_halfword_t;
+
+typedef struct sp_relative_load_store {
+    unsigned todo:16;
+} sp_relative_load_store_t;
+
 typedef struct load_address {
     unsigned word8:8;
     unsigned rd:3;
     bool sp:1;
     unsigned:4;
 } load_address_t;
+
+typedef struct add_offset_to_stack_pointer {
+    unsigned todo:16;
+} add_offset_to_stack_pointer_t;
+
+typedef struct push_pop_registers {
+    unsigned todo:16;
+} push_pop_registers_t;
+
+typedef struct multiple_load_store {
+    unsigned todo:16;
+} multiple_load_store_t;
+
+typedef struct conditional_branch {
+    unsigned todo:16;
+} conditional_branch_t;
+
+typedef struct thumb_software_interrupt {
+    unsigned todo:16;
+} thumb_software_interrupt_t;
+
+typedef struct unconditional_branch {
+    unsigned todo:16;
+} unconditional_branch_t;
+
+typedef struct long_branch_link {
+    unsigned todo:16;
+} long_branch_link_t;
+
+typedef struct thumb_undefined {
+    unsigned todo:16;
+} thumb_undefined_t;
 
 typedef union thumbinstr {
     move_shifted_register_t MOVE_SHIFTED_REGISTER;
@@ -86,7 +138,20 @@ typedef union thumbinstr {
     alu_operations_t ALU_OPERATIONS;
     high_register_operations_t HIGH_REGISTER_OPERATIONS;
     pc_relative_load_t PC_RELATIVE_LOAD;
+    load_store_ro_t LOAD_STORE_RO;
+    load_store_byte_halfword_t LOAD_STORE_BYTE_HALFWORD;
+    load_store_io_t LOAD_STORE_IO;
+    load_store_halfword_t LOAD_STORE_HALFWORD;
+    sp_relative_load_store_t SP_RELATIVE_LOAD_STORE;
     load_address_t LOAD_ADDRESS;
+    add_offset_to_stack_pointer_t ADD_OFFSET_TO_STACK_POINTER;
+    push_pop_registers_t PUSH_POP_REGISTERS;
+    multiple_load_store_t MULTIPLE_LOAD_STORE;
+    conditional_branch_t CONDITIONAL_BRANCH;
+    thumb_software_interrupt_t THUMB_SOFTWARE_INTERRUPT;
+    unconditional_branch_t UNCONDITIONAL_BRANCH;
+    long_branch_link_t LONG_BRANCH_LINK;
+    thumb_undefined_t THUMB_UNDEFINED;
     half raw;
 } thumbinstr_t;
 
