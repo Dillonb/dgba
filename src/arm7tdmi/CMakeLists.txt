@@ -18,6 +18,17 @@ add_library(arm7tdmi
         thumb_instr/high_register_operations.c thumb_instr/high_register_operations.h
         thumb_instr/load_address.c thumb_instr/load_address.h
         thumb_instr/move_shifted_register.c thumb_instr/move_shifted_register.h
-        thumb_instr/alu_operations.c thumb_instr/alu_operations.h)
+        thumb_instr/alu_operations.c thumb_instr/alu_operations.h
+        thumb_instr/load_store_halfword.c thumb_instr/load_store_halfword.h
+        thumb_instr/pc_relative_load.c thumb_instr/pc_relative_load.h
+        thumb_instr/load_store.c thumb_instr/load_store.h
+        thumb_instr/sp_relative_load_store.c thumb_instr/sp_relative_load_store.h
+        thumb_instr/add_offset_to_stack_pointer.c thumb_instr/add_offset_to_stack_pointer.h
+        thumb_instr/push_pop_registers.c thumb_instr/push_pop_registers.h
+        thumb_instr/multiple_load_store.c thumb_instr/multiple_load_store.h
+        thumb_instr/conditional_branch.c thumb_instr/conditional_branch.h
+        thumb_instr/thumb_software_interrupt.c thumb_instr/thumb_software_interrupt.h
+        thumb_instr/unconditional_branch.c thumb_instr/unconditional_branch.h
+        thumb_instr/long_branch_link.c thumb_instr/long_branch_link.h)
 
 target_link_libraries(arm7tdmi common)

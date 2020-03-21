@@ -20,6 +20,16 @@
 #include "thumb_instr/move_shifted_register.h"
 #include "thumb_instr/alu_operations.h"
 #include "thumb_instr/load_store_halfword.h"
+#include "thumb_instr/load_store.h"
+#include "thumb_instr/pc_relative_load.h"
+#include "thumb_instr/sp_relative_load_store.h"
+#include "thumb_instr/add_offset_to_stack_pointer.h"
+#include "thumb_instr/push_pop_registers.h"
+#include "thumb_instr/multiple_load_store.h"
+#include "thumb_instr/conditional_branch.h"
+#include "thumb_instr/thumb_software_interrupt.h"
+#include "thumb_instr/unconditional_branch.h"
+#include "thumb_instr/long_branch_link.h"
 
 const char MODE_NAMES[32][11] = {
 "UNKNOWN",    // 0b00000
@@ -445,36 +455,47 @@ int thumb_mode_step(arm7tdmi_t* state, thumbinstr_t* instr) {
             high_register_operations(state, &instr->HIGH_REGISTER_OPERATIONS);
             break;
         case PC_RELATIVE_LOAD:
-            logfatal("Unimplemented THUMB mode instruction type: PC_RELATIVE_LOAD")
+            pc_relative_load(state, &instr->PC_RELATIVE_LOAD);
+            break;
         case LOAD_STORE_RO:
-            logfatal("Unimplemented THUMB mode instruction type: LOAD_STORE_RO")
+            load_store_ro(state, &instr->LOAD_STORE_RO);
+            break;
         case LOAD_STORE_BYTE_HALFWORD:
             load_store_byte_halfword(state, &instr->LOAD_STORE_BYTE_HALFWORD);
             break;
         case LOAD_STORE_IO:
-            logfatal("Unimplemented THUMB mode instruction type: LOAD_STORE_IO")
+            load_store_io(state, &instr->LOAD_STORE_IO);
+            break;
         case LOAD_STORE_HALFWORD:
             load_store_halfword(state, &instr->LOAD_STORE_HALFWORD);
             break;
         case SP_RELATIVE_LOAD_STORE:
-            logfatal("Unimplemented THUMB mode instruction type: SP_RELATIVE_LOAD_STORE")
+            sp_relative_load_store(state, &instr->SP_RELATIVE_LOAD_STORE);
+            break;
         case LOAD_ADDRESS:
             load_address(state, &instr->LOAD_ADDRESS);
             break;
         case ADD_OFFSET_TO_STACK_POINTER:
-            logfatal("Unimplemented THUMB mode instruction type: ADD_OFFSET_TO_STACK_POINTER")
+            add_offset_to_stack_pointer(state, &instr->ADD_OFFSET_TO_STACK_POINTER);
+            break;
         case PUSH_POP_REGISTERS:
-            logfatal("Unimplemented THUMB mode instruction type: PUSH_POP_REGISTERS")
+            push_pop_registers(state, &instr->PUSH_POP_REGISTERS);
+            break;
         case MULTIPLE_LOAD_STORE:
-            logfatal("Unimplemented THUMB mode instruction type: MULTIPLE_LOAD_STORE")
+            multiple_load_store(state, &instr->MULTIPLE_LOAD_STORE);
+            break;
         case CONDITIONAL_BRANCH:
-            logfatal("Unimplemented THUMB mode instruction type: CONDITIONAL_BRANCH")
+            conditional_branch(state, &instr->CONDITIONAL_BRANCH);
+            break;
         case THUMB_SOFTWARE_INTERRUPT:
-            logfatal("Unimplemented THUMB mode instruction type: THUMB_SOFTWARE_INTERRUPT")
+            thumb_software_interrupt(state, &instr->THUMB_SOFTWARE_INTERRUPT);
+            break;
         case UNCONDITIONAL_BRANCH:
-            logfatal("Unimplemented THUMB mode instruction type: UNCONDITIONAL_BRANCH")
+            unconditional_branch(state, &instr->UNCONDITIONAL_BRANCH);
+            break;
         case LONG_BRANCH_LINK:
-            logfatal("Unimplemented THUMB mode instruction type: LONG_BRANCH_LINK")
+            long_branch_link(state, &instr->LONG_BRANCH_LINK);
+            break;
         case THUMB_UNDEFINED:
             logfatal("Unimplemented THUMB mode instruction type: THUMB_UNDEFINED")
         default:
