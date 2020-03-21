@@ -19,6 +19,7 @@
 #include "arm_instr/single_data_swap.h"
 #include "thumb_instr/move_shifted_register.h"
 #include "thumb_instr/alu_operations.h"
+#include "thumb_instr/load_store_halfword.h"
 
 const char MODE_NAMES[32][11] = {
 "UNKNOWN",    // 0b00000
@@ -448,11 +449,13 @@ int thumb_mode_step(arm7tdmi_t* state, thumbinstr_t* instr) {
         case LOAD_STORE_RO:
             logfatal("Unimplemented THUMB mode instruction type: LOAD_STORE_RO")
         case LOAD_STORE_BYTE_HALFWORD:
-            logfatal("Unimplemented THUMB mode instruction type: LOAD_STORE_BYTE_HALFWORD")
+            load_store_byte_halfword(state, &instr->LOAD_STORE_BYTE_HALFWORD);
+            break;
         case LOAD_STORE_IO:
             logfatal("Unimplemented THUMB mode instruction type: LOAD_STORE_IO")
         case LOAD_STORE_HALFWORD:
-            logfatal("Unimplemented THUMB mode instruction type: LOAD_STORE_HALFWORD")
+            load_store_halfword(state, &instr->LOAD_STORE_HALFWORD);
+            break;
         case SP_RELATIVE_LOAD_STORE:
             logfatal("Unimplemented THUMB mode instruction type: SP_RELATIVE_LOAD_STORE")
         case LOAD_ADDRESS:
