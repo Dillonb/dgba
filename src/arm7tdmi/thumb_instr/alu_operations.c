@@ -37,7 +37,12 @@ void alu_operations(arm7tdmi_t* state, alu_operations_t* instr) {
             logfatal("NEG")
         }
         case 0xA: { // CMP: Set condition codes on Rd - Rs
-            logfatal("CMP")
+            word rddata = get_register(state, instr->rd);
+            word rsdata = get_register(state, instr->rs);
+            word result = rddata - rsdata;
+            set_flags_nz(state, result);
+            set_flags_sub(state, rddata, rsdata, result);
+            break;
         }
         case 0xB: { // CMN: Set condition codes on Rd + Rs
             logfatal("CMN")
