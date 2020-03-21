@@ -41,6 +41,8 @@
 #define IO_WIN1V    0x046
 #define IO_WININ    0x048
 #define IO_WINOUT   0x04A
+#define IO_MOSAIC   0x04C
+#define IO_BLDCNT   0x050
 #define IO_IE       0x200
 #define IO_IF       0x202
 #define IO_WAITCNT  0x204

@@ -82,6 +82,8 @@ half* get_half_ioreg_ptr(word addr) {
         case IO_WIN1V: return &ppu->WIN1V.raw;
         case IO_WININ: return &ppu->WININ.raw;
         case IO_WINOUT: return &ppu->WINOUT.raw;
+        case IO_MOSAIC: return &ppu->MOSAIC.raw;
+        case IO_BLDCNT: return &ppu->BLDCNT.raw;
         case IO_IE: return &state.interrupt_enable.raw;
         case IO_IF:
             logwarn("Ignoring write to IF register")

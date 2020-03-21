@@ -139,6 +139,36 @@ typedef union WINOUT {
     half raw;
 } WINOUT_t;
 
+typedef union MOSAIC {
+    struct {
+        unsigned bg_hsize:4;
+        unsigned bg_vsize:4;
+        unsigned obj_hsize:4;
+        unsigned obj_vsize:4;
+    };
+    half raw;
+} MOSAIC_t;
+
+typedef union BLDCNT {
+    struct {
+        bool bg0_first_target_pixel:1;
+        bool bg1_first_target_pixel:1;
+        bool bg2_first_target_pixel:1;
+        bool bg3_first_target_pixel:1;
+        bool obj_first_target_pixel:1;
+        bool bd_first_target_pixel:1;
+        unsigned color_special_effect:2;
+        bool bg0_second_target_pixel:1;
+        bool bg1_second_target_pixel:1;
+        bool bg2_second_target_pixel:1;
+        bool bg3_second_target_pixel:1;
+        bool obj_second_target_pixel:1;
+        bool bd_second_target_pixel:1;
+        unsigned:2;
+    };
+    half raw;
+} BLDCNT_t;
+
 typedef struct gba_ppu {
     // State
     int x;
@@ -176,6 +206,9 @@ typedef struct gba_ppu {
     WINV_t WIN1V;
     WININ_t WININ;
     WINOUT_t WINOUT;
+    MOSAIC_t MOSAIC;
+
+    BLDCNT_t BLDCNT;
 
     bg_referencepoint_t BG2X;
     bg_referencepoint_t BG2Y;
