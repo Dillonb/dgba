@@ -5,11 +5,11 @@
 thumb_instr_type_t get_thumb_instr_type(thumbinstr_t* instr) {
     half hash = instr->raw >> 6u;
 
-    if ((hash & 0b1110000000u) == 0b0000000000u) {
-        return MOVE_SHIFTED_REGISTER;
-    }
     if ((hash & 0b1111100000u) == 0b0001100000u) {
         return ADD_SUBTRACT;
+    }
+    if ((hash & 0b1110000000u) == 0b0000000000u) {
+        return MOVE_SHIFTED_REGISTER;
     }
     if ((hash & 0b1110000000u) == 0b0010000000u) {
         return IMMEDIATE_OPERATIONS;
