@@ -54,8 +54,44 @@ void write_half_ioreg(word addr, half value) {
             ppu->DISPSTAT.raw |= dispstat;
             break;
         }
+        case IO_VCOUNT:
+            logwarn("Writing to read-only VCOUNT register, ignoring!")
+            break;
         case IO_BG0CNT:
-            write_bg0cnt(ppu, value);
+            write_bgcnt(ppu, 0, value);
+            break;
+        case IO_BG1CNT:
+            write_bgcnt(ppu, 1, value);
+            break;
+        case IO_BG2CNT:
+            write_bgcnt(ppu, 2, value);
+            break;
+        case IO_BG3CNT:
+            write_bgcnt(ppu, 3, value);
+            break;
+        case IO_BG0HOFS:
+            ppu->BG0HOFS.raw = value;
+            break;
+        case IO_BG1HOFS:
+            ppu->BG1HOFS.raw = value;
+            break;
+        case IO_BG2HOFS:
+            ppu->BG2HOFS.raw = value;
+            break;
+        case IO_BG3HOFS:
+            ppu->BG3HOFS.raw = value;
+            break;
+        case IO_BG0VOFS:
+            ppu->BG0VOFS.raw = value;
+            break;
+        case IO_BG1VOFS:
+            ppu->BG1VOFS.raw = value;
+            break;
+        case IO_BG2VOFS:
+            ppu->BG2VOFS.raw = value;
+            break;
+        case IO_BG3VOFS:
+            ppu->BG3VOFS.raw = value;
             break;
         case IO_IE:
             state.interrupt_enable.raw = value;

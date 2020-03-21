@@ -12,6 +12,17 @@
 #define IO_DISPSTAT 0x004
 #define IO_VCOUNT   0x006
 #define IO_BG0CNT   0x008
+#define IO_BG1CNT   0x00A
+#define IO_BG2CNT   0x00C
+#define IO_BG3CNT   0x00E
+#define IO_BG0HOFS  0x010
+#define IO_BG0VOFS  0x012
+#define IO_BG1HOFS  0x014
+#define IO_BG1VOFS  0x016
+#define IO_BG2HOFS  0x018
+#define IO_BG2VOFS  0x01A
+#define IO_BG3HOFS  0x01C
+#define IO_BG3VOFS  0x01E
 #define IO_IE       0x200
 #define IO_IME      0x208
 

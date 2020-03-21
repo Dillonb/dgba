@@ -6,9 +6,24 @@ void write_dispcnt(gba_ppu_t* state, half value) {
     logwarn("DISPCNT write!")
 }
 
-void write_bg0cnt(gba_ppu_t* state, half value) {
-    state->BG0CNT.raw = value;
-    logwarn("BG0CNT write!")
+void write_bgcnt(gba_ppu_t* state, int num, half value) {
+    switch (num) {
+        case 0:
+            state->BG0CNT.raw = value;
+            break;
+        case 1:
+            state->BG1CNT.raw = value;
+            break;
+        case 2:
+            state->BG2CNT.raw = value;
+            break;
+        case 3:
+            state->BG3CNT.raw = value;
+            break;
+        default:
+            logfatal("Invalid BGxCNT write!")
+    }
+    logwarn("BG%dCNT write!", num)
 }
 
 gba_ppu_t* init_ppu() {
