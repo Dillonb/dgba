@@ -9,8 +9,11 @@ void alu_operations(arm7tdmi_t* state, alu_operations_t* instr) {
             set_register(state, instr->rd, newvalue);
             break;
         }
-        case 0x1: { // EOR: Rd = Rd EOR Rs
-            logfatal("EOR")
+        case 0x1: { // EOR: Rd = Rd ^ Rs
+            word newvalue = get_register(state, instr->rd) ^ get_register(state, instr->rs);
+            set_flags_nz(state, newvalue);
+            set_register(state, instr->rd, newvalue);
+            break;
         }
         case 0x2: { // LSL: Rd = Rd << Rs
             logfatal("LSL")
