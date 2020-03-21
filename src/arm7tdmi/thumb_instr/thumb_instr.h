@@ -101,8 +101,9 @@ typedef struct load_store_io {
 } load_store_io_t;
 
 typedef struct load_store_halfword {
-    unsigned word8:8;
     unsigned rd:3;
+    unsigned rb:3;
+    unsigned offset:5;
     bool l:1;
     unsigned:4;
 } load_store_halfword_t;
