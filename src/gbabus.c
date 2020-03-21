@@ -72,6 +72,10 @@ half* get_half_ioreg_ptr(word addr) {
         case IO_BG2PB: return &ppu->BG2PB.raw;
         case IO_BG2PC: return &ppu->BG2PC.raw;
         case IO_BG2PD: return &ppu->BG2PD.raw;
+        case IO_BG3PA: return &ppu->BG3PA.raw;
+        case IO_BG3PB: return &ppu->BG3PB.raw;
+        case IO_BG3PC: return &ppu->BG3PC.raw;
+        case IO_BG3PD: return &ppu->BG3PD.raw;
         case IO_IE: return &state.interrupt_enable.raw;
         case IO_IF:
             logwarn("Ignoring write to IF register")
@@ -115,6 +119,8 @@ word* get_word_ioreg_ptr(word addr) {
     switch (addr & 0xFFF) {
         case IO_BG2X: return &ppu->BG2X.raw;
         case IO_BG2Y: return &ppu->BG2Y.raw;
+        case IO_BG3X: return &ppu->BG3X.raw;
+        case IO_BG3Y: return &ppu->BG3Y.raw;
         default: logfatal("Tried to get the address of an unknown (but valid) word ioreg addr: 0x%08X", addr)
     }
 }

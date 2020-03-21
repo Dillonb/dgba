@@ -29,6 +29,12 @@
 #define IO_BG2PD    0x026
 #define IO_BG2X     0x028
 #define IO_BG2Y     0x02C
+#define IO_BG3PA    0x030
+#define IO_BG3PB    0x032
+#define IO_BG3PC    0x034
+#define IO_BG3PD    0x036
+#define IO_BG3X     0x038
+#define IO_BG3Y     0x03C
 #define IO_IE       0x200
 #define IO_IF       0x202
 #define IO_WAITCNT  0x204

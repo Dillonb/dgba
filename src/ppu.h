@@ -109,9 +109,15 @@ typedef struct gba_ppu {
     bg_rotation_scaling_t BG2PB;
     bg_rotation_scaling_t BG2PC;
     bg_rotation_scaling_t BG2PD;
+    bg_rotation_scaling_t BG3PA;
+    bg_rotation_scaling_t BG3PB;
+    bg_rotation_scaling_t BG3PC;
+    bg_rotation_scaling_t BG3PD;
 
     bg_referencepoint_t BG2X;
     bg_referencepoint_t BG2Y;
+    bg_referencepoint_t BG3X;
+    bg_referencepoint_t BG3Y;
 
     DISPSTAT_t DISPSTAT;
 } gba_ppu_t;
