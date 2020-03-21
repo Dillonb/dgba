@@ -8,20 +8,24 @@ gbamem_t* mem;
 arm7tdmi_t* cpu;
 gba_ppu_t* ppu;
 
-bool interrupt_master_enable = false;
+gbabus_t state;
+
 
 void init_gbabus(gbamem_t* new_mem, arm7tdmi_t* new_cpu, gba_ppu_t* new_ppu) {
     mem = new_mem;
     cpu = new_cpu;
     ppu = new_ppu;
+
+    state.interrupt_master_enable = false;
+    state.interrupt_enable.raw = 0;
 }
 
 void write_byte_ioreg(word addr, byte value) {
     word regnum = addr & 0xFFF;
     switch (regnum) {
         case IO_IME: {
-            interrupt_master_enable = value & 1;
-            if (interrupt_master_enable) {
+            state.interrupt_master_enable = value & 1;
+            if (state.interrupt_master_enable) {
                 logwarn("Enabled interrupts!")
             } else {
                 logwarn("Disabled all interrupts")
@@ -44,6 +48,9 @@ void write_half_ioreg(word addr, half value) {
             break;
         case IO_BG0CNT:
             write_bg0cnt(ppu, value);
+            break;
+        case IO_IE:
+            state.interrupt_enable.raw = value;
             break;
         default:
             logfatal("Write to unknown (but valid) half ioreg addr 0x%08X == 0x%04X", addr, value)

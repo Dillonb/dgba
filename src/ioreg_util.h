@@ -11,6 +11,7 @@
 #define IO_DISPCNT 0x000
 #define IO_VCOUNT  0x006
 #define IO_BG0CNT  0x008
+#define IO_IE      0x200
 #define IO_IME     0x208
 
 #define IO_UNDOCUMENTED_GREEN_SWAP 0x002
