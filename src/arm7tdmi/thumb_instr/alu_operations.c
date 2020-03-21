@@ -31,7 +31,8 @@ void alu_operations(arm7tdmi_t* state, alu_operations_t* instr) {
             logfatal("ROR")
         }
         case 0x8: { // TST: Set condition codes on Rd AND Rs
-            logfatal("TST")
+            set_flags_nz(state, get_register(state, instr->rd) & get_register(state, instr->rs));
+            break;
         }
         case 0x9: { // NEG: Rd = -Rs
             logfatal("NEG")
@@ -45,7 +46,9 @@ void alu_operations(arm7tdmi_t* state, alu_operations_t* instr) {
             break;
         }
         case 0xB: { // CMN: Set condition codes on Rd + Rs
-            logfatal("CMN")
+            set_flags_add(state, get_register(state, instr->rd), get_register(state, instr->rs));
+            set_flags_nz(state, get_register(state, instr->rd) + get_register(state, instr->rs));
+            break;
         }
         case 0xC: { // ORR: Rd = Rd | Rs
             word newvalue = get_register(state, instr->rd) | get_register(state, instr->rs);
@@ -57,10 +60,16 @@ void alu_operations(arm7tdmi_t* state, alu_operations_t* instr) {
             logfatal("MUL")
         }
         case 0xE: { // BIC: Rd = Rd & ~Rs
-            logfatal("BIC")
+            word newvalue = get_register(state, instr->rd) & ~get_register(state, instr->rs);
+            set_flags_nz(state, newvalue);
+            set_register(state, instr->rd, newvalue);
+            break;
         }
         case 0xF: { // MVN: Rd = ~Rs
-            logfatal("MVN")
+            word newvalue = ~get_register(state, instr->rs);
+            set_flags_nz(state, newvalue);
+            set_register(state, instr->rd, newvalue);
+            break;
         }
         default:
             logfatal("Unknown ALU operations opcode: %d", instr->opcode)
