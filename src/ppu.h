@@ -38,6 +38,24 @@ typedef struct color {
     byte b;
 } color_t;
 
+typedef union DISPSTAT {
+    struct {
+        // Read only
+        bool vblank:1;
+        bool hblank:1;
+        bool vcount:1;
+
+        // R/W
+        bool vblank_irq_enable:1;
+        bool hblank_irq_enable:1;
+        bool vcount_irq_enable:1;
+        unsigned:1; // Unused: DSi LCD initialization ready (RO)
+        unsigned:1; // Unused: NDS: MSB of v-vcount setting
+        unsigned vcount_setting:8;
+    };
+    half raw;
+} DISPSTAT_t;
+
 typedef struct gba_ppu {
     // State
     int x;
@@ -46,6 +64,7 @@ typedef struct gba_ppu {
     // Registers
     DISPCNT_t DISPCNT;
     BG0CNT_t BG0CNT;
+    DISPSTAT_t DISPSTAT;
 } gba_ppu_t;
 
 void write_dispcnt(gba_ppu_t* state, half value);

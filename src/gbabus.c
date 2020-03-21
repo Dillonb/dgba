@@ -10,6 +10,14 @@ gba_ppu_t* ppu;
 
 gbabus_t state;
 
+void write_ime(bool value) {
+    state.interrupt_master_enable = value;
+    if (state.interrupt_master_enable) {
+        logwarn("Enabled interrupts!")
+    } else {
+        logwarn("Disabled all interrupts")
+    }
+}
 
 void init_gbabus(gbamem_t* new_mem, arm7tdmi_t* new_cpu, gba_ppu_t* new_ppu) {
     mem = new_mem;
@@ -23,15 +31,9 @@ void init_gbabus(gbamem_t* new_mem, arm7tdmi_t* new_cpu, gba_ppu_t* new_ppu) {
 void write_byte_ioreg(word addr, byte value) {
     word regnum = addr & 0xFFF;
     switch (regnum) {
-        case IO_IME: {
-            state.interrupt_master_enable = value & 1;
-            if (state.interrupt_master_enable) {
-                logwarn("Enabled interrupts!")
-            } else {
-                logwarn("Disabled all interrupts")
-            }
+        case IO_IME:
+            write_ime(value & 1);
             break;
-        }
         default:
             logfatal("Write to unknown (but valid) byte ioreg addr 0x%08X == 0x%02X", addr, value)
     }
@@ -46,6 +48,12 @@ void write_half_ioreg(word addr, half value) {
         case IO_UNDOCUMENTED_GREEN_SWAP:
             logwarn("Ignoring write to Green Swap register")
             break;
+        case IO_DISPSTAT: {
+            half dispstat = value & 0b1111111111111000;
+            ppu->DISPSTAT.raw &= 0b0000000000000111;
+            ppu->DISPSTAT.raw |= dispstat;
+            break;
+        }
         case IO_BG0CNT:
             write_bg0cnt(ppu, value);
             break;
@@ -57,6 +65,9 @@ void write_half_ioreg(word addr, half value) {
             break;
         case 0x204/*IO_WAITCNT*/:
             logwarn("Ignoring write to WAITCNT register: 0x%04X", value)
+            break;
+        case IO_IME:
+            write_ime(value & 1);
             break;
         default:
             logfatal("Write to unknown (but valid) half ioreg addr 0x%08X == 0x%04X", addr, value)
@@ -219,7 +230,7 @@ void gba_write_half(word address, half value) {
             return;
         } else if (ioreg_size == 0) {
             // Unused io register
-            logwarn("Unused half size ioregister!")
+            logwarn("Unused half size ioregister 0x%08X", address)
             return;
         }
     }
