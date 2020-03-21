@@ -43,7 +43,7 @@ void write_half_ioreg(word addr, half value) {
     word regnum = addr & 0xFFF;
     switch (regnum) {
         case IO_DISPCNT:
-            write_dispcnt(ppu, value);
+            ppu->DISPCNT.raw = value;
             break;
         case IO_UNDOCUMENTED_GREEN_SWAP:
             logwarn("Ignoring write to Green Swap register")

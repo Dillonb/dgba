@@ -103,7 +103,6 @@ typedef struct gba_ppu {
     DISPSTAT_t DISPSTAT;
 } gba_ppu_t;
 
-void write_dispcnt(gba_ppu_t* state, half value);
 gba_ppu_t* init_ppu();
 void ppu_step(gba_ppu_t* ppu);
 
