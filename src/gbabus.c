@@ -111,23 +111,6 @@ word* get_word_ioreg_ptr(word addr) {
     logfatal("Tried to get the address of an unknown (but valid) word ioreg addr: 0x%08X", addr)
 }
 
-void write_word_ioreg(word addr, word value) {
-    // 0x04XX0800 is the only address that's mirrored.
-    if ((addr & 0xFF00FFFFu) == 0x04000800u) {
-        addr = 0xFF00FFFFu;
-    }
-
-    word* ioreg = get_word_ioreg_ptr(addr);
-    if (ioreg) {
-        *ioreg = value;
-    } else {
-        logwarn("Ignoring write to word ioreg")
-    }
-
-    logwarn("Wrote 0x%08X to 0x%08X", value, addr)
-    unimplemented(1, "io register write")
-}
-
 void write_word_ioreg_masked(word addr, word value, word mask) {
     word* ioreg = get_word_ioreg_ptr(addr);
     if (ioreg) {
@@ -137,6 +120,15 @@ void write_word_ioreg_masked(word addr, word value, word mask) {
     } else {
         logwarn("Ignoring write to word ioreg")
     }
+}
+
+void write_word_ioreg(word addr, word value) {
+    // 0x04XX0800 is the only address that's mirrored.
+    if ((addr & 0xFF00FFFFu) == 0x04000800u) {
+        addr = 0xFF00FFFFu;
+    }
+
+    write_word_ioreg_masked(addr, value, 0xFFFFFFFF);
 }
 
 word read_word_ioreg(word addr) {
