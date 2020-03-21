@@ -1,5 +1,6 @@
 #ifndef THUMB_INSTR_H
 #define THUMB_INSTR_H
+#include <stdbool.h>
 #include "../../common/util.h"
 
 typedef enum thumb_instr_type {
@@ -33,12 +34,28 @@ typedef struct move_shifted_register {
     unsigned:3;
 } move_shifted_register_t;
 
+typedef struct add_subtract {
+    unsigned rd:3;
+    unsigned rs:3;
+    unsigned rn_or_offset:3;
+    bool op:1;
+    bool i:1;
+    unsigned:5;
+} add_subtract_t;
+
 typedef struct immediate_operations {
     unsigned offset:8;
     unsigned rd:3;
     unsigned opcode:2;
     unsigned:3;
 } immediate_operations_t;
+
+typedef struct alu_operations {
+    unsigned rd:3;
+    unsigned rs:3;
+    unsigned opcode:4;
+    unsigned:6;
+} alu_operations_t;
 
 typedef struct high_register_operations {
     unsigned rdhd:3;
@@ -49,6 +66,12 @@ typedef struct high_register_operations {
     unsigned:6;
 } high_register_operations_t;
 
+typedef struct pc_relative_load {
+    unsigned word8:8;
+    unsigned rd:3;
+    unsigned:5;
+} pc_relative_load_t;
+
 typedef struct load_address {
     unsigned word8:8;
     unsigned rd:3;
@@ -58,10 +81,11 @@ typedef struct load_address {
 
 typedef union thumbinstr {
     move_shifted_register_t MOVE_SHIFTED_REGISTER;
-    // TODO ADD_SUBTRACT
+    add_subtract_t ADD_SUBTRACT;
     immediate_operations_t IMMEDIATE_OPERATIONS;
-    // TODO ALU_OPERATIONS
+    alu_operations_t ALU_OPERATIONS;
     high_register_operations_t HIGH_REGISTER_OPERATIONS;
+    pc_relative_load_t PC_RELATIVE_LOAD;
     load_address_t LOAD_ADDRESS;
     half raw;
 } thumbinstr_t;
