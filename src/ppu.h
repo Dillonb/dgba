@@ -104,7 +104,6 @@ typedef struct gba_ppu {
 } gba_ppu_t;
 
 void write_dispcnt(gba_ppu_t* state, half value);
-void write_bgcnt(gba_ppu_t* state, int num, half value);
 gba_ppu_t* init_ppu();
 void ppu_step(gba_ppu_t* ppu);
 

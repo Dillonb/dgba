@@ -58,16 +58,16 @@ void write_half_ioreg(word addr, half value) {
             logwarn("Writing to read-only VCOUNT register, ignoring!")
             break;
         case IO_BG0CNT:
-            write_bgcnt(ppu, 0, value);
+            ppu->BG0CNT.raw = value;
             break;
         case IO_BG1CNT:
-            write_bgcnt(ppu, 1, value);
+            ppu->BG1CNT.raw = value;
             break;
         case IO_BG2CNT:
-            write_bgcnt(ppu, 2, value);
+            ppu->BG2CNT.raw = value;
             break;
         case IO_BG3CNT:
-            write_bgcnt(ppu, 3, value);
+            ppu->BG3CNT.raw = value;
             break;
         case IO_BG0HOFS:
             ppu->BG0HOFS.raw = value;
