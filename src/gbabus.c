@@ -19,14 +19,25 @@ void init_gbabus(gbamem_t* new_mem, arm7tdmi_t* new_cpu, gba_ppu_t* new_ppu) {
     state.interrupt_enable.raw = 0;
 }
 
+void write_half_ioreg_masked(word addr, half value, half mask);
+
 void write_byte_ioreg(word addr, byte value) {
-    word regnum = addr & 0xFFF;
-    switch (regnum) {
-        case IO_IME:
-            state.interrupt_master_enable.enable = (value & 1);
-            break;
-        default:
-            logfatal("Write to unknown (but valid) byte ioreg addr 0x%08X == 0x%02X", addr, value)
+    byte size = get_ioreg_size_for_addr(addr);
+    if (size == sizeof(half)) {
+        word offset = (addr % sizeof(half)) * 8;
+        half shifted_value = value;
+        shifted_value <<= offset;
+        write_half_ioreg_masked(addr, shifted_value, 0xFF << offset);
+    } else if (size == sizeof(word)) {
+        logfatal("Writing byte to word ioreg 0x%08X", addr)
+    } else {
+        // Don't really need to do the get addr/write masked thing that the bigger ioregs do
+        // Or do I?
+        word regnum = addr & 0xFFF;
+        switch (regnum) {
+            default:
+                logfatal("Write to unknown (but valid) byte ioreg addr 0x%08X == 0x%02X", addr, value)
+        }
     }
 }
 

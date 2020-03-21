@@ -248,6 +248,4 @@ byte get_ioreg_size_for_addr(word address) {
     }
 }
 
-#define IOREG_BYTE_IME 0x208
-
 #endif //GBA_IOREG_UTIL_H
