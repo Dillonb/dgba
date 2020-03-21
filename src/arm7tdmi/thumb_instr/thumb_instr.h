@@ -2,6 +2,7 @@
 #define THUMB_INSTR_H
 #include <stdbool.h>
 #include "../../common/util.h"
+#include "../arm_instr/arm_instr.h"
 
 typedef enum thumb_instr_type {
     MOVE_SHIFTED_REGISTER,
@@ -145,7 +146,7 @@ typedef struct multiple_load_store {
 
 typedef struct conditional_branch {
     unsigned soffset:8;
-    unsigned cond:4;
+    arm_cond_t cond:4;
     unsigned:4;
 } conditional_branch_t;
 
