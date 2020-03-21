@@ -23,7 +23,13 @@
 #define IO_BG2VOFS  0x01A
 #define IO_BG3HOFS  0x01C
 #define IO_BG3VOFS  0x01E
+#define IO_BG2PA    0x020
+#define IO_BG2PB    0x022
+#define IO_BG2PC    0x024
+#define IO_BG2PD    0x026
 #define IO_IE       0x200
+#define IO_IF       0x202
+#define IO_WAITCNT  0x204
 #define IO_IME      0x208
 
 #define IO_UNDOCUMENTED_GREEN_SWAP 0x002

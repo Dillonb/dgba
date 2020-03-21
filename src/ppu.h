@@ -40,6 +40,15 @@ typedef union BGOFS {
     half raw;
 } BGOFS_t;
 
+typedef union bg_rotation_scaling {
+    struct {
+        unsigned fractional:8;
+        unsigned integer:7;
+        bool sign:1;
+    };
+    half raw;
+} bg_rotation_scaling_t;
+
 typedef struct color {
     byte r;
     byte g;
@@ -85,6 +94,11 @@ typedef struct gba_ppu {
     BGOFS_t BG2VOFS;
     BGOFS_t BG3HOFS;
     BGOFS_t BG3VOFS;
+
+    bg_rotation_scaling_t BG2PA;
+    bg_rotation_scaling_t BG2PB;
+    bg_rotation_scaling_t BG2PC;
+    bg_rotation_scaling_t BG2PD;
 
     DISPSTAT_t DISPSTAT;
 } gba_ppu_t;

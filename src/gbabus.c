@@ -93,13 +93,25 @@ void write_half_ioreg(word addr, half value) {
         case IO_BG3VOFS:
             ppu->BG3VOFS.raw = value;
             break;
+        case IO_BG2PA:
+            ppu->BG2PA.raw = value;
+            break;
+        case IO_BG2PB:
+            ppu->BG2PB.raw = value;
+            break;
+        case IO_BG2PC:
+            ppu->BG2PC.raw = value;
+            break;
+        case IO_BG2PD:
+            ppu->BG2PD.raw = value;
+            break;
         case IO_IE:
             state.interrupt_enable.raw = value;
             break;
-        case 0x202/*IO_IF*/:
+        case IO_IF:
             logwarn("Ignoring write to IF register: 0x%04X", value)
             break;
-        case 0x204/*IO_WAITCNT*/:
+        case IO_WAITCNT:
             logwarn("Ignoring write to WAITCNT register: 0x%04X", value)
             break;
         case IO_IME:
@@ -110,6 +122,11 @@ void write_half_ioreg(word addr, half value) {
     }
 }
 
+word* get_word_ioreg_ptr(word addr) {
+    unimplemented(get_ioreg_size_for_addr(addr) != sizeof(word), "Trying to get the address of a wrong-sized word ioreg")
+    logfatal("Tried to get the address of an unknown (but valid) word ioreg addr: 0x%08X", addr)
+}
+
 void write_word_ioreg(word addr, word value) {
     // 0x04XX0800 is the only address that's mirrored.
     if ((addr & 0xFF00FFFFu) == 0x04000800u) {
@@ -118,6 +135,13 @@ void write_word_ioreg(word addr, word value) {
 
     logwarn("Wrote 0x%08X to 0x%08X", value, addr)
     unimplemented(1, "io register write")
+}
+
+void write_word_ioreg_masked(word addr, word value, word mask) {
+    word* ioreg = get_word_ioreg_ptr(addr);
+    *ioreg &= (~mask);
+    *ioreg |= (value & mask);
+    logfatal("masked io register write! addr: 0x%08X value: 0x%08X mask: 0x%08X", addr, value, mask)
 }
 
 word read_word_ioreg(word addr) {
@@ -260,8 +284,12 @@ void gba_write_half(word address, half value) {
     address &= ~(sizeof(half) - 1);
     if (is_ioreg(address)) {
         byte ioreg_size = get_ioreg_size_for_addr(address);
-        unimplemented(ioreg_size > sizeof(half), "writing to a too-large ioreg from gba_write_half")
-        if (ioreg_size == sizeof(half)) {
+        if (ioreg_size == sizeof(word)) {
+            word offset = (address % sizeof(word)) * 8;
+            word shifted_value = value;
+            shifted_value <<= offset;
+            write_word_ioreg_masked(address, shifted_value, 0xFFFF << offset);
+        } else if (ioreg_size == sizeof(half)) {
             write_half_ioreg(address, value);
             return;
         } else if (ioreg_size == 0) {
