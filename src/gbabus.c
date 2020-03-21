@@ -10,21 +10,12 @@ gba_ppu_t* ppu;
 
 gbabus_t state;
 
-void write_ime(bool value) {
-    state.interrupt_master_enable = value;
-    if (state.interrupt_master_enable) {
-        logwarn("Enabled interrupts!")
-    } else {
-        logwarn("Disabled all interrupts")
-    }
-}
-
 void init_gbabus(gbamem_t* new_mem, arm7tdmi_t* new_cpu, gba_ppu_t* new_ppu) {
     mem = new_mem;
     cpu = new_cpu;
     ppu = new_ppu;
 
-    state.interrupt_master_enable = false;
+    state.interrupt_master_enable.raw = 0;
     state.interrupt_enable.raw = 0;
 }
 
@@ -32,94 +23,76 @@ void write_byte_ioreg(word addr, byte value) {
     word regnum = addr & 0xFFF;
     switch (regnum) {
         case IO_IME:
-            write_ime(value & 1);
+            state.interrupt_master_enable.enable = (value & 1);
             break;
         default:
             logfatal("Write to unknown (but valid) byte ioreg addr 0x%08X == 0x%02X", addr, value)
     }
 }
 
-void write_half_ioreg(word addr, half value) {
+half* get_half_ioreg_ptr(word addr) {
     word regnum = addr & 0xFFF;
     switch (regnum) {
-        case IO_DISPCNT:
-            ppu->DISPCNT.raw = value;
-            break;
+        case IO_DISPCNT: return &ppu->DISPCNT.raw;
         case IO_UNDOCUMENTED_GREEN_SWAP:
             logwarn("Ignoring write to Green Swap register")
-            break;
-        case IO_DISPSTAT: {
-            half dispstat = value & 0b1111111111111000;
-            ppu->DISPSTAT.raw &= 0b0000000000000111;
-            ppu->DISPSTAT.raw |= dispstat;
-            break;
-        }
+            return NULL;
+        case IO_DISPSTAT: return &ppu->DISPSTAT.raw;
         case IO_VCOUNT:
             logwarn("Writing to read-only VCOUNT register, ignoring!")
-            break;
-        case IO_BG0CNT:
-            ppu->BG0CNT.raw = value;
-            break;
-        case IO_BG1CNT:
-            ppu->BG1CNT.raw = value;
-            break;
-        case IO_BG2CNT:
-            ppu->BG2CNT.raw = value;
-            break;
-        case IO_BG3CNT:
-            ppu->BG3CNT.raw = value;
-            break;
-        case IO_BG0HOFS:
-            ppu->BG0HOFS.raw = value;
-            break;
-        case IO_BG1HOFS:
-            ppu->BG1HOFS.raw = value;
-            break;
-        case IO_BG2HOFS:
-            ppu->BG2HOFS.raw = value;
-            break;
-        case IO_BG3HOFS:
-            ppu->BG3HOFS.raw = value;
-            break;
-        case IO_BG0VOFS:
-            ppu->BG0VOFS.raw = value;
-            break;
-        case IO_BG1VOFS:
-            ppu->BG1VOFS.raw = value;
-            break;
-        case IO_BG2VOFS:
-            ppu->BG2VOFS.raw = value;
-            break;
-        case IO_BG3VOFS:
-            ppu->BG3VOFS.raw = value;
-            break;
-        case IO_BG2PA:
-            ppu->BG2PA.raw = value;
-            break;
-        case IO_BG2PB:
-            ppu->BG2PB.raw = value;
-            break;
-        case IO_BG2PC:
-            ppu->BG2PC.raw = value;
-            break;
-        case IO_BG2PD:
-            ppu->BG2PD.raw = value;
-            break;
-        case IO_IE:
-            state.interrupt_enable.raw = value;
-            break;
+            return NULL;
+        case IO_BG0CNT: return &ppu->BG0CNT.raw;
+        case IO_BG1CNT: return &ppu->BG1CNT.raw;
+        case IO_BG2CNT: return &ppu->BG2CNT.raw;
+        case IO_BG3CNT: return &ppu->BG3CNT.raw;
+        case IO_BG0HOFS: return &ppu->BG0HOFS.raw;
+        case IO_BG1HOFS: return &ppu->BG1HOFS.raw;
+        case IO_BG2HOFS: return &ppu->BG2HOFS.raw;
+        case IO_BG3HOFS: return &ppu->BG3HOFS.raw;
+        case IO_BG0VOFS: return &ppu->BG0VOFS.raw;
+        case IO_BG1VOFS: return &ppu->BG1VOFS.raw;
+        case IO_BG2VOFS: return &ppu->BG2VOFS.raw;
+        case IO_BG3VOFS: return &ppu->BG3VOFS.raw;
+        case IO_BG2PA: return &ppu->BG2PA.raw;
+        case IO_BG2PB: return &ppu->BG2PB.raw;
+        case IO_BG2PC: return &ppu->BG2PC.raw;
+        case IO_BG2PD: return &ppu->BG2PD.raw;
+        case IO_IE: return &state.interrupt_enable.raw;
         case IO_IF:
-            logwarn("Ignoring write to IF register: 0x%04X", value)
-            break;
+            logwarn("Ignoring write to IF register")
+            return NULL;
         case IO_WAITCNT:
-            logwarn("Ignoring write to WAITCNT register: 0x%04X", value)
-            break;
-        case IO_IME:
-            write_ime(value & 1);
-            break;
+            logwarn("Ignoring write to WAITCNT register")
+            return NULL;
+        case IO_IME: return &state.interrupt_master_enable.raw;
         default:
-            logfatal("Write to unknown (but valid) half ioreg addr 0x%08X == 0x%04X", addr, value)
+            logfatal("Write to unknown (but valid) half ioreg addr 0x%08X", addr)
     }
+}
+
+void write_half_ioreg_masked(word addr, half value, half mask) {
+    half* ioreg = get_half_ioreg_ptr(addr);
+    if (ioreg) {
+        switch (addr & 0xFFF) {
+            case IO_DISPSTAT:
+                mask &= 0b1111111111111000; // Last 3 bits are read-only
+                break;
+            case IO_IME:
+                mask = 0b1;
+                break;
+            default:
+                break; // No special case
+        }
+        *ioreg &= (~mask);
+        *ioreg |= (value & mask);
+    } else {
+        logwarn("Ignoring write to word ioreg")
+    }
+}
+
+void write_half_ioreg(word addr, half value) {
+    // Write to the whole thing
+    write_half_ioreg_masked(addr, value, 0xFFFF);
 }
 
 word* get_word_ioreg_ptr(word addr) {
@@ -133,15 +106,26 @@ void write_word_ioreg(word addr, word value) {
         addr = 0xFF00FFFFu;
     }
 
+    word* ioreg = get_word_ioreg_ptr(addr);
+    if (ioreg) {
+        *ioreg = value;
+    } else {
+        logwarn("Ignoring write to word ioreg")
+    }
+
     logwarn("Wrote 0x%08X to 0x%08X", value, addr)
     unimplemented(1, "io register write")
 }
 
 void write_word_ioreg_masked(word addr, word value, word mask) {
     word* ioreg = get_word_ioreg_ptr(addr);
-    *ioreg &= (~mask);
-    *ioreg |= (value & mask);
-    logfatal("masked io register write! addr: 0x%08X value: 0x%08X mask: 0x%08X", addr, value, mask)
+    if (ioreg) {
+        *ioreg &= (~mask);
+        *ioreg |= (value & mask);
+        logfatal("masked io register write! addr: 0x%08X value: 0x%08X mask: 0x%08X", addr, value, mask)
+    } else {
+        logwarn("Ignoring write to word ioreg")
+    }
 }
 
 word read_word_ioreg(word addr) {

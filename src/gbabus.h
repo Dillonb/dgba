@@ -28,8 +28,16 @@ typedef union interrupt_enable {
     half raw;
 } interrupt_enable_t;
 
+typedef union interrupt_master_enable {
+    struct {
+        bool enable:1;
+        unsigned:15;
+    };
+    half raw;
+} interrupt_master_enable_t;
+
 typedef struct gbabus {
-    bool interrupt_master_enable;
+    interrupt_master_enable_t interrupt_master_enable;
     interrupt_enable_t interrupt_enable;
 } gbabus_t;
 
