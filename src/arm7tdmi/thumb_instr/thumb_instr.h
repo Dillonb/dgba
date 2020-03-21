@@ -73,23 +73,45 @@ typedef struct pc_relative_load {
 } pc_relative_load_t;
 
 typedef struct load_store_ro {
-    unsigned todo:16;
+    unsigned rd:3;
+    unsigned rb:3;
+    unsigned ro:3;
+    unsigned:1;
+    bool b:1;
+    bool l:1;
+    unsigned:4;
 } load_store_ro_t;
 
 typedef struct load_store_byte_halfword {
-    unsigned todo:16;
+    unsigned rd:3;
+    unsigned rb:3;
+    unsigned ro:3;
+    bool s:1;
+    bool h:1;
+    unsigned:4;
 } load_store_byte_halfword_t;
 
 typedef struct load_store_io {
-    unsigned todo:16;
+    unsigned rd:3;
+    unsigned rb:3;
+    unsigned offset:5;
+    bool l:1;
+    bool b:1;
+    unsigned:3;
 } load_store_io_t;
 
 typedef struct load_store_halfword {
-    unsigned todo:16;
+    unsigned word8:8;
+    unsigned rd:3;
+    bool l:1;
+    unsigned:4;
 } load_store_halfword_t;
 
 typedef struct sp_relative_load_store {
-    unsigned todo:16;
+    unsigned word8:8;
+    unsigned rd:3;
+    bool l:1;
+    unsigned:4;
 } sp_relative_load_store_t;
 
 typedef struct load_address {
@@ -100,31 +122,46 @@ typedef struct load_address {
 } load_address_t;
 
 typedef struct add_offset_to_stack_pointer {
-    unsigned todo:16;
+    unsigned sword7:7;
+    bool s:1;
+    unsigned:8;
 } add_offset_to_stack_pointer_t;
 
 typedef struct push_pop_registers {
-    unsigned todo:16;
+    unsigned rlist:8;
+    bool r:1;
+    unsigned:2;
+    bool l:1;
+    unsigned:4;
 } push_pop_registers_t;
 
 typedef struct multiple_load_store {
-    unsigned todo:16;
+    unsigned rlist:8;
+    unsigned rb:3;
+    bool l:1;
+    unsigned:4;
 } multiple_load_store_t;
 
 typedef struct conditional_branch {
-    unsigned todo:16;
+    unsigned soffset:8;
+    unsigned cond:4;
+    unsigned:4;
 } conditional_branch_t;
 
 typedef struct thumb_software_interrupt {
-    unsigned todo:16;
+    unsigned value:8;
+    unsigned:8;
 } thumb_software_interrupt_t;
 
 typedef struct unconditional_branch {
-    unsigned todo:16;
+    unsigned offset:11;
+    unsigned:5;
 } unconditional_branch_t;
 
 typedef struct long_branch_link {
-    unsigned todo:16;
+    unsigned offset:11;
+    bool h:1;
+    unsigned:4;
 } long_branch_link_t;
 
 typedef struct thumb_undefined {
