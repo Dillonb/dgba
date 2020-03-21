@@ -18,6 +18,7 @@
 #include "arm_instr/multiply.h"
 #include "arm_instr/single_data_swap.h"
 #include "thumb_instr/move_shifted_register.h"
+#include "thumb_instr/alu_operations.h"
 
 const char MODE_NAMES[32][11] = {
 "UNKNOWN",    // 0b00000
@@ -437,7 +438,8 @@ int thumb_mode_step(arm7tdmi_t* state, thumbinstr_t* instr) {
             immediate_operations(state, &instr->IMMEDIATE_OPERATIONS);
             break;
         case ALU_OPERATIONS:
-            logfatal("Unimplemented THUMB mode instruction type: ALU_OPERATIONS")
+            alu_operations(state, &instr->ALU_OPERATIONS);
+            break;
         case HIGH_REGISTER_OPERATIONS:
             high_register_operations(state, &instr->HIGH_REGISTER_OPERATIONS);
             break;
