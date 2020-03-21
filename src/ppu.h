@@ -49,6 +49,16 @@ typedef union bg_rotation_scaling {
     half raw;
 } bg_rotation_scaling_t;
 
+typedef union bg_referencepoint {
+    struct {
+        unsigned fractional:8;
+        unsigned integer:19;
+        bool sign:1;
+        unsigned:4;
+    };
+    word raw;
+} bg_referencepoint_t;
+
 typedef struct color {
     byte r;
     byte g;
@@ -99,6 +109,9 @@ typedef struct gba_ppu {
     bg_rotation_scaling_t BG2PB;
     bg_rotation_scaling_t BG2PC;
     bg_rotation_scaling_t BG2PD;
+
+    bg_referencepoint_t BG2X;
+    bg_referencepoint_t BG2Y;
 
     DISPSTAT_t DISPSTAT;
 } gba_ppu_t;
