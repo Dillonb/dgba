@@ -15,7 +15,9 @@ void usage(cflags_t* flags) {
 int main(int argc, char** argv) {
     cflags_t* flags = cflags_init();
     bool debug = false;
+    bool should_skip_bios = false;
     cflags_add_bool(flags, 'd', "debug", &debug, "enable debug mode");
+    cflags_add_bool(flags, 's', "skip-bios", &should_skip_bios, "skip-bios");
 
     cflags_flag_t * verbose = cflags_add_bool(flags, 'v', "verbose", NULL, "enables verbose output, repeat up to 4 times for more verbosity");
 
@@ -44,9 +46,15 @@ int main(int argc, char** argv) {
     init_gbabus(mem, cpu, ppu);
 
     loginfo("ROM loaded: %lu bytes", mem->rom_size)
+    if (should_skip_bios) {
+        loginfo("Skipping BIOS")
+        skip_bios(cpu);
+    }
+
     loginfo("Beginning CPU loop")
 
     int cycles = 0;
+
 
     while(true) {
         cycles = (cycles + arm7tdmi_step(cpu)) % 4;
