@@ -28,6 +28,8 @@ void conditional_branch(arm7tdmi_t* state, conditional_branch_t* instr) {
         if (offset < 0) {
             logfatal("Negative offset!")
         }
-        set_pc(state, state->pc + offset);
+        word newpc = state->pc + offset;
+        newpc |= 1; // Set thumb mode bit
+        set_pc(state, newpc);
     }
 }
