@@ -52,6 +52,12 @@ void write_half_ioreg(word addr, half value) {
         case IO_IE:
             state.interrupt_enable.raw = value;
             break;
+        case 0x202/*IO_IF*/:
+            logwarn("Ignoring write to IF register: 0x%04X", value)
+            break;
+        case 0x204/*IO_WAITCNT*/:
+            logwarn("Ignoring write to WAITCNT register: 0x%04X", value)
+            break;
         default:
             logfatal("Write to unknown (but valid) half ioreg addr 0x%08X == 0x%04X", addr, value)
     }
