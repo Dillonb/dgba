@@ -444,7 +444,8 @@ int thumb_mode_step(arm7tdmi_t* state, thumbinstr_t* instr) {
             move_shifted_register(state, &instr->MOVE_SHIFTED_REGISTER);
             break;
         case ADD_SUBTRACT:
-            logfatal("Unimplemented THUMB mode instruction type: ADD_SUBTRACT")
+            add_subtract(state, &instr->ADD_SUBTRACT);
+            break;
         case IMMEDIATE_OPERATIONS:
             immediate_operations(state, &instr->IMMEDIATE_OPERATIONS);
             break;

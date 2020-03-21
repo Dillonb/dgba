@@ -29,6 +29,7 @@ add_library(arm7tdmi
         thumb_instr/conditional_branch.c thumb_instr/conditional_branch.h
         thumb_instr/thumb_software_interrupt.c thumb_instr/thumb_software_interrupt.h
         thumb_instr/unconditional_branch.c thumb_instr/unconditional_branch.h
-        thumb_instr/long_branch_link.c thumb_instr/long_branch_link.h)
+        thumb_instr/long_branch_link.c thumb_instr/long_branch_link.h
+        thumb_instr/add_subtract.c thumb_instr/add_subtract.h)
 
 target_link_libraries(arm7tdmi common)
