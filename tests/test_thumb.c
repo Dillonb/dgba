@@ -1,38 +1,10 @@
-#include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
-#include "../src/gbarom.h"
-#include "../src/gbabus.h"
-#include "../src/arm7tdmi/arm7tdmi.h"
-#include "../src/common/log.h"
+#include "test_common.h"
+
+#define NUM_LOG_LINES 745
+#define LOG_FILE "thumb.log"
+#define TEST_FAILED_ADDRESS 0x0800092E
 
 int main(int argc, char** argv) {
-    gbamem_t* mem = init_mem();
-
-    load_gbarom("thumb.gba", mem);
-
-    // Initialize the CPU, hook it up to the GBA bus
-    arm7tdmi_t* cpu = init_arm7tdmi(gba_read_byte,
-                                    gba_read_half,
-                                    gba_read_word,
-                                    gba_write_byte,
-                                    gba_write_half,
-                                    gba_write_word);
-
-    gba_ppu_t* ppu = init_ppu();
-
-    init_gbabus(mem, cpu, ppu);
-    skip_bios(cpu);
-
-    loginfo("ROM loaded: %lu bytes", mem->rom_size)
-    loginfo("Beginning CPU loop")
-    while(true) {
-        arm7tdmi_step(cpu);
-        word failed_test = cpu->r[7];
-        if (failed_test != 0) {
-            logfatal("test_thumb: FAILED TEST: %d", failed_test)
-        }
-        // TODO check for when all tests pass
-    }
-    exit(0);
+    exit(test_loop("thumb.gba", NUM_LOG_LINES, LOG_FILE, TEST_FAILED_ADDRESS));
 }
