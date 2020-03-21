@@ -35,6 +35,10 @@
 #define IO_BG3PD    0x036
 #define IO_BG3X     0x038
 #define IO_BG3Y     0x03C
+#define IO_WIN0H    0x040
+#define IO_WIN1H    0x042
+#define IO_WIN0V    0x044
+#define IO_WIN1V    0x046
 #define IO_IE       0x200
 #define IO_IF       0x202
 #define IO_WAITCNT  0x204

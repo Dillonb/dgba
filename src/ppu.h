@@ -83,6 +83,22 @@ typedef union DISPSTAT {
     half raw;
 } DISPSTAT_t;
 
+typedef union WINH {
+    struct {
+        unsigned x2:8;
+        unsigned x1:8;
+    };
+    half raw;
+} WINH_t;
+
+typedef union WINV {
+    struct {
+        unsigned y2:8;
+        unsigned y1:8;
+    };
+    half raw;
+} WINV_t;
+
 typedef struct gba_ppu {
     // State
     int x;
@@ -113,6 +129,11 @@ typedef struct gba_ppu {
     bg_rotation_scaling_t BG3PB;
     bg_rotation_scaling_t BG3PC;
     bg_rotation_scaling_t BG3PD;
+
+    WINH_t WIN0H;
+    WINH_t WIN1H;
+    WINV_t WIN0V;
+    WINV_t WIN1V;
 
     bg_referencepoint_t BG2X;
     bg_referencepoint_t BG2Y;
