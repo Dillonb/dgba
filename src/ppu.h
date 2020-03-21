@@ -99,6 +99,46 @@ typedef union WINV {
     half raw;
 } WINV_t;
 
+typedef union WININ {
+    struct {
+        bool win0_bg0_enable:1;
+        bool win0_bg1_enable:1;
+        bool win0_bg2_enable:1;
+        bool win0_bg3_enable:1;
+        bool win0_obj_enable:1;
+        bool win0_color_special_effect_enable:1;
+        unsigned:2;
+        bool win1_bg0_enable:1;
+        bool win1_bg1_enable:1;
+        bool win1_bg2_enable:1;
+        bool win1_bg3_enable:1;
+        bool win1_obj_enable:1;
+        bool win1_color_special_effect_enable:1;
+        unsigned:2;
+    };
+    half raw;
+} WININ_t;
+
+typedef union WINOUT {
+    struct {
+        bool outside_bg0_enable:1;
+        bool outside_bg1_enable:1;
+        bool outside_bg2_enable:1;
+        bool outside_bg3_enable:1;
+        bool outside_obj_enable:1;
+        bool outside_color_special_effect_enable:1;
+        unsigned:2;
+        bool obj_bg0_enable:1;
+        bool obj_bg1_enable:1;
+        bool obj_bg2_enable:1;
+        bool obj_bg3_enable:1;
+        bool obj_obj_enable:1;
+        bool obj_color_special_effect_enable:1;
+        unsigned:2;
+    };
+    half raw;
+} WINOUT_t;
+
 typedef struct gba_ppu {
     // State
     int x;
@@ -134,6 +174,8 @@ typedef struct gba_ppu {
     WINH_t WIN1H;
     WINV_t WIN0V;
     WINV_t WIN1V;
+    WININ_t WININ;
+    WINOUT_t WINOUT;
 
     bg_referencepoint_t BG2X;
     bg_referencepoint_t BG2Y;
