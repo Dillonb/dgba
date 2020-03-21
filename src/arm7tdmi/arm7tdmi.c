@@ -30,6 +30,7 @@
 #include "thumb_instr/thumb_software_interrupt.h"
 #include "thumb_instr/unconditional_branch.h"
 #include "thumb_instr/long_branch_link.h"
+#include "thumb_instr/add_subtract.h"
 
 const char MODE_NAMES[32][11] = {
 "UNKNOWN",    // 0b00000
