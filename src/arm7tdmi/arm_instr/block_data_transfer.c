@@ -72,7 +72,7 @@ void block_data_transfer(arm7tdmi_t* state, block_data_transfer_t* instr) {
             for (unsigned int rt = 0; rt <= 15; rt++) {
                 if ((instr->rlist >> rt & 1) == 1) {
                     unimplemented(rt == instr->rn, "transferring rn in block data transfer")
-                    printf("Will transfer r%d\n", rt);
+                    logdebug("Will transfer r%d\n", rt);
                     address += before_inc;
                     logdebug("Transferring 0x%08X to r%d", address, rt)
                     set_register(state, rt, state->read_word(address));
@@ -83,7 +83,7 @@ void block_data_transfer(arm7tdmi_t* state, block_data_transfer_t* instr) {
             for (unsigned int rt = 0; rt <= 15; rt++) {
                 if ((instr->rlist >> rt & 1) == 1) {
                     unimplemented(rt == instr->rn, "transferring rn in block data transfer")
-                    printf("Will transfer r%d\n", rt);
+                    logdebug("Will transfer r%d\n", rt);
                     address += before_inc;
                     logdebug("Transferring r%d to 0x%08X", rt, address)
                     word rtdata = get_register(state, rt);

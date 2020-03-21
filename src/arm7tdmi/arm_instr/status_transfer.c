@@ -63,15 +63,6 @@ void psr_transfer(arm7tdmi_t* state,
         }
         else {
             unsigned int source_register = dt_operand2 & 0b1111u;
-            // Debug
-            printf("MSR CPSR_");
-            if (field_masks.c) { printf("c"); }
-            if (field_masks.x) { printf("x"); }
-            if (field_masks.s) { printf("s"); }
-            if (field_masks.f) { printf("f"); }
-            printf(", r%d\n", source_register);
-            // http://problemkaputt.de/gbatek.htm#armopcodespsrtransfermrsmsr
-
             source_data = get_register(state, source_register);
         }
 
