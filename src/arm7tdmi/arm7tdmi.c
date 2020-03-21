@@ -17,6 +17,7 @@
 #include "thumb_instr/load_address.h"
 #include "arm_instr/multiply.h"
 #include "arm_instr/single_data_swap.h"
+#include "thumb_instr/move_shifted_register.h"
 
 const char MODE_NAMES[32][11] = {
 "UNKNOWN",    // 0b00000
@@ -428,7 +429,8 @@ int thumb_mode_step(arm7tdmi_t* state, thumbinstr_t* instr) {
 
     switch (type) {
         case MOVE_SHIFTED_REGISTER:
-            logfatal("Unimplemented THUMB mode instruction type: MOVE_SHIFTED_REGISTER")
+            move_shifted_register(state, &instr->MOVE_SHIFTED_REGISTER);
+            break;
         case ADD_SUBTRACT:
             logfatal("Unimplemented THUMB mode instruction type: ADD_SUBTRACT")
         case IMMEDIATE_OPERATIONS:
@@ -575,7 +577,7 @@ void skip_bios(arm7tdmi_t* state) {
     set_register(state, 7, 0x00000000);
     set_register(state, 8, 0x00000000);
     set_register(state, 9, 0x00000000);
-    set_register(state, 10, 0x00000000 );
+    set_register(state, 10, 0x00000000);
     set_register(state, 11, 0x00000000);
     set_register(state, 12, 0x00000000);
     set_register(state, 13, 0x03007F00);

@@ -25,6 +25,14 @@ typedef enum thumb_instr_type {
     THUMB_UNDEFINED
 } thumb_instr_type_t;
 
+typedef struct move_shifted_register {
+    unsigned rd:3;
+    unsigned rs:3;
+    unsigned offset:5;
+    unsigned opcode:2;
+    unsigned:3;
+} move_shifted_register_t;
+
 typedef struct immediate_operations {
     unsigned offset:8;
     unsigned rd:3;
@@ -49,7 +57,7 @@ typedef struct load_address {
 } load_address_t;
 
 typedef union thumbinstr {
-    // TODO MOVE_SHIFTED_REGISTER
+    move_shifted_register_t MOVE_SHIFTED_REGISTER;
     // TODO ADD_SUBTRACT
     immediate_operations_t IMMEDIATE_OPERATIONS;
     // TODO ALU_OPERATIONS
