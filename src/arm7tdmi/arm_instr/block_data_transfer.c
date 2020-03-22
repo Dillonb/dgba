@@ -8,6 +8,7 @@ void block_data_transfer(arm7tdmi_t* state, block_data_transfer_t* instr) {
     int num_registers = popcount(instr->rlist);
 
     bool p = instr->p;
+    bool w = instr->w;
 
     if (!instr->u) {
         // When the u flag is 0, we grow down from the base register.
@@ -20,7 +21,7 @@ void block_data_transfer(arm7tdmi_t* state, block_data_transfer_t* instr) {
         // and flip the p flag.
         p = !p;
         address -= 4 * num_registers;
-        if (instr->w) {
+        if (w) {
             set_register(state, instr->rn, address);
         }
     }
@@ -71,7 +72,9 @@ void block_data_transfer(arm7tdmi_t* state, block_data_transfer_t* instr) {
         if (instr->l) {
             for (unsigned int rt = 0; rt <= 15; rt++) {
                 if ((instr->rlist >> rt & 1) == 1) {
-                    unimplemented(rt == instr->rn, "transferring rn in block data transfer")
+                    if (instr->rlist & (1 << instr->rn)) {
+                        w = false; // Don't writeback to rn when we're also transferring to rn
+                    }
                     logdebug("Will transfer r%d\n", rt);
                     address += before_inc;
                     logdebug("Transferring 0x%08X to r%d", address, rt)
@@ -99,7 +102,7 @@ void block_data_transfer(arm7tdmi_t* state, block_data_transfer_t* instr) {
 
     // If we're growing up, that means we just hit the highest address, and should writeback if that flag is also set.
     // If we're growing down, we wrote back at the beginning.
-    if (instr->u && instr->w) {
+    if (instr->u && w) {
         set_register(state, instr->rn, address);
     }
 
