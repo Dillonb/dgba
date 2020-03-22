@@ -608,8 +608,11 @@ void skip_bios(arm7tdmi_t* state) {
     set_register(state, 10, 0x00000000);
     set_register(state, 11, 0x00000000);
     set_register(state, 12, 0x00000000);
-    set_register(state, 13, 0x03007F00);
-    set_register(state, 14, 0x00000000);
+    set_register(state, REG_SP, 0x03007F00);
+    state->sp_irq = 0x3007FA0;
+    state->sp_svc = 0x3007FE0;
+    set_register(state, REG_LR, 0x00000000);
+
     set_pc(state, 0x08000000);
     state->cpsr.raw = 0x6000001F;
 }
