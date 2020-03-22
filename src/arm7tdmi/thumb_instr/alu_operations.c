@@ -41,10 +41,26 @@ void alu_operations(arm7tdmi_t* state, alu_operations_t* instr) {
             break;
         }
         case 0x5: { // ADC: Rd = Rd + Rs + C
-            logfatal("ADC")
+            uint64_t rddata = get_register(state, instr->rd);
+            uint64_t rsdata = get_register(state, instr->rs) + state->cpsr.C;
+            word result = rddata + rsdata;
+            set_flags_add(state, rddata, rsdata);
+            set_flags_nz(state, result);
+            set_register(state, instr->rd, result);
+            break;
         }
         case 0x6: { // SBC: Rd = Rd - Rs - (~C)
-            logfatal("SBC")
+            word rddata = get_register(state, instr->rd);
+            word rsdata = get_register(state, instr->rs);
+            uint64_t tmp = rsdata;
+            tmp += !state->cpsr.C;
+
+            word result = rddata - tmp;
+
+            set_flags_sbc(state, rddata, rsdata, tmp, result);
+            set_flags_nz(state, result);
+            set_register(state, instr->rd, result);
+            break;
         }
         case 0x7: { // ROR: Rd = Rd ROR Rs
             word newvalue = get_register(state, instr->rd);
