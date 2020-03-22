@@ -12,19 +12,20 @@ void high_register_operations(arm7tdmi_t* state, high_register_operations_t* ins
             int adj_rd = instr->h1 ? instr->rdhd + 8 : instr->rdhd;
             int adj_rs = instr->h2 ? instr->rshs + 8 : instr->rshs;
             word rsdata = get_register(state, adj_rs);
-            if (adj_rs == 15) {
-                rsdata = (rsdata + 2) & 0xFFFFFFFE;
-            }
             word rddata = get_register(state, adj_rd);
-            if (adj_rd == 15) {
-                rddata = (rsdata + 2) & 0xFFFFFFFE;
-            }
             word result = rsdata + rddata;
             set_register(state, adj_rd, result);
             break;
         }
         case 0b01: { // CMP (only one that sets condition codes in this group)
-            logfatal("Unimplemented opcode: CMP")
+            int adj_rd = instr->h1 ? instr->rdhd + 8 : instr->rdhd;
+            int adj_rs = instr->h2 ? instr->rshs + 8 : instr->rshs;
+            word rsdata = get_register(state, adj_rs);
+            word rddata = get_register(state, adj_rd);
+            word result = rsdata - rddata;
+            set_flags_sub(state, rsdata, rddata, result);
+            set_flags_nz(state, result);
+            break;
         }
         case 0b10: { // MOV
             int adj_rd = instr->h1 ? instr->rdhd + 8 : instr->rdhd;
