@@ -19,7 +19,9 @@ void multiply(arm7tdmi_t* state, multiply_t* instr) {
 
     word wordresult = result & 0xFFFFFFFF;
 
-    unimplemented(instr->s, "Status codes")
+    if (instr->s) {
+        set_flags_nz(state, wordresult);
+    }
 
     set_register(state, instr->rd, wordresult);
 }
