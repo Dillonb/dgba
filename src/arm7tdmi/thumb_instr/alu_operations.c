@@ -75,7 +75,12 @@ void alu_operations(arm7tdmi_t* state, alu_operations_t* instr) {
             break;
         }
         case 0x9: { // NEG: Rd = -Rs
-            logfatal("NEG")
+            word rsdata = get_register(state, instr->rs);
+            word result = 0 - rsdata;
+            set_flags_nz(state, result);
+            set_flags_sub(state, 0, rsdata, result);
+            set_register(state, instr->rd, result);
+            break;
         }
         case 0xA: { // CMP: Set condition codes on Rd - Rs
             word rddata = get_register(state, instr->rd);
@@ -97,7 +102,10 @@ void alu_operations(arm7tdmi_t* state, alu_operations_t* instr) {
             break;
         }
         case 0xD: { // MUL: Rd = Rd * Rs
-            logfatal("MUL")
+            word result = get_register(state, instr->rd) * get_register(state, instr->rs);
+            set_flags_nz(state, result);
+            set_register(state, instr->rd, result);
+            break;
         }
         case 0xE: { // BIC: Rd = Rd & ~Rs
             word newvalue = get_register(state, instr->rd) & ~get_register(state, instr->rs);
