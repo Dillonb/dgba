@@ -19,6 +19,31 @@ void init_gbabus(gbamem_t* new_mem, arm7tdmi_t* new_cpu, gba_ppu_t* new_ppu) {
     state.interrupt_enable.raw = 0;
 }
 
+void request_interrupt(gba_interrupt_t interrupt) {
+    if (state.interrupt_master_enable.enable) {
+        switch (interrupt) {
+            case IRQ_VBLANK:
+                if (state.interrupt_enable.lcd_vblank) {
+                    logfatal("VBlank interrupt unhandled!")
+                } else {
+                    logwarn("VBlank interrupt blocked by IE")
+                }
+                break;
+            case IRQ_HBLANK:
+                if (state.interrupt_enable.lcd_hblank) {
+                    logfatal("HBlank interrupt unhandled!")
+                } else {
+                    logwarn("HBlank interrupt blocked by IE")
+                }
+                break;
+            default:
+                logfatal("Unknown interrupt index %d requested!", interrupt)
+        }
+    } else {
+        logwarn("Interrupt blocked by IME")
+    }
+}
+
 void write_half_ioreg_masked(word addr, half value, half mask);
 void write_word_ioreg_masked(word addr, word value, word mask);
 

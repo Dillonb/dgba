@@ -7,6 +7,11 @@
 #include "arm7tdmi/arm7tdmi.h"
 #include "ppu.h"
 
+typedef enum gba_interrupt {
+    IRQ_VBLANK,
+    IRQ_HBLANK
+} gba_interrupt_t;
+
 typedef union interrupt_enable {
     struct {
         bool lcd_vblank:1;
@@ -66,4 +71,6 @@ void gba_write_byte(word addr, byte value);
 void gba_write_half(word address, half value);
 word gba_read_word(word address);
 void gba_write_word(word address, word value);
+
+void request_interrupt(gba_interrupt_t interrupt);
 #endif
