@@ -7,6 +7,7 @@ void load_store_halfword(arm7tdmi_t* state, load_store_halfword_t* instr) {
     word addr = get_register(state, instr->rb) + (instr->offset << 1);
     if (instr->l) {
         word value = state->read_half(addr);
+        value = arm_ror(NULL, value, (addr & 0x1) << 3);
         set_register(state, instr->rd, value);
     } else {
         half value = get_register(state, instr->rd) & 0xFFFF;
