@@ -19,11 +19,7 @@ void alu_operations(arm7tdmi_t* state, alu_operations_t* instr) {
         case 0x2: { // LSL: Rd = Rd << Rs
             word newvalue = get_register(state, instr->rd);
             word shift_amount = get_register(state, instr->rs);
-            if (shift_amount == 0) {
-                newvalue = arm_shift_special_zero_behavior(state, &state->cpsr, LSL, newvalue);
-            } else {
-                newvalue = arm_shift(&state->cpsr, LSL, newvalue, shift_amount);
-            }
+            newvalue = arm_shift(&state->cpsr, LSL, newvalue, shift_amount);
             set_flags_nz(state, newvalue);
             set_register(state, instr->rd, newvalue);
             break;
@@ -31,11 +27,7 @@ void alu_operations(arm7tdmi_t* state, alu_operations_t* instr) {
         case 0x3: { // LSR: Rd = Rd >> Rs
             word newvalue = get_register(state, instr->rd);
             word shift_amount = get_register(state, instr->rs);
-            if (shift_amount == 0) {
-                newvalue = arm_shift_special_zero_behavior(state, &state->cpsr, LSR, newvalue);
-            } else {
-                newvalue = arm_shift(&state->cpsr, LSR, newvalue, shift_amount);
-            }
+            newvalue = arm_lsr(&state->cpsr, newvalue, shift_amount);
             set_flags_nz(state, newvalue);
             set_register(state, instr->rd, newvalue);
             break;
@@ -43,11 +35,7 @@ void alu_operations(arm7tdmi_t* state, alu_operations_t* instr) {
         case 0x4: { // ASR: Rd = Rd ASR Rs
             word newvalue = get_register(state, instr->rd);
             word shift_amount = get_register(state, instr->rs);
-            if (shift_amount == 0) {
-                newvalue = arm_shift_special_zero_behavior(state, &state->cpsr, ASR, newvalue);
-            } else {
-                newvalue = arm_shift(&state->cpsr, ASR, newvalue, shift_amount);
-            }
+            newvalue = arm_asr(&state->cpsr, newvalue, shift_amount);
             set_flags_nz(state, newvalue);
             set_register(state, instr->rd, newvalue);
             break;
@@ -61,11 +49,7 @@ void alu_operations(arm7tdmi_t* state, alu_operations_t* instr) {
         case 0x7: { // ROR: Rd = Rd ROR Rs
             word newvalue = get_register(state, instr->rd);
             word shift_amount = get_register(state, instr->rs);
-            if (shift_amount == 0) {
-                newvalue = arm_shift_special_zero_behavior(state, &state->cpsr, ROR, newvalue);
-            } else {
-                newvalue = arm_shift(&state->cpsr, ROR, newvalue, shift_amount);
-            }
+            newvalue = arm_ror(&state->cpsr, newvalue, shift_amount);
             set_flags_nz(state, newvalue);
             set_register(state, instr->rd, newvalue);
             break;
