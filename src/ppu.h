@@ -11,19 +11,20 @@
 
 typedef union DISPCNT {
     struct {
-        bool obj_window_display:1;
-        bool window1_display:1;
-        bool window0_display:1;
-        bool screen_display_bg3:1;
-        bool screen_display_bg2:1;
-        bool screen_display_bg1:1;
-        bool screen_display_bg0:1;
-        bool forced_blank:1;
-        bool obj_character_vram_mapping:1;
-        bool hblank_interval_free:1;
-        bool display_frame_select:1;
+        unsigned mode:3;
         bool cgbmode:1;
-        unsigned mode:2;
+        bool display_frame_select:1;
+        bool hblank_interval_free:1;
+        bool obj_character_vram_mapping:1;
+        bool forced_blank:1;
+        bool screen_display_bg0:1;
+        bool screen_display_bg1:1;
+        bool screen_display_bg2:1;
+        bool screen_display_bg3:1;
+        bool screen_display_obj:1;
+        bool window0_display:1;
+        bool window1_display:1;
+        bool obj_window_display:1;
     };
     half raw;
 } DISPCNT_t;
