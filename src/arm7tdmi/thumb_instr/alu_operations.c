@@ -1,5 +1,6 @@
 #include "alu_operations.h"
 #include "../../common/log.h"
+#include "../shifts.h"
 
 void alu_operations(arm7tdmi_t* state, alu_operations_t* instr) {
     switch (instr->opcode) {
@@ -16,13 +17,40 @@ void alu_operations(arm7tdmi_t* state, alu_operations_t* instr) {
             break;
         }
         case 0x2: { // LSL: Rd = Rd << Rs
-            logfatal("LSL")
+            word newvalue = get_register(state, instr->rd);
+            word shift_amount = get_register(state, instr->rs);
+            if (shift_amount == 0) {
+                newvalue = arm_shift_special_zero_behavior(state, &state->cpsr, LSL, newvalue);
+            } else {
+                newvalue = arm_shift(&state->cpsr, LSL, newvalue, shift_amount);
+            }
+            set_flags_nz(state, newvalue);
+            set_register(state, instr->rd, newvalue);
+            break;
         }
         case 0x3: { // LSR: Rd = Rd >> Rs
-            logfatal("LSR")
+            word newvalue = get_register(state, instr->rd);
+            word shift_amount = get_register(state, instr->rs);
+            if (shift_amount == 0) {
+                newvalue = arm_shift_special_zero_behavior(state, &state->cpsr, LSR, newvalue);
+            } else {
+                newvalue = arm_shift(&state->cpsr, LSR, newvalue, shift_amount);
+            }
+            set_flags_nz(state, newvalue);
+            set_register(state, instr->rd, newvalue);
+            break;
         }
         case 0x4: { // ASR: Rd = Rd ASR Rs
-            logfatal("ASR")
+            word newvalue = get_register(state, instr->rd);
+            word shift_amount = get_register(state, instr->rs);
+            if (shift_amount == 0) {
+                newvalue = arm_shift_special_zero_behavior(state, &state->cpsr, ASR, newvalue);
+            } else {
+                newvalue = arm_shift(&state->cpsr, ASR, newvalue, shift_amount);
+            }
+            set_flags_nz(state, newvalue);
+            set_register(state, instr->rd, newvalue);
+            break;
         }
         case 0x5: { // ADC: Rd = Rd + Rs + C
             logfatal("ADC")
@@ -31,7 +59,16 @@ void alu_operations(arm7tdmi_t* state, alu_operations_t* instr) {
             logfatal("SBC")
         }
         case 0x7: { // ROR: Rd = Rd ROR Rs
-            logfatal("ROR")
+            word newvalue = get_register(state, instr->rd);
+            word shift_amount = get_register(state, instr->rs);
+            if (shift_amount == 0) {
+                newvalue = arm_shift_special_zero_behavior(state, &state->cpsr, ROR, newvalue);
+            } else {
+                newvalue = arm_shift(&state->cpsr, ROR, newvalue, shift_amount);
+            }
+            set_flags_nz(state, newvalue);
+            set_register(state, instr->rd, newvalue);
+            break;
         }
         case 0x8: { // TST: Set condition codes on Rd AND Rs
             set_flags_nz(state, get_register(state, instr->rd) & get_register(state, instr->rs));
