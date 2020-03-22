@@ -21,6 +21,10 @@ bool is_vblank(gba_ppu_t* ppu) {
     return ppu->y > GBA_SCREEN_Y && ppu->y != 227;
 }
 
+bool is_visible(gba_ppu_t* ppu) {
+    return ppu->x < GBA_SCREEN_X && ppu->y < GBA_SCREEN_Y;
+}
+
 void ppu_step(gba_ppu_t* ppu) {
     // Update coords and set V/HBLANK flags
     ppu->x++;
@@ -40,9 +44,27 @@ void ppu_step(gba_ppu_t* ppu) {
             }
             ppu->DISPSTAT.vblank = true;
         }
+
+        if (ppu->y == ppu->DISPSTAT.vcount_setting) {
+            ppu->DISPSTAT.vcount = true;
+            logwarn("VCOUNT flag is set!!!")
+            if (ppu->DISPSTAT.vcount_irq_enable) {
+                request_interrupt(IRQ_VCOUNT);
+            }
+        } else {
+            ppu->DISPSTAT.vcount = false;
+        }
+
         if (ppu->y > GBA_SCREEN_Y + GBA_SCREEN_VBLANK) {
             ppu->y = 0;
             ppu->DISPSTAT.vblank = false;
+        }
+    }
+
+    if (is_visible(ppu) && !ppu->DISPCNT.forced_blank) {
+        // Draw a pixel
+        if (ppu->DISPCNT.mode != 0) {
+            logwarn("Drawin a pixel in mode %d", ppu->DISPCNT.mode);
         }
     }
 }
