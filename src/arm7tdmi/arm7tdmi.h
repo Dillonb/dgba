@@ -12,6 +12,10 @@
 #define MODE_UNDEFINED 0b11011
 #define MODE_SYSTEM 0b11111
 
+
+#define REG_LR 14
+#define REG_PC 15
+
 typedef union status_register {
     word raw;
     struct {
