@@ -1,5 +1,4 @@
 #include "pc_relative_load.h"
-#include "../../common/log.h"
 
 void pc_relative_load(arm7tdmi_t *state, pc_relative_load_t *instr) {
     word offset = instr->word8 << 2;
