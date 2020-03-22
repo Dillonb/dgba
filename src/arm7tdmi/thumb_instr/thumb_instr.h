@@ -87,6 +87,7 @@ typedef struct load_store_byte_halfword {
     unsigned rd:3;
     unsigned rb:3;
     unsigned ro:3;
+    unsigned:1;
     bool s:1;
     bool h:1;
     unsigned:4;
