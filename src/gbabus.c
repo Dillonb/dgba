@@ -159,8 +159,8 @@ word read_word_ioreg(word addr) {
 half read_half_ioreg(word addr) {
     word regnum = addr & 0xFFF;
     switch (regnum) {
-        case IO_VCOUNT:
-            return ppu->y;
+        case IO_VCOUNT: return ppu->y;
+        case IO_DISPSTAT: return ppu->DISPSTAT.raw;
         default:
             logfatal("read from unknown (but valid) half ioreg addr 0x%08x", addr)
     }
