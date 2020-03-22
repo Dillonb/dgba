@@ -22,8 +22,14 @@ void immediate_operations(arm7tdmi_t* state, immediate_operations_t* instr) {
             set_register(state, instr->rd, result);
             break;
         }
-        case 3: // SUB
-            logfatal("Unimplmented opcode: SUB")
+        case 3: { // SUB
+            word rddata = get_register(state, instr->rd);
+            word result = rddata - instr->offset;
+            set_flags_sub(state, rddata, result, instr->offset);
+            set_flags_nz(state, result);
+            set_register(state, instr->rd, result);
+            break;
+        }
         default:
             logfatal("immediate_operations: opc: %d rd: %d offset: %d", instr->opcode, instr->rd, instr->offset)
     }
