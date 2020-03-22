@@ -36,9 +36,27 @@ typedef union interrupt_master_enable {
     half raw;
 } interrupt_master_enable_t;
 
+typedef union KEYINPUT {
+    struct {
+        bool a:1;
+        bool b:1;
+        bool select:1;
+        bool start:1;
+        bool right:1;
+        bool left:1;
+        bool up:1;
+        bool down:1;
+        bool r:1;
+        bool l:1;
+        unsigned:6;
+    };
+    uint16_t raw;
+} KEYINPUT_t;
+
 typedef struct gbabus {
     interrupt_master_enable_t interrupt_master_enable;
     interrupt_enable_t interrupt_enable;
+    KEYINPUT_t KEYINPUT;
 } gbabus_t;
 
 void init_gbabus(gbamem_t* new_mem, arm7tdmi_t* new_cpu, gba_ppu_t* new_ppu);

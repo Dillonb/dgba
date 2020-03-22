@@ -161,6 +161,7 @@ half read_half_ioreg(word addr) {
     switch (regnum) {
         case IO_VCOUNT: return ppu->y;
         case IO_DISPSTAT: return ppu->DISPSTAT.raw;
+        case IO_KEYINPUT: return state.KEYINPUT.raw;
         default:
             logfatal("read from unknown (but valid) half ioreg addr 0x%08x", addr)
     }
