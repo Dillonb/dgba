@@ -1,5 +1,6 @@
 #include "conditional_branch.h"
 #include "../../common/log.h"
+#include "../sign_extension.h"
 
 void conditional_branch(arm7tdmi_t* state, conditional_branch_t* instr) {
     bool passed;
@@ -24,14 +25,11 @@ void conditional_branch(arm7tdmi_t* state, conditional_branch_t* instr) {
     }
 
     if (passed) {
-        int8_t offset = (int8_t)instr->soffset; // Store it in a signed datatype
-        word newpc;
-        if (offset < 0) {
-            logwarn("Negative offset!")
-            newpc = state->pc + offset - 4;
-        } else {
-            newpc = state->pc + offset + 2;
-        }
+        word offset = instr->soffset;
+        offset = sign_extend_word(offset, 8, 32);
+        offset <<= 1;
+        int signed_offset = (int)offset;
+        word newpc = state->pc + signed_offset;
         newpc |= 1; // Set thumb mode bit
         set_pc(state, newpc);
     }
