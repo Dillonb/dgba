@@ -4,6 +4,7 @@
 void block_data_transfer(arm7tdmi_t* state, block_data_transfer_t* instr) {
 
     word address = get_register(state, instr->rn);
+    word base = address;
 
     int num_registers = popcount(instr->rlist);
 
@@ -85,15 +86,19 @@ void block_data_transfer(arm7tdmi_t* state, block_data_transfer_t* instr) {
         } else {
             for (unsigned int rt = 0; rt <= 15; rt++) {
                 if ((instr->rlist >> rt & 1) == 1) {
-                    unimplemented(rt == instr->rn, "transferring rn in block data transfer")
                     logdebug("Will transfer r%d\n", rt);
                     address += before_inc;
                     logdebug("Transferring r%d to 0x%08X", rt, address)
-                    word rtdata = get_register(state, rt);
-                    if (rt == 15) {
-                        rtdata += 4;
+                    word value;
+                    if (rt == instr->rn) {
+                        value = base;
+                    } else {
+                        value = get_register(state, rt);
+                        if (rt == 15) {
+                            value += 4;
+                        }
                     }
-                    state->write_word(address, rtdata);
+                    state->write_word(address, value);
                     address += after_inc;
                 }
             }
