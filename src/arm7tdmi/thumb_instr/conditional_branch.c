@@ -25,10 +25,13 @@ void conditional_branch(arm7tdmi_t* state, conditional_branch_t* instr) {
 
     if (passed) {
         int8_t offset = (int8_t)instr->soffset; // Store it in a signed datatype
+        word newpc;
         if (offset < 0) {
-            logfatal("Negative offset!")
+            logwarn("Negative offset!")
+            newpc = state->pc + offset - 4;
+        } else {
+            newpc = state->pc + offset + 2;
         }
-        word newpc = state->pc + offset;
         newpc |= 1; // Set thumb mode bit
         set_pc(state, newpc);
     }
