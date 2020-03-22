@@ -260,7 +260,7 @@ void gba_write_byte(word addr, byte value) {
         logfatal("Tried to write to unused section of RAM in between bios and WRAM")
     } else if (addr < 0x03000000) { // EWRAM
         word index = (addr - 0x02000000) % 0x40000;
-        mem->ewram[index] = addr;
+        mem->ewram[index] = value;
     } else if (addr < 0x04000000) { // IWRAM
         word index = (addr - 0x03000000) % 0x8000;
         mem->iwram[index] = value;
