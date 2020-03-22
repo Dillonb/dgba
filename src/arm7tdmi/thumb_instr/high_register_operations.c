@@ -30,9 +30,6 @@ void high_register_operations(arm7tdmi_t* state, high_register_operations_t* ins
             int adj_rd = instr->h1 ? instr->rdhd + 8 : instr->rdhd;
             int adj_rs = instr->h2 ? instr->rshs + 8 : instr->rshs;
             word source_data = get_register(state, adj_rs);
-            if (adj_rs == 15) {
-                source_data = (source_data + 2) & 0xFFFFFFFE;
-            }
             if (adj_rd == 15) {
                 source_data |= 1; // Set thumb mode bit
             }
