@@ -118,7 +118,7 @@ int test_loop(char* rom_filename, int num_log_lines, char* log_filename, word te
         ASSERT_EQUAL(adjusted_pc, "r10",       lines[step].r[10],    get_register(cpu, 10))
         ASSERT_EQUAL(adjusted_pc, "r11",       lines[step].r[11],    get_register(cpu, 11))
         ASSERT_EQUAL(adjusted_pc, "r12",       lines[step].r[12],    get_register(cpu, 12))
-        ASSERT_EQUAL(adjusted_pc, "r13",       lines[step].r[13],    get_register(cpu, 13))
+        ASSERT_EQUAL(adjusted_pc, "r13 (SP)",  lines[step].r[13],    get_register(cpu, 13))
         ASSERT_EQUAL(adjusted_pc, "r14 (LR)",  lines[step].r[14],    get_register(cpu, 14))
         ASSERT_EQUAL(adjusted_pc, "r15 (PC)",  lines[step].r[15],    get_register(cpu, 15))
         ASSERT_EQUAL(adjusted_pc, "CPSR",      lines[step].cpsr.raw, cpu->cpsr.raw)
