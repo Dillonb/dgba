@@ -527,14 +527,14 @@ int arm7tdmi_step(arm7tdmi_t* state) {
          state->instr = instr.raw;
          word adjusted_pc = state->pc - 4;
          half fakelittleendian = FAKELITTLE_HALF(instr.raw);
-         loginfo("adjusted pc: 0x%08X read: (big: 0x%04X) (little: 0x%04X)", adjusted_pc, instr.raw, fakelittleendian)
+         loginfo("[THM] adjusted pc: 0x%08X read: (big: 0x%04X) (little: 0x%04X)", adjusted_pc, instr.raw, fakelittleendian)
          cycles = thumb_mode_step(state, &instr);
      } else {
          arminstr_t instr = next_arm_instr(state);
          state->instr = instr.raw;
          word adjusted_pc = state->pc - 8;
          word fakelittleendian = FAKELITTLE_WORD(instr.raw);
-         loginfo("adjusted pc: 0x%08X read: (big: 0x%08X) (little: 0x%08X)", adjusted_pc, instr.raw, fakelittleendian)
+         loginfo("[ARM] adjusted pc: 0x%08X read: (big: 0x%08X) (little: 0x%08X)", adjusted_pc, instr.raw, fakelittleendian)
          cycles = arm_mode_step(state, &instr);
      }
 
