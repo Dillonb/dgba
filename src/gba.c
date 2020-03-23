@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
 
     loginfo("ROM loaded: %lu bytes", mem->rom_size)
     if (should_skip_bios) {
-        loginfo("Skipping BIOS")
+        logwarn("Skipping BIOS")
         skip_bios(cpu);
     }
 
