@@ -234,15 +234,15 @@ byte gba_read_byte(word addr) {
         unimplemented(1, "Tried to read from unused portion of general internal memory")
     } else if (addr < 0x06000000) { // Palette RAM
         word index = (addr - 0x5000000) % 0x400;
-        return mem->pram[index];
+        return ppu->pram[index];
     } else if (addr < 0x07000000) {
         word index = addr - 0x06000000;
         unimplemented(index > 0x17FFF, "VRAM mirroring")
-        return mem->vram[index];
+        return ppu->vram[index];
     } else if (addr < 0x08000000) {
         word index = addr - 0x08000000;
         index %= OAM_SIZE;
-        return mem->oam[index];
+        return ppu->oam[index];
     } else if (addr < 0x0E00FFFF) {
         // Cartridge
         word adjusted = addr - 0x08000000;
@@ -297,15 +297,15 @@ void gba_write_byte(word addr, byte value) {
         unimplemented(1, "Tried to write to unused portion of general internal memory")
     } else if (addr < 0x06000000) { // Palette RAM
         word index = (addr - 0x5000000) % 0x400;
-        mem->pram[index] = value;
+        ppu->pram[index] = value;
     } else if (addr < 0x07000000) {
         word index = addr - 0x06000000;
         unimplemented(index > 0x17FFF, "VRAM mirroring")
-        mem->vram[index] = value;
+        ppu->vram[index] = value;
     } else if (addr < 0x08000000) {
         word index = addr - 0x08000000;
         index %= OAM_SIZE;
-        mem->oam[index] = value;
+        ppu->oam[index] = value;
     } else if (addr < 0x0E00FFFF) {
         logwarn("Tried to write to 0x%08X", addr)
         unimplemented(1, "Write to cartridge address")

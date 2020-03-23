@@ -9,6 +9,10 @@
 #define GBA_SCREEN_Y 160
 #define GBA_SCREEN_VBLANK 68
 
+#define PRAM_SIZE  0x400
+#define VRAM_SIZE  0x18000
+#define OAM_SIZE   0x400
+
 typedef union DISPCNT {
     struct {
         unsigned mode:3;
@@ -176,6 +180,13 @@ typedef struct gba_ppu {
     int x;
     int y;
     color_t screen[GBA_SCREEN_X][GBA_SCREEN_Y];
+
+    // Memory
+    byte pram[PRAM_SIZE];
+    byte vram[VRAM_SIZE];
+    byte oam[OAM_SIZE];
+
+
     // Registers
     DISPCNT_t DISPCNT;
 
