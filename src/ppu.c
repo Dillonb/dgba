@@ -28,6 +28,8 @@ bool is_visible(gba_ppu_t* ppu) {
 
 #define PALETTE_BANK_BACKGROUND 0
 
+#define FIVEBIT_TO_EIGHTBIT_COLOR(c) (c<<3)|(c&7)
+
 void render_pixel_mode4(gba_ppu_t* ppu, color_t* pixel) {
     if (ppu->DISPCNT.screen_display_bg2) {
         int offset = ppu->x + (ppu->y * GBA_SCREEN_X); // Calculate this based on BG2X/Y/VOFS/HOFS/etc
@@ -43,9 +45,9 @@ void render_pixel_mode4(gba_ppu_t* ppu, color_t* pixel) {
             color.raw = gba_read_half(0x05000000 | (0x20 * PALETTE_BANK_BACKGROUND + 2 * tile)) & 0x7FFF;
 
             pixel->a = 0xFF;
-            pixel->r = color.r << 3;
-            pixel->g = color.g << 3;
-            pixel->b = color.b << 3;
+            pixel->r = FIVEBIT_TO_EIGHTBIT_COLOR(color.r);
+            pixel->g = FIVEBIT_TO_EIGHTBIT_COLOR(color.g);
+            pixel->b = FIVEBIT_TO_EIGHTBIT_COLOR(color.b);
         }
     } else {
         pixel->a = 0;
