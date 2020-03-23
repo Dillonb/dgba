@@ -212,13 +212,13 @@ void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
         }
         case 0xE: { // BIC: Rd = Rn AND NOT Op2
             word newvalue = rndata & (~operand2);
-            if (s) { set_flags_nz(state, operand2); }
+            if (s) { set_flags_nz(state, newvalue); }
             set_register(state, rd, newvalue);
             break;
         }
         case 0xF: { // NOT: Rd = NOT Op2
             word newvalue = ~operand2;
-            if (s) { set_flags_nz(state, operand2); }
+            if (s) { set_flags_nz(state, newvalue); }
             set_register(state, rd, newvalue);
             break;
         }
