@@ -57,9 +57,10 @@ int main(int argc, char** argv) {
 
 
     while(true) {
-        cycles = (cycles + arm7tdmi_step(cpu)) % 4;
-        if (cycles == 0) {
+        cycles += arm7tdmi_step(cpu);
+        while (cycles > 4) {
             ppu_step(ppu);
+            cycles -= 4;
         }
     }
 
