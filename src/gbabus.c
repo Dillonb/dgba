@@ -75,7 +75,7 @@ half* get_half_ioreg_ptr(word addr) {
     switch (regnum) {
         case IO_DISPCNT: return &ppu->DISPCNT.raw;
         case IO_UNDOCUMENTED_GREEN_SWAP:
-            logwarn("Ignoring write to Green Swap register")
+            logwarn("Ignoring access to Green Swap register")
             return NULL;
         case IO_DISPSTAT: return &ppu->DISPSTAT.raw;
         case IO_VCOUNT:

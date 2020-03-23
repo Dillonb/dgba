@@ -26,6 +26,35 @@ bool is_visible(gba_ppu_t* ppu) {
     return ppu->x < GBA_SCREEN_X && ppu->y < GBA_SCREEN_Y;
 }
 
+#define PALETTE_BANK_BACKGROUND 0
+
+void render_pixel_mode4(gba_ppu_t* ppu, color_t* pixel) {
+    if (ppu->DISPCNT.screen_display_bg2) {
+        int offset = ppu->x + (ppu->y * GBA_SCREEN_X); // Calculate this based on BG2X/Y/VOFS/HOFS/etc
+        int index = ppu->DISPCNT.display_frame_select * 0xA000 + offset;
+        int tile = ppu->vram[index];
+        if (tile == 0) {
+            pixel->a = 0;
+            pixel->r = 0;
+            pixel->g = 0;
+            pixel->b = 0;
+        } else {
+            gba_color_t color;
+            color.raw = gba_read_half(0x05000000 | (0x20 * PALETTE_BANK_BACKGROUND + 2 * tile)) & 0x7FFF;
+
+            pixel->a = 0xFF;
+            pixel->r = color.r << 3;
+            pixel->g = color.g << 3;
+            pixel->b = color.b << 3;
+        }
+    } else {
+        pixel->a = 0;
+        pixel->r = 0;
+        pixel->g = 0;
+        pixel->b = 0;
+    }
+}
+
 void ppu_step(gba_ppu_t* ppu) {
     // Update coords and set V/HBLANK flags
     ppu->x++;
@@ -65,8 +94,20 @@ void ppu_step(gba_ppu_t* ppu) {
 
     if (is_visible(ppu) && !ppu->DISPCNT.forced_blank) {
         // Draw a pixel
-        if (ppu->DISPCNT.mode != 0) {
-            logwarn("Drawin a pixel in mode %d", ppu->DISPCNT.mode);
+        color_t* pixel = &ppu->screen[ppu->y][ppu->x];
+        switch (ppu->DISPCNT.mode) {
+            case 0:
+                // logwarn("Ignoring render pixel in mode 0")
+                pixel->a = 0;
+                pixel->r = 0;
+                pixel->g = 0;
+                pixel->b = 0;
+                break;
+            case 4:
+                render_pixel_mode4(ppu, pixel);
+                break;
+            default:
+                logfatal("Unknown graphics mode: %d", ppu->DISPCNT.mode)
         }
     }
 }

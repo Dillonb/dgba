@@ -45,7 +45,7 @@ void update_key(SDL_Keycode sdlk, bool state) {
     }
 }
 
-void render_screen(color_t (*screen)[GBA_SCREEN_X][GBA_SCREEN_Y]) {
+void render_screen(color_t (*screen)[GBA_SCREEN_Y][GBA_SCREEN_X]) {
     if (!initialized) {
         initialize();
     }

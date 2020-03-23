@@ -71,6 +71,16 @@ typedef struct color {
     byte b;
 } color_t;
 
+typedef union gba_color {
+    struct {
+        unsigned:1;
+        unsigned r:5;
+        unsigned g:5;
+        unsigned b:5;
+    };
+    half raw;
+} gba_color_t;
+
 typedef union DISPSTAT {
     struct {
         // Read only
@@ -179,7 +189,7 @@ typedef struct gba_ppu {
     // State
     int x;
     int y;
-    color_t screen[GBA_SCREEN_X][GBA_SCREEN_Y];
+    color_t screen[GBA_SCREEN_Y][GBA_SCREEN_X];
 
     // Memory
     byte pram[PRAM_SIZE];
