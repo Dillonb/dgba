@@ -17,6 +17,11 @@ void init_gbabus(gbamem_t* new_mem, arm7tdmi_t* new_cpu, gba_ppu_t* new_ppu) {
 
     state.interrupt_master_enable.raw = 0;
     state.interrupt_enable.raw = 0;
+    state.KEYINPUT.raw = 0xFFFF;
+}
+
+KEYINPUT_t* get_keyinput() {
+    return &state.KEYINPUT;
 }
 
 void request_interrupt(gba_interrupt_t interrupt) {

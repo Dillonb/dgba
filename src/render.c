@@ -2,6 +2,7 @@
 
 #include "render.h"
 #include "common/log.h"
+#include "gbabus.h"
 #include <stdbool.h>
 
 #define SCREEN_SCALE 4
@@ -35,9 +36,40 @@ void initialize() {
 }
 
 void update_key(SDL_Keycode sdlk, bool state) {
+    KEYINPUT_t* KEYINPUT = get_keyinput();
     switch (sdlk) {
         case SDLK_ESCAPE:
             logfatal("User pressed escape")
+            break;
+        case SDLK_UP:
+            KEYINPUT->up = !state;
+            break;
+        case SDLK_DOWN:
+            KEYINPUT->down = !state;
+            break;
+        case SDLK_LEFT:
+            KEYINPUT->left = !state;
+            break;
+        case SDLK_RIGHT:
+            KEYINPUT->right = !state;
+            break;
+        case SDLK_z:
+            KEYINPUT->a = !state;
+            break;
+        case SDLK_x:
+            KEYINPUT->b = !state;
+            break;
+        case SDLK_RETURN:
+            KEYINPUT->start = !state;
+            break;
+        case SDLK_RSHIFT:
+            KEYINPUT->select = !state;
+            break;
+        case SDLK_a:
+            KEYINPUT->l = !state;
+            break;
+        case SDLK_s:
+            KEYINPUT->r = !state;
             break;
         default:
             logwarn("Unknown key: %d", sdlk)

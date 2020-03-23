@@ -65,6 +65,8 @@ typedef struct gbabus {
     KEYINPUT_t KEYINPUT;
 } gbabus_t;
 
+KEYINPUT_t* get_keyinput();
+
 void init_gbabus(gbamem_t* new_mem, arm7tdmi_t* new_cpu, gba_ppu_t* new_ppu);
 byte gba_read_byte(word addr);
 half gba_read_half(word address);
