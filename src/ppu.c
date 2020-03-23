@@ -1,6 +1,7 @@
 #include "ppu.h"
 #include "common/log.h"
 #include "gbabus.h"
+#include "render.h"
 
 gba_ppu_t* init_ppu() {
     gba_ppu_t* ppu = malloc(sizeof(gba_ppu_t));
@@ -43,6 +44,7 @@ void ppu_step(gba_ppu_t* ppu) {
                 request_interrupt(IRQ_VBLANK);
             }
             ppu->DISPSTAT.vblank = true;
+            render_screen(&ppu->screen);
         }
 
         if (ppu->y == ppu->DISPSTAT.vcount_setting) {

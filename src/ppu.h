@@ -61,6 +61,7 @@ typedef union bg_referencepoint {
 } bg_referencepoint_t;
 
 typedef struct color {
+    byte a;
     byte r;
     byte g;
     byte b;
