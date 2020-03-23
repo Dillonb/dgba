@@ -59,8 +59,8 @@
 #define IO_DMA2CNTH 0x0D2
 #define IO_DMA3SAD  0x0D4
 #define IO_DMA3DAD  0x0D8
-#define IO_DMA3CNTL 0x0DA
-#define IO_DMA3CNTH 0x0DC
+#define IO_DMA3CNTL 0x0DC
+#define IO_DMA3CNTH 0x0DE
 #define IO_KEYINPUT 0x130
 #define IO_IE       0x200
 #define IO_IF       0x202
