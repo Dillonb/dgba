@@ -307,9 +307,9 @@ half gba_read_half(word address) {
 void gba_write_byte(word addr, byte value) {
     addr &= ~(sizeof(byte) - 1);
     if (addr < GBA_BIOS_SIZE) {
-        logfatal("Tried to write to the BIOS!")
+        logwarn("Tried to write to the BIOS!")
     } else if (addr < 0x01FFFFFF) {
-        logfatal("Tried to write to unused section of RAM in between bios and WRAM")
+        logwarn("Tried to write to unused section of RAM in between bios and WRAM")
     } else if (addr < 0x03000000) { // EWRAM
         word index = (addr - 0x02000000) % 0x40000;
         mem->ewram[index] = value;
@@ -334,9 +334,8 @@ void gba_write_byte(word addr, byte value) {
         ppu->oam[index] = value;
     } else if (addr < 0x0E00FFFF) {
         logwarn("Tried to write to 0x%08X", addr)
-        unimplemented(1, "Write to cartridge address")
     } else {
-        logfatal("Something's up, we reached the end of gba_write_byte without writing a value! addr: 0x%08X", addr)
+        logwarn("Ignoring write to high address! addr: 0x%08X", addr)
     }
 }
 
