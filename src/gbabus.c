@@ -117,6 +117,14 @@ half* get_half_ioreg_ptr(word addr) {
         case IO_BLDALPHA: return &ppu->BLDALPHA.raw;
         case IO_BLDY: return &ppu->BLDY.raw;
         case IO_IE: return &state.interrupt_enable.raw;
+        case IO_DMA0CNTL: return &state.DMA0CNTL.raw;
+        case IO_DMA0CNTH: return &state.DMA0CNTH.raw;
+        case IO_DMA1CNTL: return &state.DMA1CNTL.raw;
+        case IO_DMA1CNTH: return &state.DMA1CNTH.raw;
+        case IO_DMA2CNTL: return &state.DMA2CNTL.raw;
+        case IO_DMA2CNTH: return &state.DMA2CNTH.raw;
+        case IO_DMA3CNTL: return &state.DMA3CNTL.raw;
+        case IO_DMA3CNTH: return &state.DMA3CNTH.raw;
         case IO_IF:
             logwarn("Ignoring write to IF register")
             return NULL;
@@ -157,10 +165,18 @@ void write_half_ioreg(word addr, half value) {
 word* get_word_ioreg_ptr(word addr) {
     unimplemented(get_ioreg_size_for_addr(addr) != sizeof(word), "Trying to get the address of a wrong-sized word ioreg")
     switch (addr & 0xFFF) {
-        case IO_BG2X: return &ppu->BG2X.raw;
-        case IO_BG2Y: return &ppu->BG2Y.raw;
-        case IO_BG3X: return &ppu->BG3X.raw;
-        case IO_BG3Y: return &ppu->BG3Y.raw;
+        case IO_BG2X:     return &ppu->BG2X.raw;
+        case IO_BG2Y:     return &ppu->BG2Y.raw;
+        case IO_BG3X:     return &ppu->BG3X.raw;
+        case IO_BG3Y:     return &ppu->BG3Y.raw;
+        case IO_DMA0SAD:  return &state.DMA0SAD.raw;
+        case IO_DMA0DAD:  return &state.DMA0DAD.raw;
+        case IO_DMA1SAD:  return &state.DMA1SAD.raw;
+        case IO_DMA1DAD:  return &state.DMA1DAD.raw;
+        case IO_DMA2SAD:  return &state.DMA2SAD.raw;
+        case IO_DMA2DAD:  return &state.DMA2DAD.raw;
+        case IO_DMA3SAD:  return &state.DMA3SAD.raw;
+        case IO_DMA3DAD:  return &state.DMA3DAD.raw;
         default: logfatal("Tried to get the address of an unknown (but valid) word ioreg addr: 0x%08X", addr)
     }
 }

@@ -193,6 +193,22 @@ typedef union BLDY {
     half raw;
 } BLDY_t;
 
+typedef union addr_27b {
+    struct {
+        unsigned addr:27;
+        unsigned:5;
+    };
+    word raw;
+} addr_27b_t;
+
+typedef union addr_28b {
+    struct {
+        unsigned addr:28;
+        unsigned:4;
+    };
+    word raw;
+} addr_28b_t;
+
 typedef struct gba_ppu {
     // State
     int x;
