@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include "gbarom.h"
 
-void load_gbarom(char* filename, gbamem_t* mem) {
+void load_gbarom(const char* filename, gbamem_t* mem) {
     FILE *fp = fopen(filename, "rb");
 
     fseek(fp, 0, SEEK_END);

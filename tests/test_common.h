@@ -66,7 +66,7 @@ void load_log(const char* filename, int lines, cpu_log_t* buffer) {
          cpsrflag(cpsr.C, "C"), cpsrflag(cpsr.V, "V"), cpsrflag(cpsr.disable_irq, "I"), \
          cpsrflag(cpsr.disable_fiq, "F"), cpsrflag(cpsr.thumb, "T"))
 
-int test_loop(char* rom_filename, int num_log_lines, char* log_filename, word test_failed_address) {
+int test_loop(const char* rom_filename, int num_log_lines, const char* log_filename, word test_failed_address) {
     log_set_verbosity(4);
     gbamem_t* mem = init_mem();
 
