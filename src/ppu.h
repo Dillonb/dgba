@@ -185,6 +185,14 @@ typedef union BLDCNT {
     half raw;
 } BLDCNT_t;
 
+typedef union BLDALPHA {
+    half raw;
+} BLDALPHA_t;
+
+typedef union BLDY {
+    half raw;
+} BLDY_t;
+
 typedef struct gba_ppu {
     // State
     int x;
@@ -232,6 +240,8 @@ typedef struct gba_ppu {
     MOSAIC_t MOSAIC;
 
     BLDCNT_t BLDCNT;
+    BLDALPHA_t BLDALPHA;
+    BLDY_t BLDY;
 
     bg_referencepoint_t BG2X;
     bg_referencepoint_t BG2Y;
