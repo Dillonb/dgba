@@ -212,11 +212,32 @@ bool is_open_bus(word address) {
 }
 
 word open_bus(word addr) {
-    unimplemented(cpu->cpsr.thumb, "Open bus unimplemented in thumb mode")
-    word result = cpu->pipeline[1];
+    word result;
+
+    if (cpu->cpsr.thumb)
+    {
+        word low = cpu->pipeline[1];
+        word high = cpu->pipeline[1];
+
+        byte region = addr >> 24;
+
+        if (region == 0 || region == 7) {
+            low = cpu->pipeline[0];
+        } else if (region == 3) {
+            if (addr & 3) {
+                low = cpu->pipeline[0];
+            } else {
+                high = cpu->pipeline[0];
+            }
+        }
+
+        result = (high << 16) | low;
+    } else {
+        result = cpu->pipeline[1];
+    }
     result >>= ((addr & 0b11u) << 3u);
 
-    logwarn("RETURNING FROM OPEN BUS AT ADDRESS 0x%08X: 0x%08X", addr, result);
+    logwarn("RETURNING FROM OPEN BUS AT ADDRESS 0x%08X: 0x%08X", addr, result)
     return result;
 }
 
