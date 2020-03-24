@@ -101,23 +101,24 @@ void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
 
     logdebug("Doing data processing opcode %X", instr->opcode)
 
+    word newvalue;
     word* to_set = NULL;
 
     switch(instr->opcode) {
         case 0x0: { // AND logical: Rd = Rn AND Op2
-            word newvalue = rndata & operand2;
+            newvalue = rndata & operand2;
             if (s) { set_flags_nz(state, newvalue); }
             to_set = &newvalue;
             break;
         }
         case 0x1: { // XOR logical: Rd = Rn XOR Op2
-            word newvalue = rndata ^ operand2;
+            newvalue = rndata ^ operand2;
             if (s) { set_flags_nz(state, newvalue); }
             to_set = &newvalue;
             break;
         }
         case 0x2: { // SUB: Rd = Rn-Op2
-            word newvalue = rndata - operand2;
+            newvalue = rndata - operand2;
             if (s) {
                 set_flags_nz(state, newvalue);
                 set_flags_sub(state, rndata, operand2, newvalue);
@@ -126,7 +127,7 @@ void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
             break;
         }
         case 0x3: { // RSB (subtract reversed): Rd = Op2-Rn
-            word newvalue = operand2 - rndata;
+            newvalue = operand2 - rndata;
             if (s) {
                 set_flags_nz(state, newvalue);
                 set_flags_sub(state, operand2, rndata, newvalue);
@@ -135,7 +136,7 @@ void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
             break;
         }
         case 0x4: { // ADD: Rd = Rn+Op2
-            word newvalue = rndata + operand2;
+            newvalue = rndata + operand2;
             if (s) {
                 set_flags_nz(state, newvalue);
                 set_flags_add(state, rndata, operand2);
@@ -150,14 +151,15 @@ void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
                 set_flags_nz(state, newvalue64);
                 set_flags_add(state, op2c, rndata);
             }
-            *to_set = newvalue64;
+            newvalue = newvalue64;
+            to_set = &newvalue;
             break;
         }
         case 0x6: { // SBC: Rd = Rn-Op2+C-1
             uint64_t tmp = operand2;
             tmp -= state->cpsr.C;
             tmp += 1;
-            word newvalue = rndata - tmp;
+            newvalue = rndata - tmp;
             if (s) {
                 set_flags_nz(state, newvalue);
                 set_flags_sbc(state, rndata, operand2, tmp, newvalue);
@@ -169,7 +171,7 @@ void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
             uint64_t tmp = rndata;
             tmp -= state->cpsr.C;
             tmp += 1;
-            word newvalue = operand2 - tmp;
+            newvalue = operand2 - tmp;
             if (s) {
                 set_flags_nz(state, newvalue);
                 set_flags_sbc(state, operand2, rndata, tmp, newvalue);
@@ -189,20 +191,20 @@ void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
         }
         case 0xA: { // CMP: Void = Rn-Op2
             unimplemented(!s, "BUG DETECTED: s flag must be set for opcodes 0x8-0xB")
-            word newvalue = rndata - operand2;
+            newvalue = rndata - operand2;
             set_flags_nz(state, newvalue);
             set_flags_sub(state, rndata, operand2, newvalue);
             break;
         }
         case 0xB: { // Void = Rn+Op2
             unimplemented(!s, "BUG DETECTED: s flag must be set for opcodes 0x8-0xB")
-            word newvalue = rndata + operand2;
+            newvalue = rndata + operand2;
             set_flags_nz(state, newvalue);
             set_flags_add(state, rndata, operand2);
             break;
         }
         case 0xC: { // OR logical: Rd = Rn OR Op2
-            word newvalue = rndata | operand2;
+            newvalue = rndata | operand2;
             if (s) { set_flags_nz(state, newvalue); }
             to_set = &newvalue;
             break;
@@ -213,13 +215,13 @@ void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
             break;
         }
         case 0xE: { // BIC: Rd = Rn AND NOT Op2
-            word newvalue = rndata & (~operand2);
+            newvalue = rndata & (~operand2);
             if (s) { set_flags_nz(state, newvalue); }
             to_set = &newvalue;
             break;
         }
         case 0xF: { // NOT: Rd = NOT Op2
-            word newvalue = ~operand2;
+            newvalue = ~operand2;
             if (s) { set_flags_nz(state, newvalue); }
             to_set = &newvalue;
             break;
