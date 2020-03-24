@@ -62,6 +62,8 @@
 #define IO_DMA3CNTL 0x0DC
 #define IO_DMA3CNTH 0x0DE
 #define IO_KEYINPUT 0x130
+#define IO_RCNT     0x134
+#define IO_JOYCNT   0x140
 #define IO_IE       0x200
 #define IO_IF       0x202
 #define IO_WAITCNT  0x204

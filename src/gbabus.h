@@ -94,6 +94,14 @@ typedef union DMACNTH {
     half raw;
 } DMACNTH_t;
 
+typedef union RCNT {
+    half raw;
+} RCNT_t;
+
+typedef union JOYCNT {
+    half raw;
+} JOYCNT_t;
+
 typedef struct gbabus {
     interrupt_master_enable_t interrupt_master_enable;
     interrupt_enable_t interrupt_enable;
@@ -119,6 +127,9 @@ typedef struct gbabus {
     addr_28b_t DMA3DAD;
     wc_16b_t   DMA3CNTL;
     DMACNTH_t  DMA3CNTH;
+
+    RCNT_t RCNT;
+    JOYCNT_t JOYCNT;
 
 } gbabus_t;
 
