@@ -81,6 +81,10 @@ void write_byte_ioreg(word addr, byte value) {
     }
 }
 
+byte read_byte_ioreg(word addr) {
+    logfatal("Reading byte ioreg at 0x%08X", addr)
+}
+
 half* get_half_ioreg_ptr(word addr) {
     word regnum = addr & 0xFFF;
     switch (regnum) {
@@ -321,11 +325,23 @@ byte gba_read_byte(word addr) {
         word index = (addr - 0x03000000) % 0x8000;
         return mem->iwram[index];
     } else if (addr < 0x04000400) {
-        if (!is_ioreg_readable(addr)) {
-            logwarn("Returning from open bus (UNREADABLE BUT VALID BYTE IOREG 0x%08X)", addr)
+        byte size = get_ioreg_size_for_addr(addr);
+        if (size == 0) {
+            logwarn("Returning open bus (UNUSED BYTE IOREG 0x%08X)", addr)
             return open_bus(addr);
+        } else if (size == sizeof(half)) {
+            half* ioreg = get_half_ioreg_ptr(addr);
+            int ofs = addr % 2;
+            return (*ioreg >> ofs) & 0xFF;
         }
-        logfatal("Unimplemented: reading from ioreg")
+        else if (size > sizeof(byte)) {
+            logfatal("Reading from too-large ioreg (%d) as byte at 0x%08X", size, addr)
+        }
+        if (!is_ioreg_readable(addr)) {
+            logwarn("Returning 0 (UNREADABLE BUT VALID BYTE IOREG 0x%08X)", addr)
+            return 0;
+        }
+        return read_byte_ioreg(addr);
     } else if (addr < 0x05000000) {
         logwarn("Tried to read from 0x%08X", addr)
         unimplemented(1, "Tried to read from unused portion of general internal memory")
