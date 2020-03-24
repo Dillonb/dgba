@@ -10,6 +10,8 @@ gba_ppu_t* ppu;
 
 gbabus_t state;
 
+word open_bus(word addr);
+
 void init_gbabus(gbamem_t* new_mem, arm7tdmi_t* new_cpu, gba_ppu_t* new_ppu) {
     mem = new_mem;
     cpu = new_cpu;
@@ -53,6 +55,9 @@ void write_half_ioreg_masked(word addr, half value, half mask);
 void write_word_ioreg_masked(word addr, word value, word mask);
 
 void write_byte_ioreg(word addr, byte value) {
+    if (!is_ioreg_writable(addr)) {
+        logwarn("Ignoring write to unwriteable byte ioreg 0x%08X", addr)
+    }
     byte size = get_ioreg_size_for_addr(addr);
     if (size == sizeof(half)) {
         word offset = (addr % sizeof(half));
@@ -158,6 +163,9 @@ void write_half_ioreg_masked(word addr, half value, half mask) {
 }
 
 void write_half_ioreg(word addr, half value) {
+    if (!is_ioreg_writable(addr)) {
+        logwarn("Ignoring write to unwriteable byte ioreg 0x%08X", addr)
+    }
     // Write to the whole thing
     write_half_ioreg_masked(addr, value, 0xFFFF);
 }
@@ -197,22 +205,27 @@ void write_word_ioreg(word addr, word value) {
         addr = 0xFF00FFFFu;
     }
 
+    if (!is_ioreg_writable(addr)) {
+        logwarn("Ignoring write to unwriteable word ioreg 0x%08X", addr)
+    }
+
     write_word_ioreg_masked(addr, value, 0xFFFFFFFF);
 }
 
 word read_word_ioreg(word addr) {
+    if (!is_ioreg_readable(addr)) {
+        logwarn("Returning from open bus (UNREADABLE BUT VALID WORD IOREG 0x%08X)", addr)
+        return open_bus(addr);
+    }
     logfatal("read from unknown (but valid) word ioreg addr 0x%08x", addr)
 }
 
 half read_half_ioreg(word addr) {
-    word regnum = addr & 0xFFF;
-    switch (regnum) {
-        case IO_VCOUNT: return ppu->y;
-        case IO_DISPSTAT: return ppu->DISPSTAT.raw;
-        case IO_KEYINPUT: return state.KEYINPUT.raw;
-        default:
-            logfatal("read from unknown (but valid) half ioreg addr 0x%08x", addr)
+    if (!is_ioreg_readable(addr)) {
+        logwarn("Returning from open bus (UNREADABLE BUT VALID HALF IOREG 0x%08X)", addr)
+        return open_bus(addr);
     }
+    return *get_half_ioreg_ptr(addr);
 }
 
 bool is_open_bus(word address) {
@@ -272,6 +285,10 @@ byte gba_read_byte(word addr) {
         word index = (addr - 0x03000000) % 0x8000;
         return mem->iwram[index];
     } else if (addr < 0x04000400) {
+        if (!is_ioreg_readable(addr)) {
+            logwarn("Returning from open bus (UNREADABLE BUT VALID BYTE IOREG 0x%08X)", addr)
+            return open_bus(addr);
+        }
         logfatal("Unimplemented: reading from ioreg")
     } else if (addr < 0x05000000) {
         logwarn("Tried to read from 0x%08X", addr)
