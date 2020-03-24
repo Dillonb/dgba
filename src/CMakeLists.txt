@@ -1,11 +1,13 @@
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
 
-INCLUDE_DIRECTORIES(SYSTEM "contrib")
+find_package(SDL2 REQUIRED)
+
+INCLUDE_DIRECTORIES(SYSTEM "contrib" ${SDL2_INCLUDE_DIR})
 
 add_library(render
         render.c render.h)
 
-target_link_libraries(render SDL2)
+target_link_libraries(render ${SDL2_LIBRARY})
 
 add_library(core
         gbabios.c gbabios.h
