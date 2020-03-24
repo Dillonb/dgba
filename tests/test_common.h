@@ -9,10 +9,6 @@
 #include "../src/gbabios.h"
 #include "../src/arm7tdmi/arm7tdmi.h"
 
-bool in_bios(arm7tdmi_t* state) {
-    return state->pc < GBA_BIOS_SIZE;
-}
-
 typedef struct cpu_log {
     word address;
     word instruction;
