@@ -248,8 +248,8 @@ void write_word_ioreg(word addr, word value) {
 
 word read_word_ioreg(word addr) {
     if (!is_ioreg_readable(addr)) {
-        logwarn("Returning from open bus (UNREADABLE BUT VALID WORD IOREG 0x%08X)", addr)
-        return open_bus(addr);
+        logwarn("Returning 0 (UNREADABLE BUT VALID WORD IOREG 0x%08X)", addr)
+        return 0;
     }
     logfatal("read from unknown (but valid) word ioreg addr 0x%08x", addr)
 }
@@ -257,7 +257,7 @@ word read_word_ioreg(word addr) {
 half read_half_ioreg(word addr) {
     if (!is_ioreg_readable(addr)) {
         logwarn("Returning from open bus (UNREADABLE BUT VALID HALF IOREG 0x%08X)", addr)
-        return open_bus(addr);
+        return 0;
     }
     half* ioreg = get_half_ioreg_ptr(addr);
     if (ioreg) {
