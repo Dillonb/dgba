@@ -85,13 +85,7 @@ half* get_half_ioreg_ptr(word addr) {
     word regnum = addr & 0xFFF;
     switch (regnum) {
         case IO_DISPCNT: return &ppu->DISPCNT.raw;
-        case IO_UNDOCUMENTED_GREEN_SWAP:
-            logwarn("Ignoring access to Green Swap register")
-            return NULL;
         case IO_DISPSTAT: return &ppu->DISPSTAT.raw;
-        case IO_VCOUNT:
-            logwarn("Writing to read-only VCOUNT register, ignoring!")
-            return NULL;
         case IO_BG0CNT: return &ppu->BG0CNT.raw;
         case IO_BG1CNT: return &ppu->BG1CNT.raw;
         case IO_BG2CNT: return &ppu->BG2CNT.raw;
@@ -142,6 +136,12 @@ half* get_half_ioreg_ptr(word addr) {
             return NULL;
         case IO_WAITCNT:
             logwarn("Ignoring access to WAITCNT register")
+            return NULL;
+        case IO_UNDOCUMENTED_GREEN_SWAP:
+            logwarn("Ignoring access to Green Swap register")
+            return NULL;
+        case IO_VCOUNT:
+            logwarn("Access to read-only VCOUNT register, ignoring!")
             return NULL;
         case IO_SOUND1CNT_L:
         case IO_SOUND1CNT_H:
@@ -462,7 +462,6 @@ void gba_write_word(word address, word value) {
         byte ioreg_size = get_ioreg_size_for_addr(address);
         if(ioreg_size == sizeof(word)) {
             write_word_ioreg(address, value);
-            logfatal("Writing a word to word-size ioreg")
         } else if (ioreg_size == 0) {
             logwarn("Unused word size ioregister!")
             // Unused io register
