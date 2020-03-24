@@ -138,7 +138,7 @@ half* get_half_ioreg_ptr(word addr) {
             return NULL;
         case IO_IME: return &state.interrupt_master_enable.raw;
         default:
-            logfatal("Write to unknown (but valid) half ioreg addr 0x%08X", addr)
+            logfatal("Access to unknown (but valid) half ioreg addr 0x%08X", addr)
     }
 }
 
