@@ -6,7 +6,7 @@ void thumb_software_interrupt(arm7tdmi_t* state, thumb_software_interrupt_t* ins
     state->cpsr.mode = MODE_SUPERVISOR;
     set_spsr(state, cpsr.raw);
 
-    state->lr_svc = state->pc - (state->cpsr.thumb ? 2 : 4);
+    state->lr_svc = state->pc - 2;
 
     state->cpsr.thumb = 0;
     state->cpsr.disable_irq = 1;
