@@ -20,6 +20,7 @@ void init_gbabus(gbamem_t* new_mem, arm7tdmi_t* new_cpu, gba_ppu_t* new_ppu) {
     state.interrupt_master_enable.raw = 0;
     state.interrupt_enable.raw = 0;
     state.KEYINPUT.raw = 0xFFFF;
+    state.SOUNDBIAS.raw = 0x0200;
 }
 
 KEYINPUT_t* get_keyinput() {
@@ -134,6 +135,7 @@ half* get_half_ioreg_ptr(word addr) {
         case IO_RCNT: return &state.RCNT.raw;
         case IO_JOYCNT: return &state.JOYCNT.raw;
         case IO_IME: return &state.interrupt_master_enable.raw;
+        case IO_SOUNDBIAS: return &state.SOUNDBIAS.raw;
 
         case IO_IF:
             logwarn("Ignoring access to IF register")
@@ -141,7 +143,6 @@ half* get_half_ioreg_ptr(word addr) {
         case IO_WAITCNT:
             logwarn("Ignoring access to WAITCNT register")
             return NULL;
-        case IO_SOUNDBIAS:
         case IO_SOUND1CNT_L:
         case IO_SOUND1CNT_H:
         case IO_SOUND1CNT_X:

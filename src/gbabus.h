@@ -102,6 +102,11 @@ typedef union JOYCNT {
     half raw;
 } JOYCNT_t;
 
+// MOVE THIS TO AN APPROPRIATE PLACE
+typedef union SOUNDBIAS {
+    half raw;
+} SOUNDBIAS_t;
+
 typedef struct gbabus {
     interrupt_master_enable_t interrupt_master_enable;
     interrupt_enable_t interrupt_enable;
@@ -130,6 +135,8 @@ typedef struct gbabus {
 
     RCNT_t RCNT;
     JOYCNT_t JOYCNT;
+
+    SOUNDBIAS_t SOUNDBIAS;
 
 } gbabus_t;
 
