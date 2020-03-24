@@ -110,23 +110,23 @@ typedef struct gbabus {
     // DMA
     addr_27b_t DMA0SAD;
     addr_27b_t DMA0DAD;
-    wc_14b_t   DMA0CNTL;
-    DMACNTH_t  DMA0CNTH;
+    wc_14b_t   DMA0CNT_L;
+    DMACNTH_t  DMA0CNT_H;
 
     addr_28b_t DMA1SAD;
     addr_27b_t DMA1DAD;
-    wc_14b_t   DMA1CNTL;
-    DMACNTH_t  DMA1CNTH;
+    wc_14b_t   DMA1CNT_L;
+    DMACNTH_t  DMA1CNT_H;
 
     addr_28b_t DMA2SAD;
     addr_27b_t DMA2DAD;
-    wc_14b_t   DMA2CNTL;
-    DMACNTH_t  DMA2CNTH;
+    wc_14b_t   DMA2CNT_L;
+    DMACNTH_t  DMA2CNT_H;
 
     addr_28b_t DMA3SAD;
     addr_28b_t DMA3DAD;
-    wc_16b_t   DMA3CNTL;
-    DMACNTH_t  DMA3CNTH;
+    wc_16b_t   DMA3CNT_L;
+    DMACNTH_t  DMA3CNT_H;
 
     RCNT_t RCNT;
     JOYCNT_t JOYCNT;

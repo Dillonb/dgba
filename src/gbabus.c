@@ -122,24 +122,50 @@ half* get_half_ioreg_ptr(word addr) {
         case IO_BLDALPHA: return &ppu->BLDALPHA.raw;
         case IO_BLDY: return &ppu->BLDY.raw;
         case IO_IE: return &state.interrupt_enable.raw;
-        case IO_DMA0CNTL: return &state.DMA0CNTL.raw;
-        case IO_DMA0CNTH: return &state.DMA0CNTH.raw;
-        case IO_DMA1CNTL: return &state.DMA1CNTL.raw;
-        case IO_DMA1CNTH: return &state.DMA1CNTH.raw;
-        case IO_DMA2CNTL: return &state.DMA2CNTL.raw;
-        case IO_DMA2CNTH: return &state.DMA2CNTH.raw;
-        case IO_DMA3CNTL: return &state.DMA3CNTL.raw;
-        case IO_DMA3CNTH: return &state.DMA3CNTH.raw;
+        case IO_DMA0CNT_L: return &state.DMA0CNT_L.raw;
+        case IO_DMA0CNT_H: return &state.DMA0CNT_H.raw;
+        case IO_DMA1CNT_L: return &state.DMA1CNT_L.raw;
+        case IO_DMA1CNT_H: return &state.DMA1CNT_H.raw;
+        case IO_DMA2CNT_L: return &state.DMA2CNT_L.raw;
+        case IO_DMA2CNT_H: return &state.DMA2CNT_H.raw;
+        case IO_DMA3CNT_L: return &state.DMA3CNT_L.raw;
+        case IO_DMA3CNT_H: return &state.DMA3CNT_H.raw;
         case IO_KEYINPUT: return &state.KEYINPUT.raw;
         case IO_RCNT: return &state.RCNT.raw;
         case IO_JOYCNT: return &state.JOYCNT.raw;
+        case IO_IME: return &state.interrupt_master_enable.raw;
+
         case IO_IF:
-            logwarn("Ignoring write to IF register")
+            logwarn("Ignoring access to IF register")
             return NULL;
         case IO_WAITCNT:
-            logwarn("Ignoring write to WAITCNT register")
+            logwarn("Ignoring access to WAITCNT register")
             return NULL;
-        case IO_IME: return &state.interrupt_master_enable.raw;
+        case IO_SOUNDBIAS:
+        case IO_SOUND1CNT_L:
+        case IO_SOUND1CNT_H:
+        case IO_SOUND1CNT_X:
+        case IO_SOUND2CNT_L:
+        case IO_SOUND2CNT_H:
+        case IO_SOUND3CNT_L:
+        case IO_SOUND3CNT_H:
+        case IO_SOUND3CNT_X:
+        case IO_SOUND4CNT_L:
+        case IO_SOUND4CNT_H:
+        case IO_SOUNDCNT_L:
+        case IO_SOUNDCNT_H:
+        case IO_SOUNDCNT_X:
+        case WAVE_RAM0_L:
+        case WAVE_RAM0_H:
+        case WAVE_RAM1_L:
+        case WAVE_RAM1_H:
+        case WAVE_RAM2_L:
+        case WAVE_RAM2_H:
+        case WAVE_RAM3_L:
+        case WAVE_RAM3_H:
+            logwarn("Ignoring access to sound register: 0x%03X", regnum)
+            return NULL;
+
         default:
             logfatal("Access to unknown (but valid) half ioreg addr 0x%08X", addr)
     }
@@ -228,7 +254,13 @@ half read_half_ioreg(word addr) {
         logwarn("Returning from open bus (UNREADABLE BUT VALID HALF IOREG 0x%08X)", addr)
         return open_bus(addr);
     }
-    return *get_half_ioreg_ptr(addr);
+    half* ioreg = get_half_ioreg_ptr(addr);
+    if (ioreg) {
+        return *ioreg;
+    } else {
+        logwarn("Ignoring read from half ioreg at 0x%08X and returning 0.", addr)
+        return 0;
+    }
 }
 
 bool is_open_bus(word address) {
