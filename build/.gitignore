@@ -9,3 +9,4 @@ DartConfiguration.tcl
 Testing
 tests
 gba_bios.bin
+logtester
