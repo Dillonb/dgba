@@ -101,17 +101,19 @@ void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
 
     logdebug("Doing data processing opcode %X", instr->opcode)
 
+    word* to_set = NULL;
+
     switch(instr->opcode) {
         case 0x0: { // AND logical: Rd = Rn AND Op2
             word newvalue = rndata & operand2;
             if (s) { set_flags_nz(state, newvalue); }
-            set_register(state, rd, newvalue);
+            to_set = &newvalue;
             break;
         }
         case 0x1: { // XOR logical: Rd = Rn XOR Op2
             word newvalue = rndata ^ operand2;
             if (s) { set_flags_nz(state, newvalue); }
-            set_register(state, rd, newvalue);
+            to_set = &newvalue;
             break;
         }
         case 0x2: { // SUB: Rd = Rn-Op2
@@ -120,7 +122,7 @@ void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
                 set_flags_nz(state, newvalue);
                 set_flags_sub(state, rndata, operand2, newvalue);
             }
-            set_register(state, rd, newvalue);
+            to_set = &newvalue;
             break;
         }
         case 0x3: { // RSB (subtract reversed): Rd = Op2-Rn
@@ -129,7 +131,7 @@ void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
                 set_flags_nz(state, newvalue);
                 set_flags_sub(state, operand2, rndata, newvalue);
             }
-            set_register(state, rd, newvalue);
+            to_set = &newvalue;
             break;
         }
         case 0x4: { // ADD: Rd = Rn+Op2
@@ -138,17 +140,17 @@ void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
                 set_flags_nz(state, newvalue);
                 set_flags_add(state, rndata, operand2);
             }
-            set_register(state, rd, newvalue);
+            to_set = &newvalue;
             break;
         }
         case 0x5: { // ADC: Rd = Rn+Op2+C
             uint64_t op2c = operand2 + state->cpsr.C;
-            uint64_t newvalue = rndata + op2c;
+            uint64_t newvalue64 = rndata + op2c;
             if (s) {
-                set_flags_nz(state, newvalue);
+                set_flags_nz(state, newvalue64);
                 set_flags_add(state, op2c, rndata);
             }
-            set_register(state, rd, newvalue);
+            *to_set = newvalue64;
             break;
         }
         case 0x6: { // SBC: Rd = Rn-Op2+C-1
@@ -160,7 +162,7 @@ void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
                 set_flags_nz(state, newvalue);
                 set_flags_sbc(state, rndata, operand2, tmp, newvalue);
             }
-            set_register(state, rd, newvalue);
+            to_set = &newvalue;
             break;
         }
         case 0x7: { // RSC: RD = Op2-Rn+C-1
@@ -172,7 +174,7 @@ void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
                 set_flags_nz(state, newvalue);
                 set_flags_sbc(state, operand2, rndata, tmp, newvalue);
             }
-            set_register(state, rd, newvalue);
+            to_set = &newvalue;
             break;
         }
         case 0x8: { // TST: Void = Rn AND Op2
@@ -202,24 +204,24 @@ void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
         case 0xC: { // OR logical: Rd = Rn OR Op2
             word newvalue = rndata | operand2;
             if (s) { set_flags_nz(state, newvalue); }
-            set_register(state, rd, newvalue);
+            to_set = &newvalue;
             break;
         }
         case 0xD: { // MOV: Rd = Op2
-            set_register(state, rd, operand2);
+            to_set = &operand2;
             if (s) { set_flags_nz(state, operand2); }
             break;
         }
         case 0xE: { // BIC: Rd = Rn AND NOT Op2
             word newvalue = rndata & (~operand2);
             if (s) { set_flags_nz(state, newvalue); }
-            set_register(state, rd, newvalue);
+            to_set = &newvalue;
             break;
         }
         case 0xF: { // NOT: Rd = NOT Op2
             word newvalue = ~operand2;
             if (s) { set_flags_nz(state, newvalue); }
-            set_register(state, rd, newvalue);
+            to_set = &newvalue;
             break;
         }
         default:
@@ -232,5 +234,12 @@ void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
             logfatal("rd == 15 with s bit set should not be used in user mode!")
         }
         set_psr(state, get_spsr(state)->raw);
+        if (state->cpsr.thumb && to_set) {
+            *to_set |= 1;
+        }
+    }
+
+    if (to_set) {
+        set_register(state, rd, *to_set);
     }
 }
