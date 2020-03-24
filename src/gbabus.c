@@ -130,6 +130,7 @@ half* get_half_ioreg_ptr(word addr) {
         case IO_DMA2CNTH: return &state.DMA2CNTH.raw;
         case IO_DMA3CNTL: return &state.DMA3CNTL.raw;
         case IO_DMA3CNTH: return &state.DMA3CNTH.raw;
+        case IO_KEYINPUT: return &state.KEYINPUT.raw;
         case IO_IF:
             logwarn("Ignoring write to IF register")
             return NULL;
