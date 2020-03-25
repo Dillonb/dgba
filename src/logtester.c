@@ -162,6 +162,10 @@ int main(int argc, char** argv) {
         ASSERT_EQUAL(adjusted_pc, "r15 (PC)",  lines[step].r[15],    get_register(cpu, 15))
         ASSERT_EQUAL(adjusted_pc, "CPSR",      lines[step].cpsr.raw, cpu->cpsr.raw)
 
+        while(gba_dma() > 0) {
+            loginfo("DMA in progress, please hold...")
+        }
+
         arm7tdmi_step(cpu);
         step++;
     }
