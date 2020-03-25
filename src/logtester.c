@@ -15,13 +15,17 @@ typedef struct cpu_log {
 } cpu_log_t;
 
 
-void load_log(const char* filename, int lines, cpu_log_t* buffer) {
-    FILE* fp = fopen(filename, "rt");
-    char buf[200];
+void load_log(const char* filename, int lines, int* lines_read, cpu_log_t* buffer) {
+    FILE* fp = fopen(filename, "r");
     for (int l = 0; l < lines; l++) {
         cpu_log_t log;
 
-        char* line = fgets(buf, sizeof(buf), fp);
+        char* line = NULL;
+        size_t len = 0;
+
+        if (getline(&line, &len, fp) == -1) {
+            break;
+        }
 
         char* tok = strtok(line, " ");
 
@@ -34,6 +38,12 @@ void load_log(const char* filename, int lines, cpu_log_t* buffer) {
         log.cpsr.raw = strtol(tok, NULL, 16);
 
         buffer[l] = log;
+
+        free(line);
+
+        if (lines_read) {
+            (*lines_read)++;
+        }
     }
 }
 
@@ -107,7 +117,12 @@ int main(int argc, char** argv) {
     cpu_log_t* lines = malloc(sizeof(cpu_log_t) * log_lines);
 
     loginfo("Loading log")
-    load_log(log_file, log_lines, lines);
+    int log_lines_in_file = 0;
+    load_log(log_file, log_lines, &log_lines_in_file, lines);
+
+    if (log_lines > log_lines_in_file) {
+        log_lines = log_lines_in_file;
+    }
 
     loginfo("ROM loaded: %lu bytes", mem->rom_size)
     loginfo("Beginning CPU loop")
