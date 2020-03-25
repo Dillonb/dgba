@@ -34,6 +34,11 @@ void init_gbabus(gbamem_t* new_mem, arm7tdmi_t* new_cpu, gba_ppu_t* new_ppu) {
     state.KEYINPUT.raw = 0xFFFF;
     state.SOUNDBIAS.raw = 0x0200;
 
+    state.DMA0INT.previously_enabled = false;
+    state.DMA1INT.previously_enabled = false;
+    state.DMA2INT.previously_enabled = false;
+    state.DMA3INT.previously_enabled = false;
+
     // Loop through every single word aligned address in the ROM and try to find what backup type it is (you read that right)
     // Start at 0xE4 since everything before that is part of the header
     for (int addr = 0xE4; addr < (mem->rom_size - 4); addr += 4) {
@@ -508,8 +513,10 @@ void gba_write_byte(word addr, byte value) {
         word index = (addr - 0x5000000) % 0x400;
         ppu->pram[index] = value;
     } else if (addr < 0x07000000) {
-        word index = addr - 0x06000000;
-        unimplemented(index > 0x17FFF, "VRAM mirroring")
+        word index = addr & 0x1FFFF;
+        if (index > 0x17FFF) {
+            index -= 0x8000;
+        }
         ppu->vram[index] = value;
     } else if (addr < 0x08000000) {
         word index = addr - 0x08000000;
@@ -610,7 +617,76 @@ int gba_dma() {
     unimplemented(state.DMA0CNT_H.dma_enable, "DMA0")
     unimplemented(state.DMA1CNT_H.dma_enable, "DMA1")
     unimplemented(state.DMA2CNT_H.dma_enable, "DMA2")
-    unimplemented(state.DMA3CNT_H.dma_enable, "DMA3")
 
-    return 0;
+    int dma_cycles = 0;
+
+    if (state.DMA3CNT_H.dma_enable) {
+        unimplemented(state.DMA3CNT_H.game_pak_drq_dma3_only, "Game pak DRQ")
+        unimplemented(state.DMA3CNT_H.dma_start_time != 0, "Non-immediate DMA start time (grr)")
+        // When newly enabled, reload everything
+        if (!state.DMA3INT.previously_enabled) {
+            state.DMA3INT.previously_enabled = true;
+            state.DMA3INT.current_source_address = state.DMA3SAD.addr;
+            state.DMA3INT.current_dest_address = state.DMA3DAD.addr;
+
+            state.DMA3INT.remaining = state.DMA3CNT_L.wc;
+            if (state.DMA3INT.remaining == 0) {
+                state.DMA3INT.remaining = 0x10000; // Value of 0 means max value +1
+            }
+        }
+
+        if (state.DMA3INT.remaining > 0) {
+            if (state.DMA3CNT_H.dma_transfer_type == 0) {// 16 bits
+                word source_address = state.DMA3INT.current_source_address;
+                half value = gba_read_half(source_address);
+                switch (state.DMA3CNT_H.source_addr_control) {
+                    case 0: state.DMA3INT.current_source_address += sizeof(half); break;
+                    case 1: state.DMA3INT.current_source_address -= sizeof(half); break;
+                    case 2: break; // No change
+                    default: logfatal("Unimplemented source address control type: %d", state.DMA3CNT_H.source_addr_control)
+                }
+
+                word dest_address = state.DMA3INT.current_dest_address;
+                gba_write_half(dest_address, value);
+                switch (state.DMA3CNT_H.dest_addr_control) {
+                    case 0: state.DMA3INT.current_dest_address += sizeof(half); break;
+                    case 1: state.DMA3INT.current_dest_address -= sizeof(half); break;
+                    case 2: break; // No change
+                    default: logfatal("Unimplemented dest address control type: %d", state.DMA3CNT_H.dest_addr_control)
+                }
+                logwarn("DMA3: transferred 0x%04X from 0x%08X to 0x%08X", value, source_address, dest_address)
+            } else { // 32 bits
+                word source_address = state.DMA3INT.current_source_address;
+                word value = gba_read_word(source_address);
+                dma_cycles++; // TODO real mem access time
+                switch (state.DMA3CNT_H.source_addr_control) {
+                    case 0: state.DMA3INT.current_source_address += sizeof(word); break;
+                    case 1: state.DMA3INT.current_source_address -= sizeof(word); break;
+                    case 2: break; // No change
+                    default: logfatal("Unimplemented source address control type: %d", state.DMA3CNT_H.source_addr_control)
+                }
+
+                word dest_address = state.DMA3INT.current_dest_address;
+                gba_write_word(dest_address, value);
+                dma_cycles++; // TODO real mem access time
+                switch (state.DMA3CNT_H.dest_addr_control) {
+                    case 0: state.DMA3INT.current_dest_address += sizeof(word); break;
+                    case 1: state.DMA3INT.current_dest_address -= sizeof(word); break;
+                    case 2: break; // No change
+                    default: logfatal("Unimplemented dest address control type: %d", state.DMA3CNT_H.dest_addr_control)
+                }
+
+                logwarn("DMA3: transferred 0x%08X from 0x%08X to 0x%08X", value, source_address, dest_address)
+            }
+            state.DMA3INT.remaining--;
+        } else {
+            unimplemented(state.DMA3CNT_H.irq_on_end_of_wc, "IRQ on end of DMA3. I mean, this shouldn't be hard")
+            unimplemented(state.DMA3CNT_H.dma_repeat, "DMA3 repeat")
+            state.DMA3CNT_H.dma_enable = false;
+        }
+    } else if (state.DMA3INT.previously_enabled) {
+        state.DMA3INT.previously_enabled = false;
+    }
+
+    return dma_cycles;
 }

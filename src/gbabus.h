@@ -94,6 +94,13 @@ typedef union DMACNTH {
     half raw;
 } DMACNTH_t;
 
+typedef struct DMAINT {
+    bool previously_enabled;
+    word current_source_address;
+    word current_dest_address;
+    word remaining;
+} DMAINT_t;
+
 typedef union RCNT {
     half raw;
 } RCNT_t;
@@ -134,21 +141,25 @@ typedef struct gbabus {
     addr_27b_t DMA0DAD;
     wc_14b_t   DMA0CNT_L;
     DMACNTH_t  DMA0CNT_H;
+    DMAINT_t   DMA0INT;
 
     addr_28b_t DMA1SAD;
     addr_27b_t DMA1DAD;
     wc_14b_t   DMA1CNT_L;
     DMACNTH_t  DMA1CNT_H;
+    DMAINT_t   DMA1INT;
 
     addr_28b_t DMA2SAD;
     addr_27b_t DMA2DAD;
     wc_14b_t   DMA2CNT_L;
     DMACNTH_t  DMA2CNT_H;
+    DMAINT_t   DMA2INT;
 
     addr_28b_t DMA3SAD;
     addr_28b_t DMA3DAD;
     wc_16b_t   DMA3CNT_L;
     DMACNTH_t  DMA3CNT_H;
+    DMAINT_t   DMA3INT;
 
     RCNT_t RCNT;
     JOYCNT_t JOYCNT;
