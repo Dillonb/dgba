@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "gbabus.h"
 #include "ioreg_util.h"
 #include "gbamem.h"
@@ -12,6 +14,16 @@ gbabus_t state;
 
 word open_bus(word addr);
 
+typedef enum backup_type {
+    UNKNOWN,
+    SRAM,
+    EEPROM,
+    FLASH64K,
+    FLASH128K
+} backup_type_t;
+
+backup_type_t backup_type = UNKNOWN;
+
 void init_gbabus(gbamem_t* new_mem, arm7tdmi_t* new_cpu, gba_ppu_t* new_ppu) {
     mem = new_mem;
     cpu = new_cpu;
@@ -21,6 +33,38 @@ void init_gbabus(gbamem_t* new_mem, arm7tdmi_t* new_cpu, gba_ppu_t* new_ppu) {
     state.interrupt_enable.raw = 0;
     state.KEYINPUT.raw = 0xFFFF;
     state.SOUNDBIAS.raw = 0x0200;
+
+    // Loop through every single word aligned address in the ROM and try to find what backup type it is (you read that right)
+    // Start at 0xE4 since everything before that is part of the header
+    for (int addr = 0xE4; addr < (mem->rom_size - 4); addr += 4) {
+        if (memcmp("SRAM", &mem->rom[addr], 4) == 0) {
+            backup_type = SRAM;
+            logwarn("Determined backup type: SRAM")
+            mem->backup = malloc(SRAM_SIZE);
+            memset(mem->backup, 0, SRAM_SIZE);
+            break;
+        }
+        if (memcmp("EEPROM", &mem->rom[addr], 6) == 0) {
+            backup_type = EEPROM;
+            logwarn("Determined backup type: EEPROM")
+            break;
+        }
+        if (memcmp("FLASH_", &mem->rom[addr], 6) == 0) {
+            backup_type = FLASH64K;
+            logwarn("Determined backup type: FLASH64K")
+            break;
+        }
+        if (memcmp("FLASH512_", &mem->rom[addr], 9) == 0) {
+            backup_type = FLASH64K;
+            logwarn("Determined backup type: FLASH64K")
+            break;
+        }
+        if (memcmp("FLASH1M_", &mem->rom[addr], 8) == 0) {
+            backup_type = FLASH128K;
+            logwarn("Determined backup type: FLASH128K")
+            break;
+        }
+    }
 }
 
 KEYINPUT_t* get_keyinput() {
@@ -75,6 +119,9 @@ void write_byte_ioreg(word addr, byte value) {
         // Or do I?
         word regnum = addr & 0xFFF;
         switch (regnum) {
+            case IO_HALTCNT:
+                logwarn("Ignoring write to HALTCNT register")
+                break;
             default:
                 logfatal("Write to unknown (but valid) byte ioreg addr 0x%08X == 0x%02X", addr, value)
         }
@@ -274,16 +321,39 @@ half read_half_ioreg(word addr) {
 }
 
 bool is_open_bus(word address) {
-    if (address < GBA_BIOS_SIZE) {
-        return false;
-    } else if (address < 0x01FFFFFF) {
-        return true;
-    } else if (address < 0x08000000) {
-        return false;
-    } else if (address < 0x08000000 + mem->rom_size) {
-        return false;
-    } else {
-        return true;
+    switch (address >> 24) {
+        case 0x0:
+            return address >= GBA_BIOS_SIZE;
+        case 0x1:
+            return true;
+        case 0x2:
+        case 0x3:
+        case 0x4:
+        case 0x5:
+        case 0x6:
+        case 0x7:
+        case 0x8:
+            return false;
+        case 0x9:
+        case 0xA:
+        case 0xB:
+        case 0xC:
+            return (address & 0x1FFFFFF) >= mem->rom_size;
+        case 0xD:
+            unimplemented(backup_type == EEPROM, "This region is different when the backup type is EEPROM")
+            return (address & 0x1FFFFFF) >= mem->rom_size;
+        case 0xE:
+            if (backup_type == FLASH64K || backup_type == FLASH128K) {
+                return (address & 0x1FFFFFF) >= mem->rom_size;
+            } else if (backup_type == EEPROM || backup_type == SRAM) {
+                return false;
+            } else {
+                logfatal("Unknown backup type %d", backup_type)
+            }
+        case 0xF:
+            return false; // Always
+        default:
+            return true;
     }
 }
 
@@ -366,13 +436,23 @@ byte gba_read_byte(word addr) {
         word index = addr - 0x08000000;
         index %= OAM_SIZE;
         return ppu->oam[index];
-    } else if (addr < 0x0E00FFFF) {
-        // Cartridge
-        word adjusted = addr - 0x08000000;
-        if (adjusted > mem->rom_size) {
-            return open_bus(addr);
-        } else {
-            return mem->rom[adjusted];
+    } else if (addr < 0x08000000 + mem->rom_size) {
+        return mem->rom[addr - 0x08000000];
+    } else if (addr < 0x10000000) {
+        // Backup space
+        switch (backup_type) {
+            case SRAM:
+                return mem->backup[addr & 0x7FFF];
+            case UNKNOWN:
+                logfatal("Tried to access backup when backup type unknown!")
+            case EEPROM:
+                logfatal("Backup type EEPROM unimplemented!")
+            case FLASH64K:
+                logfatal("Backup type FLASH64K unimplemented!")
+            case FLASH128K:
+                logfatal("Backup type FLASH128K unimplemented!")
+            default:
+                logfatal("Unknown backup type index %d!", backup_type)
         }
     }
 
@@ -431,10 +511,25 @@ void gba_write_byte(word addr, byte value) {
         word index = addr - 0x08000000;
         index %= OAM_SIZE;
         ppu->oam[index] = value;
-    } else if (addr < 0x0E00FFFF) {
-        logwarn("Tried to write to 0x%08X", addr)
-    } else {
-        logwarn("Ignoring write to high address! addr: 0x%08X", addr)
+    } else if (addr < 0x08000000 + mem->rom_size) {
+        logwarn("Ignoring write to valid cartridge address!")
+    } else if ((addr >> 24) >= 0xE && addr < 0x10000000) {
+        // Backup space
+        switch (backup_type) {
+            case SRAM:
+                mem->backup[addr & 0x7FFF] = value;
+                break;
+            case UNKNOWN:
+                logfatal("Tried to access backup when backup type unknown!")
+            case EEPROM:
+                logfatal("Backup type EEPROM unimplemented!")
+            case FLASH64K:
+                logfatal("Backup type FLASH64K unimplemented!")
+            case FLASH128K:
+                logfatal("Backup type FLASH128K unimplemented!")
+            default:
+                logfatal("Unknown backup type index %d!", backup_type)
+        }
     }
 }
 
