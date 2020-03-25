@@ -90,6 +90,8 @@ typedef struct arm7tdmi {
     // Other state
     word pipeline[2];
 
+    bool irq; // Should the CPU IRQ next chance it gets?
+
     word instr; // last instr the CPU executed
 } arm7tdmi_t;
 

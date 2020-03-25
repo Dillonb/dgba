@@ -175,6 +175,7 @@ void gba_write_byte(word addr, byte value);
 void gba_write_half(word address, half value);
 word gba_read_word(word address);
 void gba_write_word(word address, word value);
+int gba_dma();
 
 void request_interrupt(gba_interrupt_t interrupt);
 #endif

@@ -155,6 +155,8 @@ arm7tdmi_t* init_arm7tdmi(byte (*read_byte)(word),
 
     // SPSR raw = 0x00000000;
 
+    state->irq = false;
+
     fill_pipe(state);
     return state;
 }
@@ -510,7 +512,24 @@ int thumb_mode_step(arm7tdmi_t* state, thumbinstr_t* instr) {
 #define FAKELITTLE_HALF(h) ((((h) >> 8u) & 0xFFu) | (((h) << 8u) & 0xFF00u))
 #define FAKELITTLE_WORD(w) (FAKELITTLE_HALF((w) >> 16u) | (FAKELITTLE_HALF((w) & 0xFFFFu)) << 16u)
 
+void handle_irq(arm7tdmi_t* state) {
+    status_register_t cpsr = state->cpsr;
+    state->cpsr.mode = MODE_IRQ;
+    set_spsr(state, cpsr.raw);
+
+    state->lr_irq = state->pc - 2 * (cpsr.thumb ? 2 : 4) + 4;
+
+    state->cpsr.thumb = 0;
+    state->cpsr.disable_irq = 1;
+
+    set_pc(state, 0x18); // IRQ handler
+}
+
 int arm7tdmi_step(arm7tdmi_t* state) {
+    if (state->irq) {
+        handle_irq(state);
+    }
+
     this_step_ticks = 0;
     logdebug("r0:  %08X   r1: %08X   r2: %08X   r3: %08X", get_register(state, 0), get_register(state, 1), get_register(state, 2), get_register(state, 3))
     logdebug("r4:  %08X   r5: %08X   r6: %08X   r7: %08X", get_register(state, 4), get_register(state, 5), get_register(state, 6), get_register(state, 7))

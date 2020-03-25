@@ -72,16 +72,7 @@ KEYINPUT_t* get_keyinput() {
 }
 
 void send_irq() {
-    status_register_t cpsr = cpu->cpsr;
-    cpu->cpsr.mode = MODE_IRQ;
-    set_spsr(cpu, cpsr.raw);
-
-    cpu->lr_irq = cpu->pc - 2 * (cpsr.thumb ? 2 : 4) + 4;
-
-    cpu->cpsr.thumb = 0;
-    cpu->cpsr.disable_irq = 1;
-
-    set_pc(cpu, 0x18); // IRQ handler
+    cpu->irq = true;
 }
 
 void request_interrupt(gba_interrupt_t interrupt) {
@@ -615,3 +606,11 @@ void gba_write_word(word address, word value) {
     gba_write_half(address + 2, upper);
 }
 
+int gba_dma() {
+    unimplemented(state.DMA0CNT_H.dma_enable, "DMA0")
+    unimplemented(state.DMA1CNT_H.dma_enable, "DMA1")
+    unimplemented(state.DMA2CNT_H.dma_enable, "DMA2")
+    unimplemented(state.DMA3CNT_H.dma_enable, "DMA3")
+
+    return 0;
+}
