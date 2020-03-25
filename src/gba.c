@@ -4,6 +4,7 @@
 #include "common/log.h"
 #include "gbabus.h"
 #include "arm7tdmi/arm7tdmi.h"
+#include "gba_system.h"
 
 void usage(cflags_t* flags) {
     cflags_print_usage(flags,
@@ -53,15 +54,8 @@ int main(int argc, char** argv) {
 
     loginfo("Beginning CPU loop")
 
-    int cycles = 0;
-
-
     while(true) {
-        cycles += arm7tdmi_step(cpu);
-        while (cycles > 4) {
-            ppu_step(ppu);
-            cycles -= 4;
-        }
+        gba_system_step(cpu, ppu);
     }
 
     cflags_free(flags);

@@ -71,19 +71,32 @@ KEYINPUT_t* get_keyinput() {
     return &state.KEYINPUT;
 }
 
+void send_irq() {
+    status_register_t cpsr = cpu->cpsr;
+    cpu->cpsr.mode = MODE_IRQ;
+    set_spsr(cpu, cpsr.raw);
+
+    cpu->lr_irq = cpu->pc - 2 * (cpsr.thumb ? 2 : 4) + 4;
+
+    cpu->cpsr.thumb = 0;
+    cpu->cpsr.disable_irq = 1;
+
+    set_pc(cpu, 0x18); // IRQ handler
+}
+
 void request_interrupt(gba_interrupt_t interrupt) {
     if (state.interrupt_master_enable.enable) {
         switch (interrupt) {
             case IRQ_VBLANK:
                 if (state.interrupt_enable.lcd_vblank) {
-                    logfatal("VBlank interrupt unhandled!")
+                    send_irq();
                 } else {
                     logwarn("VBlank interrupt blocked by IE")
                 }
                 break;
             case IRQ_HBLANK:
                 if (state.interrupt_enable.lcd_hblank) {
-                    logfatal("HBlank interrupt unhandled!")
+                    send_irq();
                 } else {
                     logwarn("HBlank interrupt blocked by IE")
                 }

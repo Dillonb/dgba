@@ -21,7 +21,7 @@ add_library(core
 add_subdirectory(arm7tdmi)
 add_subdirectory(common)
 
-add_executable (gba gba.c)
+add_executable (gba gba.c gba_system.c gba_system.h)
 target_link_libraries(gba common arm7tdmi core render)
 
 add_executable (logtester logtester.c ../tests/test_common.h)
