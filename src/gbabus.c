@@ -578,7 +578,10 @@ word gba_read_word(word address) {
             return read_word_ioreg(address);
         } else if (ioreg_size == 0) {
             logfatal("Read from unused word size ioregister!")
-        } else if (!is_ioreg_readable(address)) {
+        } else if (!is_ioreg_readable(address)
+                   && !is_ioreg_readable(address + 1)
+                   && !is_ioreg_readable(address + 2)
+                   && !is_ioreg_readable(address + 3)) {
             return open_bus(address);
         }
         // Otherwise, it'll be smaller than a word, and we'll read each part from the respective registers.
