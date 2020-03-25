@@ -211,8 +211,8 @@ typedef union addr_28b {
 
 typedef struct gba_ppu {
     // State
-    int x;
-    int y;
+    half x;
+    half y;
     color_t screen[GBA_SCREEN_Y][GBA_SCREEN_X];
 
     // Memory

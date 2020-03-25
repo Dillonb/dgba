@@ -107,6 +107,23 @@ typedef union SOUNDBIAS {
     half raw;
 } SOUNDBIAS_t;
 
+typedef union TMCNT_L {
+    half raw;
+    half timer_reload;
+}TMCNT_L_t;
+
+typedef union TMCNT_H {
+    half raw;
+    struct {
+        unsigned prescaler_selection:2;
+        bool countup_timing:1;
+        unsigned:3;
+        bool timer_irq_enable:1;
+        bool start:1;
+        unsigned:8;
+    };
+}TMCNT_H_t;
+
 typedef struct gbabus {
     interrupt_master_enable_t interrupt_master_enable;
     interrupt_enable_t interrupt_enable;
@@ -137,6 +154,15 @@ typedef struct gbabus {
     JOYCNT_t JOYCNT;
 
     SOUNDBIAS_t SOUNDBIAS;
+
+    TMCNT_L_t TM0CNT_L;
+    TMCNT_H_t TM0CNT_H;
+    TMCNT_L_t TM1CNT_L;
+    TMCNT_H_t TM1CNT_H;
+    TMCNT_L_t TM2CNT_L;
+    TMCNT_H_t TM2CNT_H;
+    TMCNT_L_t TM3CNT_L;
+    TMCNT_H_t TM3CNT_H;
 
 } gbabus_t;
 

@@ -85,6 +85,14 @@
 #define IO_DMA3DAD      0x0D8
 #define IO_DMA3CNT_L    0x0DC
 #define IO_DMA3CNT_H    0x0DE
+#define IO_TM0CNT_L     0X100
+#define IO_TM0CNT_H     0X102
+#define IO_TM1CNT_L     0X104
+#define IO_TM1CNT_H     0X106
+#define IO_TM2CNT_L     0X108
+#define IO_TM2CNT_H     0X10A
+#define IO_TM3CNT_L     0X10C
+#define IO_TM3CNT_H     0X10E
 #define IO_KEYINPUT     0x130
 #define IO_RCNT         0x134
 #define IO_JOYCNT       0x140

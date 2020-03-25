@@ -85,7 +85,7 @@ byte read_byte_ioreg(word addr) {
     logfatal("Reading byte ioreg at 0x%08X", addr)
 }
 
-half* get_half_ioreg_ptr(word addr) {
+half* get_half_ioreg_ptr(word addr, bool write) {
     word regnum = addr & 0xFFF;
     switch (regnum) {
         case IO_DISPCNT: return &ppu->DISPCNT.raw;
@@ -134,7 +134,14 @@ half* get_half_ioreg_ptr(word addr) {
         case IO_JOYCNT: return &state.JOYCNT.raw;
         case IO_IME: return &state.interrupt_master_enable.raw;
         case IO_SOUNDBIAS: return &state.SOUNDBIAS.raw;
-
+        case IO_TM0CNT_L: unimplemented(!write, "Read from timer reload (get current counter)") return &state.TM0CNT_L.raw;
+        case IO_TM0CNT_H: return &state.TM0CNT_H.raw;
+        case IO_TM1CNT_L: unimplemented(!write, "Read from timer reload (get current counter)") return &state.TM1CNT_L.raw;
+        case IO_TM1CNT_H: return &state.TM1CNT_H.raw;
+        case IO_TM2CNT_L: unimplemented(!write, "Read from timer reload (get current counter)") return &state.TM2CNT_L.raw;
+        case IO_TM2CNT_H: return &state.TM2CNT_H.raw;
+        case IO_TM3CNT_L: unimplemented(!write, "Read from timer reload (get current counter)") return &state.TM3CNT_L.raw;
+        case IO_TM3CNT_H: return &state.TM3CNT_H.raw;
         case IO_IF:
             logwarn("Ignoring access to IF register")
             return NULL;
@@ -144,9 +151,7 @@ half* get_half_ioreg_ptr(word addr) {
         case IO_UNDOCUMENTED_GREEN_SWAP:
             logwarn("Ignoring access to Green Swap register")
             return NULL;
-        case IO_VCOUNT:
-            logwarn("Access to read-only VCOUNT register, ignoring!")
-            return NULL;
+        case IO_VCOUNT: return &ppu->y;
         case IO_SOUND1CNT_L:
         case IO_SOUND1CNT_H:
         case IO_SOUND1CNT_X:
@@ -177,7 +182,7 @@ half* get_half_ioreg_ptr(word addr) {
 }
 
 void write_half_ioreg_masked(word addr, half value, half mask) {
-    half* ioreg = get_half_ioreg_ptr(addr);
+    half* ioreg = get_half_ioreg_ptr(addr, true);
     if (ioreg) {
         switch (addr & 0xFFF) {
             case IO_DISPSTAT:
@@ -256,10 +261,10 @@ word read_word_ioreg(word addr) {
 
 half read_half_ioreg(word addr) {
     if (!is_ioreg_readable(addr)) {
-        logwarn("Returning from open bus (UNREADABLE BUT VALID HALF IOREG 0x%08X)", addr)
+        logwarn("Returning 0 (UNREADABLE BUT VALID HALF IOREG 0x%08X)", addr)
         return 0;
     }
-    half* ioreg = get_half_ioreg_ptr(addr);
+    half* ioreg = get_half_ioreg_ptr(addr, false);
     if (ioreg) {
         return *ioreg;
     } else {
@@ -330,9 +335,14 @@ byte gba_read_byte(word addr) {
             logwarn("Returning open bus (UNUSED BYTE IOREG 0x%08X)", addr)
             return open_bus(addr);
         } else if (size == sizeof(half)) {
-            half* ioreg = get_half_ioreg_ptr(addr);
             int ofs = addr % 2;
-            return (*ioreg >> ofs) & 0xFF;
+            half* ioreg = get_half_ioreg_ptr(addr - ofs, false);
+            if (ioreg) {
+                return (*ioreg >> ofs) & 0xFF;
+            } else {
+                logwarn("Ignoring read from half ioreg 0x%08X", addr - ofs)
+                return 0;
+            }
         }
         else if (size > sizeof(byte)) {
             logfatal("Reading from too-large ioreg (%d) as byte at 0x%08X", size, addr)
@@ -376,6 +386,8 @@ half gba_read_half(word address) {
         unimplemented(ioreg_size > sizeof(half), "Reading from a too-large ioreg from gba_read_half")
         if (ioreg_size == sizeof(half)) {
             return read_half_ioreg(address);
+        } else if (!is_ioreg_readable(address)) {
+            return open_bus(address);
         } else if (ioreg_size == 0) {
             // Unused io register
             logfatal("Read from unused half size ioregister!")
@@ -460,6 +472,8 @@ word gba_read_word(word address) {
             return read_word_ioreg(address);
         } else if (ioreg_size == 0) {
             logfatal("Read from unused word size ioregister!")
+        } else if (!is_ioreg_readable(address)) {
+            return open_bus(address);
         }
         // Otherwise, it'll be smaller than a word, and we'll read each part from the respective registers.
     }
