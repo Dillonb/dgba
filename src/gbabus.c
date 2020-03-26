@@ -621,14 +621,21 @@ int dma0() {
     unimplemented(state.DMA0CNT_H.dma_enable, "DMA0")
     return 0;
 }
+
 int dma1() {
-    unimplemented(state.DMA1CNT_H.dma_enable, "DMA1")
-    return 0;
+    int dma_cycles = 0;
+    if (state.DMA1CNT_H.dma_enable) {
+        unimplemented(state.DMA1CNT_H.dma_start_time != Special, "Non-special DMA1 start time (Special is unimplemented sound fifo)")
+    }
+    return dma_cycles;
 }
 
 int dma2() {
-    unimplemented(state.DMA2CNT_H.dma_enable, "DMA2")
-    return 0;
+    int dma_cycles = 0;
+    if (state.DMA1CNT_H.dma_enable) {
+        unimplemented(state.DMA1CNT_H.dma_start_time != Special, "Non-special DMA1 start time (Special is unimplemented sound fifo)")
+    }
+    return dma_cycles;
 }
 
 int dma3() {
