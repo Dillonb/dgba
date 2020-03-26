@@ -625,15 +625,18 @@ int dma0() {
 int dma1() {
     int dma_cycles = 0;
     if (state.DMA1CNT_H.dma_enable) {
-        unimplemented(state.DMA1CNT_H.dma_start_time != Special, "Non-special DMA1 start time (Special is unimplemented sound fifo)")
+        if (state.DMA1CNT_H.dma_start_time != 3) {
+            loginfo("DMA1 start time: %d", state.DMA1CNT_H.dma_start_time)
+        }
+        unimplemented(state.DMA1CNT_H.dma_start_time != 3, "Non-special DMA1 start time (Special is unimplemented sound fifo)")
     }
     return dma_cycles;
 }
 
 int dma2() {
     int dma_cycles = 0;
-    if (state.DMA1CNT_H.dma_enable) {
-        unimplemented(state.DMA1CNT_H.dma_start_time != Special, "Non-special DMA1 start time (Special is unimplemented sound fifo)")
+    if (state.DMA2CNT_H.dma_enable) {
+        unimplemented(state.DMA2CNT_H.dma_start_time != 3, "Non-special DMA2 start time (Special is unimplemented sound fifo)")
     }
     return dma_cycles;
 }
