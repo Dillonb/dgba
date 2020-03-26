@@ -616,14 +616,25 @@ void gba_write_word(word address, word value) {
     gba_write_half(address + 2, upper);
 }
 
-int gba_dma() {
+
+int dma0() {
     unimplemented(state.DMA0CNT_H.dma_enable, "DMA0")
+    return 0;
+}
+int dma1() {
     unimplemented(state.DMA1CNT_H.dma_enable, "DMA1")
+    return 0;
+}
+
+int dma2() {
     unimplemented(state.DMA2CNT_H.dma_enable, "DMA2")
+    return 0;
+}
 
+int dma3() {
     int dma_cycles = 0;
-
     if (state.DMA3CNT_H.dma_enable) {
+
         unimplemented(state.DMA3CNT_H.game_pak_drq_dma3_only, "Game pak DRQ")
         unimplemented(state.DMA3CNT_H.dma_start_time != 0, "Non-immediate DMA start time (grr)")
         // When newly enabled, reload everything
@@ -686,9 +697,28 @@ int gba_dma() {
             unimplemented(state.DMA3CNT_H.irq_on_end_of_wc, "IRQ on end of DMA3. I mean, this shouldn't be hard")
             unimplemented(state.DMA3CNT_H.dma_repeat, "DMA3 repeat")
             state.DMA3CNT_H.dma_enable = false;
+            dma_cycles++;
         }
     } else if (state.DMA3INT.previously_enabled) {
         state.DMA3INT.previously_enabled = false;
+    }
+    return dma_cycles;
+}
+
+int gba_dma() {
+    // Run one cycle of the highest priority DMA.
+    int dma_cycles = dma0();
+
+    if (dma_cycles == 0) {
+        dma_cycles = dma1();
+    }
+
+    if (dma_cycles == 0) {
+        dma_cycles = dma2();
+    }
+
+    if (dma_cycles == 0) {
+        dma_cycles = dma3();
     }
 
     return dma_cycles;
