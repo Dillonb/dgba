@@ -3,7 +3,7 @@
 #include "gbabus.h"
 #include "ioreg_util.h"
 #include "gbamem.h"
-#include "common/log.h"
+#include "../common/log.h"
 #include "gbabios.h"
 
 gbamem_t* mem;

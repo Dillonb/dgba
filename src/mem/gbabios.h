@@ -1,7 +1,7 @@
 #ifndef GBA_BIOS_H
 #define GBA_BIOS_H
 
-#include "common/util.h"
+#include "../common/util.h"
 
 #define GBA_BIOS_SIZE 0x4000
 

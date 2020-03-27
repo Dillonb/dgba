@@ -2,9 +2,9 @@
 #include "common/util.h"
 #include "arm7tdmi/arm7tdmi.h"
 #include "common/log.h"
-#include "gbamem.h"
-#include "gbarom.h"
-#include "gbabus.h"
+#include "mem/gbamem.h"
+#include "mem/gbarom.h"
+#include "mem/gbabus.h"
 
 typedef struct cpu_log {
     word address;

@@ -1,5 +1,5 @@
 #include "gba_system.h"
-#include "gbabus.h"
+#include "mem/gbabus.h"
 
 int cycles = 0;
 

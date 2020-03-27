@@ -1,11 +1,11 @@
 #ifndef __GBABUS_H__
 #define __GBABUS_H__
 
-#include "common/util.h"
+#include "../common/util.h"
 
 #include "gbamem.h"
-#include "arm7tdmi/arm7tdmi.h"
-#include "ppu.h"
+#include "../arm7tdmi/arm7tdmi.h"
+#include "../graphics/ppu.h"
 
 typedef enum gba_interrupt {
     IRQ_VBLANK,

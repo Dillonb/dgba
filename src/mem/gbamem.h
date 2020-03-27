@@ -3,7 +3,7 @@
 
 #include <stddef.h>
 
-#include "common/util.h"
+#include "../common/util.h"
 
 // RAM (inside GBA)
 #define EWRAM_SIZE 0x40000

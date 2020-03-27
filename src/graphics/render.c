@@ -1,8 +1,8 @@
 #include <SDL.h>
 
 #include "render.h"
-#include "common/log.h"
-#include "gbabus.h"
+#include "../common/log.h"
+#include "../mem/gbabus.h"
 #include <stdbool.h>
 
 #define SCREEN_SCALE 4

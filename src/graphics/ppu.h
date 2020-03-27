@@ -2,7 +2,7 @@
 #define GBA_PPU_H
 
 #include <stdbool.h>
-#include "common/util.h"
+#include "../common/util.h"
 
 #define GBA_SCREEN_X 240
 #define GBA_SCREEN_HBLANK 68

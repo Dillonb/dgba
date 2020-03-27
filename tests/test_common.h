@@ -4,9 +4,9 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include "../src/common/log.h"
-#include "../src/gbabus.h"
-#include "../src/gbarom.h"
-#include "../src/gbabios.h"
+#include "../src/mem/gbabus.h"
+#include "../src/mem/gbarom.h"
+#include "../src/mem/gbabios.h"
 #include "../src/arm7tdmi/arm7tdmi.h"
 
 typedef struct cpu_log {

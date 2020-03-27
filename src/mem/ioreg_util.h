@@ -1,8 +1,8 @@
 #ifndef GBA_IOREG_UTIL_H
 #define GBA_IOREG_UTIL_H
 
-#include "common/util.h"
-#include "common/log.h"
+#include "../common/util.h"
+#include "../common/log.h"
 
 #define is_ioreg(addr) ((addr >> 24u) == 0x4u)
 #define mirror_ioreg(addr) ( ((addr & 0xFF00FFFFu) == 0x04000800u) ? 0x04000800u : addr )

@@ -1,6 +1,6 @@
 #include "ppu.h"
-#include "common/log.h"
-#include "gbabus.h"
+#include "../common/log.h"
+#include "../mem/gbabus.h"
 #include "render.h"
 
 gba_ppu_t* init_ppu() {
