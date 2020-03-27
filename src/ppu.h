@@ -34,6 +34,16 @@ typedef union DISPCNT {
 } DISPCNT_t;
 
 typedef union BGCNT {
+    struct {
+        unsigned priority:2;
+        unsigned character_base_block;
+        unsigned:2;
+        bool mosaic:1;
+        unsigned is_256color:1;
+        unsigned screen_base_block:5;
+        unsigned:1;
+        unsigned screen_size:2;
+    };
     half raw;
 } BGCNT_t;
 
