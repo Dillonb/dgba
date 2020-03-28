@@ -6,8 +6,8 @@
 #include "debug.h"
 #include "../common/log.h"
 
-#define WINDOW_WIDTH 1600
-#define WINDOW_HEIGHT 1200
+#define WINDOW_WIDTH 800
+#define WINDOW_HEIGHT 600
 
 #define SCREEN_SCALE 1
 
@@ -43,8 +43,8 @@ void setup_dbg_sdl_window() {
     DUI_Init(dbg_window);
 
     DUI_Style * style = DUI_GetStyle();
-    style->CharSize = 8 * 2;
-    style->LineHeight = 20;
+    style->CharSize = 8 * SCREEN_SCALE;
+    style->LineHeight = 10 * SCREEN_SCALE;
 
     if (dbg_renderer == NULL) {
         logfatal("SDL couldn't create a renderer! %s", SDL_GetError());
@@ -137,6 +137,16 @@ void dbg_tick() {
         if (DUI_Tab("Video Registers", TAB_VIDEO_REGISTERS, &tab_index)) {
             DUI_MoveCursor(8, 40);
             DUI_Panel(WINDOW_WIDTH - 16, WINDOW_HEIGHT - 48);
+
+            DUI_Println("DISPSTAT: 0x%08Xh\nvbl: %d hbl: %d vcnt %d\n IRQ: vbl: %d hbl: %d vcount: %d vcount_setting: %02Xh\n",
+                        ppu->DISPSTAT.raw,
+                        ppu->DISPSTAT.vblank,
+                        ppu->DISPSTAT.hblank,
+                        ppu->DISPSTAT.vcount,
+                        ppu->DISPSTAT.vblank_irq_enable,
+                        ppu->DISPSTAT.hblank_irq_enable,
+                        ppu->DISPSTAT.vcount_irq_enable,
+                        ppu->DISPSTAT.vcount_setting);
 
             DUI_Println("DISPCNT: %08Xh\n[mode: %d, cgbmode: %d, d_f_s: %d, hbl_i_f: %d, obj_c_vrm: %s\n"
                         "forced_blank: %d, display: bg0: %d bg1: %d bg2: %d bg3: %d win0: %d win1: %d objwin %d]\n\n",
