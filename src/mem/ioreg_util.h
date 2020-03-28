@@ -93,14 +93,24 @@
 #define IO_TM2CNT_H     0x10A
 #define IO_TM3CNT_L     0x10C
 #define IO_TM3CNT_H     0x10E
+#define IO_SIOMULTI0    0x120
+#define IO_SIOMULTI1    0x122
+#define IO_SIOMULTI2    0x124
+#define IO_SIOMULTI3    0x126
 #define IO_SIOCNT       0x128
+#define IO_SIOMLT_SEND  0x12A
 #define IO_KEYINPUT     0x130
+#define IO_KEYCNT       0x132
 #define IO_RCNT         0x134
 #define IO_JOYCNT       0x140
+#define IO_JOY_RECV     0x150
+#define IO_JOY_TRANS    0x154
+#define IO_JOYSTAT      0x158
 #define IO_IE           0x200
 #define IO_IF           0x202
 #define IO_WAITCNT      0x204
 #define IO_IME          0x208
+#define IO_POSTBOOT     0x300
 #define IO_HALTCNT      0x301
 
 #define IO_UNDOCUMENTED_GREEN_SWAP 0x002

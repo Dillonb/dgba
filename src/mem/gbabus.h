@@ -109,6 +109,10 @@ typedef union JOYCNT {
     half raw;
 } JOYCNT_t;
 
+typedef union KEYCNT {
+    half raw;
+} KEYCNT_t;
+
 // MOVE THIS TO AN APPROPRIATE PLACE
 typedef union SOUNDBIAS {
     half raw;
@@ -163,6 +167,7 @@ typedef struct gbabus {
 
     RCNT_t RCNT;
     JOYCNT_t JOYCNT;
+    KEYCNT_t KEYCNT;
 
     SOUNDBIAS_t SOUNDBIAS;
 

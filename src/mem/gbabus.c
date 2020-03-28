@@ -204,6 +204,7 @@ half* get_half_ioreg_ptr(word addr, bool write) {
         case IO_TM2CNT_H: return &state.TM2CNT_H.raw;
         case IO_TM3CNT_L: unimplemented(!write, "Read from timer reload (get current counter)") return &state.TM3CNT_L.raw;
         case IO_TM3CNT_H: return &state.TM3CNT_H.raw;
+        case IO_KEYCNT: return &state.KEYCNT.raw;
         case IO_IF:
             logwarn("Ignoring access to IF register")
             return NULL;
@@ -239,7 +240,15 @@ half* get_half_ioreg_ptr(word addr, bool write) {
             return NULL;
 
         case IO_SIOCNT:
-            logwarn("Ignoring access to SIOCNT register: 0x%03X", regnum)
+        case IO_SIOMULTI0:
+        case IO_SIOMULTI1:
+        case IO_SIOMULTI2:
+        case IO_SIOMULTI3:
+        case IO_SIOMLT_SEND:
+        case IO_JOY_RECV:
+        case IO_JOY_TRANS:
+        case IO_JOYSTAT:
+            logwarn("Ignoring access to SIO register: 0x%03X", regnum)
             return NULL;
 
         default:
