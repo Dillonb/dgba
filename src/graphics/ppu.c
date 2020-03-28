@@ -89,13 +89,15 @@ void render_line_mode0(gba_ppu_t* ppu) {
     unimplemented(ppu->DISPCNT.screen_display_bg3, "mode0 bg3")
     reg_se_t se;
     for (int x = 0; x < GBA_SCREEN_X; x++) {
+        int screen_x = (x + ppu->BG0HOFS.offset) % 256;
+        int screen_y = (ppu->y + ppu->BG0VOFS.offset) % 256;
         int screenblock_number = 0; // TODO: bigger sizes mean we won't always be in se 0
-        int se_number = (x / 8) + (ppu->y / 8) * 32; // TODO with scrolling this'll change.
+        int se_number = (screen_x / 8) + (screen_y / 8) * 32; // TODO with scrolling this'll change.
         se.raw = gba_read_half(screen_base_addr + screenblock_number * SCREENBLOCK_SIZE + se_number * 2);
 
         // Find the tile
         word tile_address = character_base_addr + se.tid * tile_size;
-        int in_tile_offset = (x % 8) + (ppu->y % 8) * 8;
+        int in_tile_offset = (screen_x % 8) + (screen_y % 8) * 8;
         tile_address += in_tile_offset / in_tile_offset_divisor;
 
         byte tile = gba_read_byte(tile_address);
