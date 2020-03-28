@@ -45,15 +45,19 @@ void update_key(SDL_Keycode sdlk, bool state) {
             logfatal("User pressed escape")
             break;
         case SDLK_UP:
+        case SDLK_k:
             KEYINPUT->up = !state;
             break;
         case SDLK_DOWN:
+        case SDLK_j:
             KEYINPUT->down = !state;
             break;
         case SDLK_LEFT:
+        case SDLK_h:
             KEYINPUT->left = !state;
             break;
         case SDLK_RIGHT:
+        case SDLK_l:
             KEYINPUT->right = !state;
             break;
         case SDLK_z:
