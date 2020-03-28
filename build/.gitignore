@@ -1,4 +1,7 @@
 *.gba
+*.log
+peda-session*
+*.sav
 CMakeCache.txt
 CMakeFiles
 Makefile
@@ -9,4 +12,5 @@ DartConfiguration.tcl
 Testing
 tests
 gba_bios.bin
+normmatt_bios.bin
 logtester
