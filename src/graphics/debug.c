@@ -77,8 +77,40 @@ void dbg_tick() {
         if (DUI_Tab("CPU Registers", TAB_CPU_REGISTERS, &tab_index)) {
             DUI_MoveCursor(8, 40);
             DUI_Panel(WINDOW_WIDTH - 16, WINDOW_HEIGHT - 48);
+            DUI_Print("Mode: ");
+
+            DUI_MoveCursorRelative(6 * DUI_CHAR_SIZE, 0);
+
+            const char* execution_mode = cpu->cpsr.thumb ? "[THM]" : "[ARM]";
+
+            switch (cpu->cpsr.mode) {
+                case MODE_USER:
+                    DUI_Println("User %s", execution_mode);
+                    break;
+                case MODE_FIQ:
+                    DUI_Println("FIQ %s", execution_mode);
+                    break;
+                case MODE_SUPERVISOR:
+                    DUI_Println("Supervisor %s", execution_mode);
+                    break;
+                case MODE_ABORT:
+                    DUI_Println("Abort %s", execution_mode);
+                    break;
+                case MODE_IRQ:
+                    DUI_Println("IRQ %s", execution_mode);
+                    break;
+                case MODE_UNDEFINED:
+                    DUI_Println("Undefined %s", execution_mode);
+                    break;
+                case MODE_SYSTEM:
+                    DUI_Println("System %s", execution_mode);
+                    break;
+            }
+
+            DUI_MoveCursorRelative(-6 * DUI_CHAR_SIZE, 0);
+
             for (int r = 0; r < 16; r++) {
-                DUI_Println("r%02d: 0x%08X", r, get_register(cpu, r));
+                DUI_Println("r%02d: %08Xh", r, get_register(cpu, r));
             }
         }
 
