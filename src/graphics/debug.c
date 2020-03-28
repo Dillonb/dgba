@@ -65,6 +65,11 @@ enum {
 
 int tab_index = TAB_CPU_REGISTERS;
 
+#define cpsrflag(f, c) (f == 1?c:"-")
+#define printcpsr(cpsr) DUI_Println("CPSR: %08Xh [%s%s%s%s%s%s%s]", cpsr.raw, cpsrflag(cpsr.N, "N"), cpsrflag(cpsr.Z, "Z"), \
+         cpsrflag(cpsr.C, "C"), cpsrflag(cpsr.V, "V"), cpsrflag(cpsr.disable_irq, "I"), \
+         cpsrflag(cpsr.disable_fiq, "F"), cpsrflag(cpsr.thumb, "T"))
+
 void dbg_tick() {
     if (dbg_window_visible) {
         DUI_Update();
@@ -109,8 +114,10 @@ void dbg_tick() {
 
             DUI_MoveCursorRelative(-6 * DUI_CHAR_SIZE, 0);
 
+            printcpsr(cpu->cpsr);
+
             for (int r = 0; r < 16; r++) {
-                DUI_Println("r%02d: %08Xh", r, get_register(cpu, r));
+                DUI_Println("r%02d:  %08Xh", r, get_register(cpu, r));
             }
         }
 
