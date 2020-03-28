@@ -97,7 +97,15 @@ void render_line_mode0(gba_ppu_t* ppu) {
 
         // Find the tile
         word tile_address = character_base_addr + se.tid * tile_size;
-        int in_tile_offset = (screen_x % 8) + (screen_y % 8) * 8;
+        int tile_x = screen_x % 8;
+        if (se.hflip) {
+            tile_x = 8 - tile_x;
+        }
+        int tile_y = screen_y % 8;
+        if (se.vflip) {
+            tile_y = 8 - tile_y;
+        }
+        int in_tile_offset = tile_x + tile_y * 8;
         tile_address += in_tile_offset / in_tile_offset_divisor;
 
         byte tile = gba_read_byte(tile_address);
