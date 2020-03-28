@@ -79,7 +79,6 @@ void update_key(SDL_Keycode sdlk, bool state) {
             KEYINPUT->r = !state;
             break;
         default:
-            logwarn("Unknown key: %d", sdlk)
             break;
     }
 }

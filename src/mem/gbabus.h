@@ -133,11 +133,37 @@ typedef union TMCNT_H {
         bool start:1;
         unsigned:8;
     };
-}TMCNT_H_t;
+} TMCNT_H_t;
+
+typedef union WAITCNT {
+    half raw;
+} WAITCNT_t;
+
+typedef union IF {
+    struct {
+        bool vblank:1;
+        bool hblank:1;
+        bool vcount:1;
+        bool timer0:1;
+        bool timer1:1;
+        bool timer2:1;
+        bool timer3:1;
+        bool sio:1;
+        bool dma0:1;
+        bool dma1:1;
+        bool dma2:1;
+        bool dma3:1;
+        bool keypad:1;
+        bool gamepak:1;
+        unsigned:2;
+    };
+    half raw;
+} IF_t;
 
 typedef struct gbabus {
     interrupt_master_enable_t interrupt_master_enable;
     interrupt_enable_t interrupt_enable;
+    IF_t IF;
     KEYINPUT_t KEYINPUT;
 
     // DMA
@@ -180,11 +206,12 @@ typedef struct gbabus {
     TMCNT_L_t TM3CNT_L;
     TMCNT_H_t TM3CNT_H;
 
+    WAITCNT_t WAITCNT;
 } gbabus_t;
 
 KEYINPUT_t* get_keyinput();
 
-void init_gbabus(gbamem_t* new_mem, arm7tdmi_t* new_cpu, gba_ppu_t* new_ppu);
+gbabus_t* init_gbabus(gbamem_t* new_mem, arm7tdmi_t* new_cpu, gba_ppu_t* new_ppu);
 byte gba_read_byte(word addr);
 half gba_read_half(word address);
 void gba_write_byte(word addr, byte value);

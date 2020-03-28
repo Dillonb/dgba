@@ -513,6 +513,9 @@ int thumb_mode_step(arm7tdmi_t* state, thumbinstr_t* instr) {
 #define FAKELITTLE_WORD(w) (FAKELITTLE_HALF((w) >> 16u) | (FAKELITTLE_HALF((w) & 0xFFFFu)) << 16u)
 
 void handle_irq(arm7tdmi_t* state) {
+    loginfo("IRQ!")
+    state->irq = false;
+    state->halt = false;
     status_register_t cpsr = state->cpsr;
     state->cpsr.mode = MODE_IRQ;
     set_spsr(state, cpsr.raw);
@@ -527,7 +530,15 @@ void handle_irq(arm7tdmi_t* state) {
 
 int arm7tdmi_step(arm7tdmi_t* state) {
     if (state->irq) {
-        handle_irq(state);
+        if (state->cpsr.disable_irq) {
+            logwarn("IRQ blocked by CPSR")
+        } else {
+            handle_irq(state);
+        }
+    }
+
+    if (state->halt) {
+        return 1;
     }
 
     this_step_ticks = 0;

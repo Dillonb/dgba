@@ -91,6 +91,7 @@ typedef struct arm7tdmi {
     word pipeline[2];
 
     bool irq; // Should the CPU IRQ next chance it gets?
+    bool halt; // Should the CPU do nothing (except interrupts?)
 
     word instr; // last instr the CPU executed
 } arm7tdmi_t;

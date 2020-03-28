@@ -17,12 +17,14 @@ int dbg_window_id;
 
 bool dbg_window_visible = false;
 
+gbabus_t* bus;
 arm7tdmi_t* cpu;
 gba_ppu_t* ppu;
 
-void debug_init(arm7tdmi_t* new_cpu, gba_ppu_t* new_ppu) {
+void debug_init(arm7tdmi_t* new_cpu, gba_ppu_t* new_ppu, gbabus_t* new_bus) {
     cpu = new_cpu;
     ppu = new_ppu;
+    bus = new_bus;
 }
 
 void setup_dbg_sdl_window() {
@@ -99,6 +101,8 @@ void dbg_tick() {
         if (DUI_Tab("CPU Registers", TAB_CPU_REGISTERS, &tab_index)) {
             DUI_MoveCursor(8, 40);
             DUI_Panel(WINDOW_WIDTH - 16, WINDOW_HEIGHT - 48);
+            DUI_Println("IF: %08Xh", bus->IF.raw);
+            DUI_Println("Halt: %d\nIRQ: %d", cpu->halt, cpu->irq);
             DUI_Print("Mode: ");
 
             const char* execution_mode = cpu->cpsr.thumb ? "[THM]" : "[ARM]";
@@ -201,13 +205,12 @@ void set_dbg_window_visibility(bool visible) {
 }
 
 void handle_keydown(SDL_Keycode key) {
-    if (key == SDLK_p) {
-        set_dbg_window_visibility(false);
-    }
 }
 
 void handle_keyup(SDL_Keycode key) {
-
+    if (key == SDLK_p || key == SDLK_ESCAPE) {
+        set_dbg_window_visibility(false);
+    }
 }
 
 void debug_handle_event(SDL_Event* event) {

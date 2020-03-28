@@ -24,7 +24,7 @@ typedef enum backup_type {
 
 backup_type_t backup_type = UNKNOWN;
 
-void init_gbabus(gbamem_t* new_mem, arm7tdmi_t* new_cpu, gba_ppu_t* new_ppu) {
+gbabus_t* init_gbabus(gbamem_t* new_mem, arm7tdmi_t* new_cpu, gba_ppu_t* new_ppu) {
     mem = new_mem;
     cpu = new_cpu;
     ppu = new_ppu;
@@ -70,14 +70,12 @@ void init_gbabus(gbamem_t* new_mem, arm7tdmi_t* new_cpu, gba_ppu_t* new_ppu) {
             break;
         }
     }
+
+    return &state;
 }
 
 KEYINPUT_t* get_keyinput() {
     return &state.KEYINPUT;
-}
-
-void send_irq() {
-    cpu->irq = true;
 }
 
 void request_interrupt(gba_interrupt_t interrupt) {
@@ -85,14 +83,16 @@ void request_interrupt(gba_interrupt_t interrupt) {
         switch (interrupt) {
             case IRQ_VBLANK:
                 if (state.interrupt_enable.lcd_vblank) {
-                    send_irq();
+                    cpu->irq = true;
+                    state.IF.vblank = true;
                 } else {
                     logwarn("VBlank interrupt blocked by IE")
                 }
                 break;
             case IRQ_HBLANK:
                 if (state.interrupt_enable.lcd_hblank) {
-                    send_irq();
+                    cpu->irq = true;
+                    state.IF.hblank = true;
                 } else {
                     logwarn("HBlank interrupt blocked by IE")
                 }
@@ -128,9 +128,14 @@ void write_byte_ioreg(word addr, byte value) {
         // Or do I?
         word regnum = addr & 0xFFF;
         switch (regnum) {
-            case IO_HALTCNT:
-                logwarn("Ignoring write to HALTCNT register")
+            case IO_HALTCNT: {
+                if ((value & 1) == 0) {
+                    cpu->halt = true;
+                } else {
+                    logfatal("Wrote to HALTCNT with bit 0 being 1")
+                }
                 break;
+            }
             case IO_POSTFLG:
                 logwarn("Ignoring write to POSTFLG register")
                 break;
@@ -208,12 +213,9 @@ half* get_half_ioreg_ptr(word addr, bool write) {
         case IO_TM3CNT_L: unimplemented(!write, "Read from timer reload (get current counter)") return &state.TM3CNT_L.raw;
         case IO_TM3CNT_H: return &state.TM3CNT_H.raw;
         case IO_KEYCNT: return &state.KEYCNT.raw;
-        case IO_IF:
-            logwarn("Ignoring access to IF register")
-            return NULL;
+        case IO_IF: return &state.IF.raw;
         case IO_WAITCNT:
-            logwarn("Ignoring access to WAITCNT register")
-            return NULL;
+            return &state.WAITCNT.raw;
         case IO_UNDOCUMENTED_GREEN_SWAP:
             logwarn("Ignoring access to Green Swap register")
             return NULL;
@@ -269,13 +271,18 @@ void write_half_ioreg_masked(word addr, half value, half mask) {
             case IO_IME:
                 mask = 0b1;
                 break;
+            case IO_IF: {
+                state.IF.raw &= ~value;
+                return;
+            }
+
             default:
                 break; // No special case
         }
         *ioreg &= (~mask);
         *ioreg |= (value & mask);
     } else {
-        logwarn("Ignoring write to word ioreg")
+        logwarn("Ignoring write to half ioreg 0x%08X", addr)
     }
 }
 
@@ -317,7 +324,7 @@ void write_word_ioreg_masked(word addr, word value, word mask) {
         *ioreg &= (~mask);
         *ioreg |= (value & mask);
     } else {
-        logwarn("Ignoring write to word ioreg")
+        logwarn("Ignoring write to word ioreg 0x%08X", addr)
     }
 }
 
