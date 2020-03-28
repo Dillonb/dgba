@@ -70,7 +70,6 @@ typedef union reg_se {
 #define SCREENBLOCK_SIZE 0x800
 #define CHARBLOCK_SIZE  0x4000
 void render_line_mode0(gba_ppu_t* ppu) {
-    //unimplemented(ppu->BG0CNT.screen_size > 0, "Screen size >0 for mode0")
     unimplemented(ppu->BG0CNT.is_256color == 1, "256 color mode")
 
     // Tileset (like pattern tables in the NES)
@@ -89,19 +88,34 @@ void render_line_mode0(gba_ppu_t* ppu) {
     unimplemented(ppu->DISPCNT.screen_display_bg3, "mode0 bg3")
     reg_se_t se;
     for (int x = 0; x < GBA_SCREEN_X; x++) {
-        int screen_x = (x + ppu->BG0HOFS.offset) % 256;
-        int screen_y = (ppu->y + ppu->BG0VOFS.offset) % 256;
-        int screenblock_number = 0; // TODO: bigger sizes mean we won't always be in se 0
-        int se_number = (screen_x / 8) + (screen_y / 8) * 32; // TODO with scrolling this'll change.
+        int screenblock_number;
+        int tilemap_x;
+        int tilemap_y;
+        switch (ppu->BG0CNT.screen_size) {
+            case 0:
+                tilemap_x = (x + ppu->BG0HOFS.offset) % 256;
+                tilemap_y = (ppu->y + ppu->BG0VOFS.offset) % 256;
+                screenblock_number = 0;
+                break;
+            case 1:
+                screenblock_number = ((x + ppu->BG0HOFS.offset) % 512) > 255 ? 1 : 0;
+                tilemap_x = (x + ppu->BG0HOFS.offset) % 256;
+                tilemap_y = (ppu->y + ppu->BG0VOFS.offset) % 256;
+                break;
+            default:
+                logfatal("Unimplemented screen size: %d", ppu->BG0CNT.screen_size);
+
+        }
+        int se_number = (tilemap_x / 8) + (tilemap_y / 8) * 32;
         se.raw = gba_read_half(screen_base_addr + screenblock_number * SCREENBLOCK_SIZE + se_number * 2);
 
         // Find the tile
         word tile_address = character_base_addr + se.tid * tile_size;
-        int tile_x = screen_x % 8;
+        int tile_x = tilemap_x % 8;
         if (se.hflip) {
             tile_x = 8 - tile_x;
         }
-        int tile_y = screen_y % 8;
+        int tile_y = tilemap_y % 8;
         if (se.vflip) {
             tile_y = 8 - tile_y;
         }
