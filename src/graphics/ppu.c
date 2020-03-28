@@ -101,16 +101,13 @@ void render_line_mode0(gba_ppu_t* ppu) {
         byte tile = gba_read_byte(tile_address);
 
         if (!ppu->BG0CNT.is_256color) {
-            tile >>= !(in_tile_offset % 2);
+            tile >>= (in_tile_offset % 2) * 4;
             tile &= 0xF;
         }
 
         gba_color_t color;
-        color.raw = gba_read_half(0x05000000 | (0x20 * se.pb + 2 * tile)) & 0x7FFF;
-
-        if (se.tid > 0 && tile > 0) {
-            printf("TID: %d tile: 0x%02X\n", se.tid, tile);
-        }
+        word palette_address = 0x05000000 + (0x20 * se.pb + 2 * tile);
+        color.raw = gba_read_half(palette_address);
 
         ppu->screen[ppu->y][x].a = 0xFF;
         ppu->screen[ppu->y][x].r = FIVEBIT_TO_EIGHTBIT_COLOR(color.r);
