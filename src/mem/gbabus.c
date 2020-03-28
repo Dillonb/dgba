@@ -138,7 +138,13 @@ void write_byte_ioreg(word addr, byte value) {
 }
 
 byte read_byte_ioreg(word addr) {
-    logfatal("Reading byte ioreg at 0x%08X", addr)
+    switch (addr & 0xFFF) {
+        case IO_POSTBOOT:
+            logwarn("Ignoring read from POSTBOOT reg. Returning 0")
+            return 0;
+        default:
+            logfatal("Reading byte ioreg at 0x%08X", addr)
+    }
 }
 
 half* get_half_ioreg_ptr(word addr, bool write) {
@@ -515,7 +521,6 @@ void gba_write_byte(word addr, byte value) {
         write_byte_ioreg(addr, value);
     } else if (addr < 0x05000000) {
         logwarn("Tried to write to 0x%08X", addr)
-        unimplemented(1, "Tried to write to unused portion of general internal memory")
     } else if (addr < 0x06000000) { // Palette RAM
         word index = (addr - 0x5000000) % 0x400;
         ppu->pram[index] = value;
