@@ -153,9 +153,8 @@ arm7tdmi_t* init_arm7tdmi(byte (*read_byte)(word),
     state->highreg_fiq[3] = 0;
     state->highreg_fiq[4] = 0;
 
-    // SPSR raw = 0x00000000;
-
     state->irq = false;
+    state->halt = false;
 
     fill_pipe(state);
     return state;
@@ -163,42 +162,60 @@ arm7tdmi_t* init_arm7tdmi(byte (*read_byte)(word),
 
 // EQ, NE, CS, CC, MI, PL, VS, VC, HI, LS, GE, LT, GT, LE, AL, NV
 bool check_cond(arm7tdmi_t* state, arminstr_t* instr) {
+    bool passed = false;
     switch (instr->parsed.cond) {
         case EQ:
-            return state->cpsr.Z == 1;
+            passed = state->cpsr.Z == 1;
+            break;
         case NE:
-            return state->cpsr.Z == 0;
+            passed = state->cpsr.Z == 0;
+            break;
         case CS:
-            return state->cpsr.C == 1;
+            passed = state->cpsr.C == 1;
+            break;
         case CC:
-            return state->cpsr.C == 0;
+            passed = state->cpsr.C == 0;
+            break;
         case MI:
-            return state->cpsr.N == 1;
+            passed = state->cpsr.N == 1;
+            break;
         case PL:
-            return state->cpsr.N == 0;
+            passed = state->cpsr.N == 0;
+            break;
         case VS:
-            return state->cpsr.V == 1;
+            passed = state->cpsr.V == 1;
+            break;
         case VC:
-            return state->cpsr.V == 0;
+            passed = state->cpsr.V == 0;
+            break;
         case HI:
-            return state->cpsr.C == 1 && state->cpsr.Z == 0;
+            passed = state->cpsr.C == 1 && state->cpsr.Z == 0;
+            break;
         case LS:
-            return state->cpsr.C == 0 || state->cpsr.Z == 1;
+            passed = state->cpsr.C == 0 || state->cpsr.Z == 1;
+            break;
         case GE:
-            return (!state->cpsr.N == !state->cpsr.V);
+            passed = (!state->cpsr.N == !state->cpsr.V);
+            break;
         case LT:
-            return (!state->cpsr.N != !state->cpsr.V);
+            passed = (!state->cpsr.N != !state->cpsr.V);
+            break;
         case GT:
-            return (!state->cpsr.Z && !state->cpsr.N == !state->cpsr.V);
+            passed = (!state->cpsr.Z && !state->cpsr.N == !state->cpsr.V);
+            break;
         case LE:
-            return (state->cpsr.Z || !state->cpsr.N != !state->cpsr.V);
+            passed = (state->cpsr.Z || !state->cpsr.N != !state->cpsr.V);
+            break;
         case AL:
-            return true;
+            passed = true;
+            break;
         case NV:
-            return false;
+            passed = false;
+            break;
         default:
             logfatal("Unimplemented COND: %d", instr->parsed.cond)
     }
+    return passed;
 }
 
 int this_step_ticks = 0;
@@ -326,7 +343,7 @@ void set_register(arm7tdmi_t* state, word index, word newvalue) {
 }
 
 word get_register(arm7tdmi_t* state, word index) {
-    word value;
+    word value = 0;
     if (state->cpsr.mode == MODE_FIQ && index >= 8 && index <= 12) {
         value = state->highreg_fiq[index - 8];
     } else if (index < 13) {
