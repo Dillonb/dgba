@@ -6,6 +6,7 @@
 #include "arm7tdmi/arm7tdmi.h"
 #include "gba_system.h"
 #include "graphics/debug.h"
+#include "mem/gbabios.h"
 
 void usage(cflags_t* flags) {
     cflags_print_usage(flags,
@@ -18,7 +19,9 @@ int main(int argc, char** argv) {
     cflags_t* flags = cflags_init();
     bool debug = false;
     bool should_skip_bios = false;
+    const char* bios_file = NULL;
     cflags_add_bool(flags, 'd', "debug", &debug, "enable debug mode");
+    cflags_add_string(flags, 'b', "bios", &bios_file, "Alternative BIOS to load");
     cflags_add_bool(flags, 's', "skip-bios", &should_skip_bios, "skip-bios");
 
     cflags_flag_t * verbose = cflags_add_bool(flags, 'v', "verbose", NULL, "enables verbose output, repeat up to 4 times for more verbosity");
@@ -36,6 +39,9 @@ int main(int argc, char** argv) {
 
     char* romfile = flags->argv[0];
     load_gbarom(romfile, mem);
+    if (bios_file) {
+        load_alternate_bios(bios_file);
+    }
 
     // Initialize the CPU, hook it up to the GBA bus
     arm7tdmi_t* cpu = init_arm7tdmi(gba_read_byte,

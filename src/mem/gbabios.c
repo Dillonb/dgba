@@ -1,4 +1,10 @@
+#include <stdlib.h>
+#include <stdio.h>
+
 #include "gbabios.h"
+#include "../common/log.h"
+
+byte* alternate_bios = NULL;
 
 byte bios[GBA_BIOS_SIZE] = {
         0x0C, 0x00, 0x00, 0xEA, 0x15, 0x00, 0x00, 0xEA, 0x15, 0x00, 0x00, 0xEA, 0x13, 0x00, 0x00, 0xEA,
@@ -584,5 +590,26 @@ byte bios[GBA_BIOS_SIZE] = {
 };
 
 byte gbabios_read_byte(word address) {
-    return bios[address];
+    if (alternate_bios) {
+        return alternate_bios[address];
+    } else {
+        return bios[address];
+    }
+}
+
+
+void load_alternate_bios(const char* filename) {
+    FILE *fp = fopen(filename, "rb");
+
+    fseek(fp, 0, SEEK_END);
+    size_t size = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+    byte *buf = malloc(size);
+    fread(buf, size, 1, fp);
+
+    if (size != GBA_BIOS_SIZE) {
+        logfatal("Incorrect bios size! Got: %zu expected: %d", size, GBA_BIOS_SIZE)
+    }
+
+    alternate_bios = buf;
 }
