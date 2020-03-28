@@ -83,10 +83,10 @@ typedef struct color {
 
 typedef union gba_color {
     struct {
-        unsigned:1;
-        unsigned r:5;
-        unsigned g:5;
         unsigned b:5;
+        unsigned g:5;
+        unsigned r:5;
+        unsigned:1;
     };
     half raw;
 } gba_color_t;
