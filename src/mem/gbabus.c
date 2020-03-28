@@ -868,12 +868,10 @@ int dma3() {
             state.DMA3INT.remaining--;
         } else {
             unimplemented(state.DMA3CNT_H.irq_on_end_of_wc, "IRQ on end of DMA3. I mean, this shouldn't be hard")
-            unimplemented(state.DMA3CNT_H.dma_repeat, "DMA3 repeat")
-            state.DMA3CNT_H.dma_enable = false;
+            state.DMA3CNT_H.dma_enable = state.DMA3CNT_H.dma_repeat;
+            state.DMA3INT.previously_enabled = false;
             dma_cycles++;
         }
-    } else if (state.DMA3INT.previously_enabled) {
-        state.DMA3INT.previously_enabled = false;
     }
     return dma_cycles;
 }
