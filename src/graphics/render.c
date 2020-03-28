@@ -3,12 +3,14 @@
 #include "render.h"
 #include "../common/log.h"
 #include "../mem/gbabus.h"
+#include "debug.h"
 #include <stdbool.h>
 
 #define SCREEN_SCALE 4
 
 bool initialized = false;
 SDL_Window* window = NULL;
+uint32_t window_id;
 SDL_Renderer* renderer = NULL;
 SDL_Texture* buffer = NULL;
 
@@ -24,6 +26,7 @@ void initialize() {
             GBA_SCREEN_X * SCREEN_SCALE,
             GBA_SCREEN_Y * SCREEN_SCALE,
             SDL_WINDOW_SHOWN);
+    window_id = SDL_GetWindowID(window);
 
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
     buffer = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB32, SDL_TEXTUREACCESS_STREAMING, GBA_SCREEN_X, GBA_SCREEN_Y);
@@ -77,6 +80,29 @@ void update_key(SDL_Keycode sdlk, bool state) {
     }
 }
 
+void gba_handle_event(SDL_Event* event) {
+    switch (event->type) {
+        case SDL_QUIT:
+            logfatal("User requested quit");
+        case SDL_KEYDOWN:
+            if (event->key.windowID == window_id) {
+                if (event->key.keysym.sym == SDLK_p) {
+                    set_dbg_window_visibility(true);
+                } else {
+                    update_key(event->key.keysym.sym, true);
+                }
+                break;
+            }
+        case SDL_KEYUP:
+            if (event->key.windowID == window_id) {
+                update_key(event->key.keysym.sym, false);
+                break;
+            }
+        default:
+            break;
+    }
+}
+
 void render_screen(color_t (*screen)[GBA_SCREEN_Y][GBA_SCREEN_X]) {
     if (!initialized) {
         initialize();
@@ -84,22 +110,14 @@ void render_screen(color_t (*screen)[GBA_SCREEN_Y][GBA_SCREEN_X]) {
 
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
-        switch (event.type) {
-            case SDL_QUIT:
-                logfatal("User requested quit");
-            case SDL_KEYDOWN:
-                update_key(event.key.keysym.sym, true);
-                break;
-            case SDL_KEYUP:
-                update_key(event.key.keysym.sym, false);
-                break;
-            default:
-                break;
-        }
+        debug_handle_event(&event);
+        gba_handle_event(&event);
     }
 
     SDL_UpdateTexture(buffer, NULL, screen, GBA_SCREEN_X * 4);
     SDL_RenderCopy(renderer, buffer, NULL, NULL);
     loginfo("Updating renderer")
     SDL_RenderPresent(renderer);
+
+    dbg_tick();
 }

@@ -5,6 +5,7 @@
 #include "mem/gbabus.h"
 #include "arm7tdmi/arm7tdmi.h"
 #include "gba_system.h"
+#include "graphics/debug.h"
 
 void usage(cflags_t* flags) {
     cflags_print_usage(flags,
@@ -45,6 +46,7 @@ int main(int argc, char** argv) {
                                     gba_write_word);
     gba_ppu_t* ppu = init_ppu();
     init_gbabus(mem, cpu, ppu);
+    debug_init(cpu, ppu);
 
     loginfo("ROM loaded: %lu bytes", mem->rom_size)
     if (should_skip_bios) {
