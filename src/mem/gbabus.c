@@ -131,6 +131,9 @@ void write_byte_ioreg(word addr, byte value) {
             case IO_HALTCNT:
                 logwarn("Ignoring write to HALTCNT register")
                 break;
+            case IO_POSTFLG:
+                logwarn("Ignoring write to POSTFLG register")
+                break;
             default:
                 logfatal("Write to unknown (but valid) byte ioreg addr 0x%08X == 0x%02X", addr, value)
         }
@@ -139,8 +142,8 @@ void write_byte_ioreg(word addr, byte value) {
 
 byte read_byte_ioreg(word addr) {
     switch (addr & 0xFFF) {
-        case IO_POSTBOOT:
-            logwarn("Ignoring read from POSTBOOT reg. Returning 0")
+        case IO_POSTFLG:
+            logwarn("Ignoring read from POSTFLG reg. Returning 0")
             return 0;
         default:
             logfatal("Reading byte ioreg at 0x%08X", addr)
@@ -301,6 +304,8 @@ word* get_word_ioreg_ptr(word addr) {
         case IO_DMA3DAD:  return &state.DMA3DAD.raw;
         case IO_FIFO_A:
         case IO_FIFO_B:
+        case IO_JOY_RECV:
+        case IO_JOY_TRANS:
             return NULL;
         default: logfatal("Tried to get the address of an unknown (but valid) word ioreg addr: 0x%08X", addr)
     }
