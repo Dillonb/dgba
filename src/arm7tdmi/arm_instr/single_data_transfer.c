@@ -5,12 +5,13 @@
 
 typedef union immediate_as_offset_flags {
     struct {
-        unsigned rm:4; // Offset register
+        unsigned rm:4;
         bool reg_op:1; // Must be 0?
         unsigned shift_type:2;
         unsigned shift_amount:5;
+        unsigned:4;
     };
-    unsigned raw:11;
+    half raw;
 } immediate_as_offset_flags_t;
 
 // http://problemkaputt.de/gbatek.htm#armopcodesmemorysingledatatransferldrstrpld
