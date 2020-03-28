@@ -113,11 +113,11 @@ void render_line_mode0(gba_ppu_t* ppu) {
         word tile_address = character_base_addr + se.tid * tile_size;
         int tile_x = tilemap_x % 8;
         if (se.hflip) {
-            tile_x = 8 - tile_x;
+            tile_x = 7 - tile_x;
         }
         int tile_y = tilemap_y % 8;
         if (se.vflip) {
-            tile_y = 8 - tile_y;
+            tile_y = 7 - tile_y;
         }
         int in_tile_offset = tile_x + tile_y * 8;
         tile_address += in_tile_offset / in_tile_offset_divisor;
