@@ -145,7 +145,9 @@ void set_dbg_window_visibility(bool visible) {
 }
 
 void handle_keydown(SDL_Keycode key) {
-
+    if (key == SDLK_p) {
+        set_dbg_window_visibility(false);
+    }
 }
 
 void handle_keyup(SDL_Keycode key) {

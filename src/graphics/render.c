@@ -86,7 +86,7 @@ void gba_handle_event(SDL_Event* event) {
             logfatal("User requested quit");
         case SDL_KEYDOWN:
             if (event->key.windowID == window_id) {
-                if (event->key.keysym.sym == SDLK_p) {
+                if (event->key.keysym.sym == SDLK_o) {
                     set_dbg_window_visibility(true);
                 } else {
                     update_key(event->key.keysym.sym, true);
