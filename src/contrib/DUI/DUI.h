@@ -29,10 +29,9 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdint.h>
 #include <stdbool.h>
 
-#define DUI_CHAR_SIZE (8)
-
 typedef struct
 {
+    int CharSize;               // = 8
     int LineHeight;             // = 12
 
     int PanelPadding;           // = 8
@@ -318,6 +317,7 @@ SDL_Texture *  _duiFontTexture = NULL;
 int _duiWindowID = 0;
 
 DUI_Style _duiStyle = {
+    .CharSize = 8,
     .LineHeight = 12,
 
     .PanelPadding = 8,
@@ -455,22 +455,22 @@ void DUI_Print(const char * format, ...)
     SDL_Rect src = { 
         .x = 0,
         .y = 0,
-        .w = DUI_CHAR_SIZE,
-        .h = DUI_CHAR_SIZE,
+        .w = 8,
+        .h = 8,
     };
 
     SDL_Rect dst = { 
         .x = _duiCursor.x,
         .y = _duiCursor.y,
-        .w = DUI_CHAR_SIZE,
-        .h = DUI_CHAR_SIZE,
+        .w = _duiStyle.CharSize,
+        .h = _duiStyle.CharSize,
     };
 
     char * questionMark = strchr(DUI_FONT_MAP, '?');
 
     for (size_t i = 0; i < length; ++i) {
         if (buffer[i] == ' ') {
-            dst.x += DUI_CHAR_SIZE;
+            dst.x += _duiStyle.CharSize;
             continue;
         }
 
@@ -478,6 +478,7 @@ void DUI_Print(const char * format, ...)
             DUI_Newline();
             dst.x = _duiCursor.x;
             dst.y = _duiCursor.y;
+            continue;
         }
 
         char * index = strchr(DUI_FONT_MAP, toupper(buffer[i]));
@@ -488,12 +489,15 @@ void DUI_Print(const char * format, ...)
 
         size_t offset = index - DUI_FONT_MAP;
 
-        src.x = (offset % DUI_CHAR_SIZE) * DUI_CHAR_SIZE;
-        src.y = (offset / DUI_CHAR_SIZE) * DUI_CHAR_SIZE;
+        src.x = (offset % 8) * 8;
+        src.y = (offset / 8) * 8;
         SDL_RenderCopy(_duiRenderer, _duiFontTexture, &src, &dst);
 
-        dst.x += DUI_CHAR_SIZE;
+        dst.x += _duiStyle.CharSize;
     }
+
+    _duiCursor.x = dst.x;
+    _duiCursor.y = dst.y;
 }
 
 void DUI_Panel(int width, int height)
@@ -516,10 +520,10 @@ void DUI_Panel(int width, int height)
 
 bool DUI_Button(const char * text)
 {
-    int width = (strlen(text) * DUI_CHAR_SIZE) 
+    int width = (strlen(text) * _duiStyle.CharSize) 
         + (_duiStyle.ButtonPadding * 2);
 
-    int height = DUI_CHAR_SIZE 
+    int height = _duiStyle.CharSize 
         + (_duiStyle.ButtonPadding * 2);
 
     SDL_Rect bounds = {
@@ -569,11 +573,11 @@ bool DUI_ButtonAt(int x, int y, const char * text)
 
 bool DUI_Checkbox(const char * text, bool * checked)
 {
-    int width = (strlen(text) * DUI_CHAR_SIZE) 
-        + (DUI_CHAR_SIZE * 2)
+    int width = (strlen(text) * _duiStyle.CharSize) 
+        + (_duiStyle.CharSize * 2)
         + (_duiStyle.ButtonPadding * 2);
 
-    int height = DUI_CHAR_SIZE 
+    int height = _duiStyle.CharSize 
         + (_duiStyle.ButtonPadding * 2);
 
     SDL_Rect bounds = {
@@ -599,10 +603,10 @@ bool DUI_Checkbox(const char * text, bool * checked)
     SDL_RenderDrawRect(_duiRenderer, &bounds);
 
     SDL_Rect mark = { 
-        .x = bounds.x + DUI_CHAR_SIZE,
-        .y = bounds.y + (DUI_CHAR_SIZE / 2),
-        .w = DUI_CHAR_SIZE,
-        .h = DUI_CHAR_SIZE,
+        .x = bounds.x + _duiStyle.CharSize,
+        .y = bounds.y + (_duiStyle.CharSize / 2),
+        .w = _duiStyle.CharSize,
+        .h = _duiStyle.CharSize,
     };
 
     SDL_RenderDrawRect(_duiRenderer, &mark);
@@ -620,7 +624,7 @@ bool DUI_Checkbox(const char * text, bool * checked)
         SDL_RenderFillRect(_duiRenderer, &mark);
     }
 
-    _duiCursor.x += _duiStyle.ButtonPadding + (DUI_CHAR_SIZE * 2);
+    _duiCursor.x += _duiStyle.ButtonPadding + (_duiStyle.CharSize * 2);
     _duiCursor.y += _duiStyle.ButtonPadding;
 
     DUI_Print("%s", text);
@@ -645,11 +649,11 @@ bool DUI_CheckboxAt(int x, int y, const char * text, bool * checked)
 
 bool DUI_Radio(const char * text, int index, int * currentIndex)
 {
-    int width = (strlen(text) * DUI_CHAR_SIZE) 
-        + (DUI_CHAR_SIZE * 2)
+    int width = (strlen(text) * _duiStyle.CharSize) 
+        + (_duiStyle.CharSize * 2)
         + (_duiStyle.ButtonPadding * 2);
 
-    int height = DUI_CHAR_SIZE 
+    int height = _duiStyle.CharSize 
         + (_duiStyle.ButtonPadding * 2);
 
     SDL_Rect bounds = {
@@ -681,10 +685,10 @@ bool DUI_Radio(const char * text, int index, int * currentIndex)
     SDL_RenderDrawRect(_duiRenderer, &bounds);
 
     SDL_Rect mark = { 
-        .x = bounds.x + DUI_CHAR_SIZE,
-        .y = bounds.y + (DUI_CHAR_SIZE / 2),
-        .w = DUI_CHAR_SIZE, 
-        .h = DUI_CHAR_SIZE
+        .x = bounds.x + _duiStyle.CharSize,
+        .y = bounds.y + (_duiStyle.CharSize / 2),
+        .w = _duiStyle.CharSize, 
+        .h = _duiStyle.CharSize
     };
 
     SDL_RenderDrawRect(_duiRenderer, &mark);
@@ -698,7 +702,7 @@ bool DUI_Radio(const char * text, int index, int * currentIndex)
         SDL_RenderFillRect(_duiRenderer, &mark);
     }
 
-    _duiCursor.x += _duiStyle.ButtonPadding + (DUI_CHAR_SIZE * 2);
+    _duiCursor.x += _duiStyle.ButtonPadding + (_duiStyle.CharSize * 2);
     _duiCursor.y += _duiStyle.ButtonPadding;
     
     DUI_Print("%s", text);
@@ -730,10 +734,10 @@ bool DUI_Tab(const char * text, int index, int * currentIndex)
 {
     _duiCursor = _duiTabCursor;
 
-    int width = (strlen(text) * DUI_CHAR_SIZE) 
+    int width = (strlen(text) * _duiStyle.CharSize) 
         + (_duiStyle.TabPadding * 2);
 
-    int height = DUI_CHAR_SIZE 
+    int height = _duiStyle.CharSize 
         + (_duiStyle.TabPadding * 2);
 
     SDL_Rect bounds = {

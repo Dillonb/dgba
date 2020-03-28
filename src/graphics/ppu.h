@@ -36,7 +36,7 @@ typedef union DISPCNT {
 typedef union BGCNT {
     struct {
         unsigned priority:2;
-        unsigned character_base_block;
+        unsigned character_base_block:2;
         unsigned:2;
         bool mosaic:1;
         unsigned is_256color:1;

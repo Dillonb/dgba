@@ -70,7 +70,7 @@ typedef union reg_se {
 #define SCREENBLOCK_SIZE 0x800
 #define CHARBLOCK_SIZE  0x4000
 void render_line_mode0(gba_ppu_t* ppu) {
-    unimplemented(ppu->BG0CNT.screen_size > 0, "Screen size >0 for mode0")
+    //unimplemented(ppu->BG0CNT.screen_size > 0, "Screen size >0 for mode0")
     unimplemented(ppu->BG0CNT.is_256color == 1, "256 color mode")
 
     // Tileset (like pattern tables in the NES)
@@ -101,7 +101,7 @@ void render_line_mode0(gba_ppu_t* ppu) {
         byte tile = gba_read_byte(tile_address);
 
         if (!ppu->BG0CNT.is_256color) {
-            tile >>= (in_tile_offset % 2);
+            tile >>= !(in_tile_offset % 2);
             tile &= 0xF;
         }
 

@@ -6,8 +6,8 @@
 #include "debug.h"
 #include "../common/log.h"
 
-#define WINDOW_WIDTH 800
-#define WINDOW_HEIGHT 600
+#define WINDOW_WIDTH 1600
+#define WINDOW_HEIGHT 1200
 
 #define SCREEN_SCALE 1
 
@@ -42,6 +42,10 @@ void setup_dbg_sdl_window() {
 
     DUI_Init(dbg_window);
 
+    DUI_Style * style = DUI_GetStyle();
+    style->CharSize = 8 * 2;
+    style->LineHeight = 20;
+
     if (dbg_renderer == NULL) {
         logfatal("SDL couldn't create a renderer! %s", SDL_GetError());
     }
@@ -63,12 +67,25 @@ enum {
     TAB_TILE_MAP
 };
 
-int tab_index = TAB_CPU_REGISTERS;
+int tab_index = TAB_VIDEO_REGISTERS;
 
 #define cpsrflag(f, c) (f == 1?c:"-")
 #define printcpsr(cpsr) DUI_Println("CPSR: %08Xh [%s%s%s%s%s%s%s]", cpsr.raw, cpsrflag(cpsr.N, "N"), cpsrflag(cpsr.Z, "Z"), \
          cpsrflag(cpsr.C, "C"), cpsrflag(cpsr.V, "V"), cpsrflag(cpsr.disable_irq, "I"), \
          cpsrflag(cpsr.disable_fiq, "F"), cpsrflag(cpsr.thumb, "T"))
+
+#define print_bgcnt(n, reg) DUI_Println("BG%dCNT: %08Xh\n " \
+            "priority: %d, chr_base: %d, mosiac: %d, 256color: %d, scr_base: %d, screen_size: %d\n\n" \
+            , n, \
+            reg.raw, \
+            reg.priority, \
+            reg.character_base_block, \
+            reg.mosaic, \
+            reg.is_256color, \
+            reg.screen_base_block, \
+            reg.screen_size)
+
+#define print_bgofs(n, hofs, vofs) DUI_Println("BG%dOFS: %08Xh / %08Xh", n, hofs.raw, vofs.raw)
 
 void dbg_tick() {
     if (dbg_window_visible) {
@@ -83,8 +100,6 @@ void dbg_tick() {
             DUI_MoveCursor(8, 40);
             DUI_Panel(WINDOW_WIDTH - 16, WINDOW_HEIGHT - 48);
             DUI_Print("Mode: ");
-
-            DUI_MoveCursorRelative(6 * DUI_CHAR_SIZE, 0);
 
             const char* execution_mode = cpu->cpsr.thumb ? "[THM]" : "[ARM]";
 
@@ -112,8 +127,6 @@ void dbg_tick() {
                     break;
             }
 
-            DUI_MoveCursorRelative(-6 * DUI_CHAR_SIZE, 0);
-
             printcpsr(cpu->cpsr);
 
             for (int r = 0; r < 16; r++) {
@@ -124,7 +137,33 @@ void dbg_tick() {
         if (DUI_Tab("Video Registers", TAB_VIDEO_REGISTERS, &tab_index)) {
             DUI_MoveCursor(8, 40);
             DUI_Panel(WINDOW_WIDTH - 16, WINDOW_HEIGHT - 48);
-            DUI_Println("TAB #2");
+
+            DUI_Println("DISPCNT: %08Xh\n[mode: %d, cgbmode: %d, d_f_s: %d, hbl_i_f: %d, obj_c_vrm: %s\n"
+                        "forced_blank: %d, display: bg0: %d bg1: %d bg2: %d bg3: %d win0: %d win1: %d objwin %d]\n\n",
+                        ppu->DISPCNT.raw,
+                        ppu->DISPCNT.mode,
+                        ppu->DISPCNT.cgbmode,
+                        ppu->DISPCNT.display_frame_select,
+                        ppu->DISPCNT.hblank_interval_free,
+                        ppu->DISPCNT.obj_character_vram_mapping ? "1D" : "2D",
+                        ppu->DISPCNT.forced_blank,
+                        ppu->DISPCNT.screen_display_bg0,
+                        ppu->DISPCNT.screen_display_bg1,
+                        ppu->DISPCNT.screen_display_bg2,
+                        ppu->DISPCNT.screen_display_bg3,
+                        ppu->DISPCNT.window0_display,
+                        ppu->DISPCNT.window1_display,
+                        ppu->DISPCNT.obj_window_display);
+
+            print_bgcnt(0, ppu->BG0CNT);
+            print_bgcnt(1, ppu->BG1CNT);
+            print_bgcnt(2, ppu->BG2CNT);
+            print_bgcnt(3, ppu->BG3CNT);
+
+            print_bgofs(0, ppu->BG0HOFS, ppu->BG0VOFS);
+            print_bgofs(1, ppu->BG1HOFS, ppu->BG1VOFS);
+            print_bgofs(2, ppu->BG2HOFS, ppu->BG2VOFS);
+            print_bgofs(3, ppu->BG3HOFS, ppu->BG3VOFS);
         }
 
         if (DUI_Tab("Tile Data", TAB_TILE_DATA, &tab_index)) {
