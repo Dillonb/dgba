@@ -91,7 +91,7 @@ void render_line_mode0(gba_ppu_t* ppu) {
     for (int x = 0; x < GBA_SCREEN_X; x++) {
         int screenblock_number = 0; // TODO: bigger sizes mean we won't always be in se 0
         int se_number = (x / 8) + (ppu->y / 8) * 32; // TODO with scrolling this'll change.
-        se.raw = gba_read_byte(screen_base_addr + screenblock_number * SCREENBLOCK_SIZE + se_number * 2);
+        se.raw = gba_read_half(screen_base_addr + screenblock_number * SCREENBLOCK_SIZE + se_number * 2);
 
         // Find the tile
         word tile_address = character_base_addr + se.tid * tile_size;
