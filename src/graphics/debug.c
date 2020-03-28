@@ -9,9 +9,10 @@
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
 
+#define SCREEN_SCALE 1
+
 SDL_Window* dbg_window = NULL;
 SDL_Renderer* dbg_renderer = NULL;
-SDL_Texture* dbg_buffer = NULL;
 int dbg_window_id;
 
 bool dbg_window_visible = false;
@@ -28,17 +29,18 @@ void setup_dbg_sdl_window() {
     dbg_window = SDL_CreateWindow("dgb dbg",
                                   SDL_WINDOWPOS_UNDEFINED,
                                   SDL_WINDOWPOS_UNDEFINED,
-                                  WINDOW_WIDTH,
-                                  WINDOW_HEIGHT,
+                                  WINDOW_WIDTH * SCREEN_SCALE,
+                                  WINDOW_HEIGHT * SCREEN_SCALE,
                                   SDL_WINDOW_SHOWN);
 
-    DUI_Init(dbg_window);
 
     dbg_window_id = SDL_GetWindowID(dbg_window);
 
     dbg_renderer = SDL_CreateRenderer(dbg_window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-    dbg_buffer = SDL_CreateTexture(dbg_renderer, SDL_PIXELFORMAT_ARGB32, SDL_TEXTUREACCESS_STREAMING, WINDOW_WIDTH,
-                                   WINDOW_HEIGHT);
+
+    SDL_RenderSetScale(dbg_renderer, SCREEN_SCALE, SCREEN_SCALE);
+
+    DUI_Init(dbg_window);
 
     if (dbg_renderer == NULL) {
         logfatal("SDL couldn't create a renderer! %s", SDL_GetError());
@@ -48,10 +50,10 @@ void setup_dbg_sdl_window() {
 }
 
 void teardown_dbg_sdl_window() {
-    SDL_DestroyTexture(dbg_buffer);
+    DUI_Term();
     SDL_DestroyRenderer(dbg_renderer);
     SDL_DestroyWindow(dbg_window);
-    DUI_Term();
+    dbg_window_visible = false;
 }
 
 enum {
@@ -74,22 +76,28 @@ void dbg_tick() {
 
         if (DUI_Tab("CPU Registers", TAB_CPU_REGISTERS, &tab_index)) {
             DUI_MoveCursor(8, 40);
-            DUI_Panel(800 - 16, 600 - 48);
+            DUI_Panel(WINDOW_WIDTH - 16, WINDOW_HEIGHT - 48);
+            for (int r = 0; r < 16; r++) {
+                DUI_Println("r%02d: 0x%08X", r, get_register(cpu, r));
+            }
         }
 
         if (DUI_Tab("Video Registers", TAB_VIDEO_REGISTERS, &tab_index)) {
             DUI_MoveCursor(8, 40);
-            DUI_Panel(800 - 16, 600 - 48);
+            DUI_Panel(WINDOW_WIDTH - 16, WINDOW_HEIGHT - 48);
+            DUI_Println("TAB #2");
         }
 
         if (DUI_Tab("Tile Data", TAB_TILE_DATA, &tab_index)) {
             DUI_MoveCursor(8, 40);
-            DUI_Panel(800 - 16, 600 - 48);
+            DUI_Panel(WINDOW_WIDTH - 16, WINDOW_HEIGHT - 48);
+            DUI_Println("TAB #3");
         }
 
         if (DUI_Tab("Tile Map", TAB_TILE_MAP, &tab_index)) {
             DUI_MoveCursor(8, 40);
-            DUI_Panel(800 - 16, 600 - 48);
+            DUI_Panel(WINDOW_WIDTH - 16, WINDOW_HEIGHT - 48);
+            DUI_Println("TAB #4");
         }
 
         SDL_RenderPresent(dbg_renderer);
