@@ -97,40 +97,54 @@ typedef union reg_se {
 #define SCREENBLOCK_SIZE 0x800
 #define CHARBLOCK_SIZE  0x4000
 void render_line_mode0(gba_ppu_t* ppu) {
-    unimplemented(ppu->BG0CNT.is_256color == 1, "256 color mode")
-
-    // Tileset (like pattern tables in the NES)
-    word character_base_addr = 0x06000000 + ppu->BG0CNT.character_base_block * CHARBLOCK_SIZE;
-    // Tile map (like nametables in the NES)
-    word screen_base_addr = 0x06000000 + ppu->BG0CNT.screen_base_block * SCREENBLOCK_SIZE;
-
-    int tile_size = ppu->BG0CNT.is_256color ? 0x40 : 0x20;
-    int in_tile_offset_divisor = ppu->BG0CNT.is_256color ? 1 : 2;
-
-    if (ppu->DISPCNT.screen_display_bg0) {
-       //printf("screen_display_bg0 chr base: 0x%08X screen base: 0x%08X\n", ppu->BG0CNT.character_base_block, ppu->BG0CNT.screen_base_block);
-    }
-    unimplemented(ppu->DISPCNT.screen_display_bg1, "mode0 bg1")
+    unimplemented(ppu->DISPCNT.screen_display_bg0 && ppu->DISPCNT.screen_display_bg1, "mode0 bg0 AND bg1 at the same time")
     unimplemented(ppu->DISPCNT.screen_display_bg2, "mode0 bg2")
     unimplemented(ppu->DISPCNT.screen_display_bg3, "mode0 bg3")
+
+    BGCNT_t* bgcnt;
+    int hofs;
+    int vofs;
+
+    if (ppu->DISPCNT.screen_display_bg0) {
+        bgcnt = &ppu->BG0CNT;
+        hofs = ppu->BG0HOFS.offset;
+        vofs = ppu->BG0VOFS.offset;
+    } else if (ppu->DISPCNT.screen_display_bg1) {
+        bgcnt = &ppu->BG1CNT;
+        hofs = ppu->BG1HOFS.offset;
+        vofs = ppu->BG1VOFS.offset;
+    } else {
+        return;
+    }
+
+    unimplemented(bgcnt->is_256color == 1, "256 color mode")
+
+    // Tileset (like pattern tables in the NES)
+    word character_base_addr = 0x06000000 + bgcnt->character_base_block * CHARBLOCK_SIZE;
+    // Tile map (like nametables in the NES)
+    word screen_base_addr = 0x06000000 + bgcnt->screen_base_block * SCREENBLOCK_SIZE;
+
+    int tile_size = bgcnt->is_256color ? 0x40 : 0x20;
+    int in_tile_offset_divisor = bgcnt->is_256color ? 1 : 2;
+
     reg_se_t se;
     for (int x = 0; x < GBA_SCREEN_X; x++) {
         int screenblock_number;
         int tilemap_x;
         int tilemap_y;
-        switch (ppu->BG0CNT.screen_size) {
+        switch (bgcnt->screen_size) {
             case 0:
-                tilemap_x = (x + ppu->BG0HOFS.offset) % 256;
-                tilemap_y = (ppu->y + ppu->BG0VOFS.offset) % 256;
+                tilemap_x = (x + hofs) % 256;
+                tilemap_y = (ppu->y + vofs) % 256;
                 screenblock_number = 0;
                 break;
             case 1:
-                screenblock_number = ((x + ppu->BG0HOFS.offset) % 512) > 255 ? 1 : 0;
-                tilemap_x = (x + ppu->BG0HOFS.offset) % 256;
-                tilemap_y = (ppu->y + ppu->BG0VOFS.offset) % 256;
+                screenblock_number = ((x + hofs) % 512) > 255 ? 1 : 0;
+                tilemap_x = (x + hofs) % 256;
+                tilemap_y = (ppu->y + vofs) % 256;
                 break;
             default:
-                logfatal("Unimplemented screen size: %d", ppu->BG0CNT.screen_size);
+                logfatal("Unimplemented screen size: %d", bgcnt->screen_size);
 
         }
         int se_number = (tilemap_x / 8) + (tilemap_y / 8) * 32;
@@ -151,7 +165,7 @@ void render_line_mode0(gba_ppu_t* ppu) {
 
         byte tile = gba_read_byte(tile_address);
 
-        if (!ppu->BG0CNT.is_256color) {
+        if (!bgcnt->is_256color) {
             tile >>= (in_tile_offset % 2) * 4;
             tile &= 0xF;
         }
