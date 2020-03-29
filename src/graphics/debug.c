@@ -184,17 +184,24 @@ void dbg_tick() {
             DUI_MoveCursor(8, 40);
             DUI_Panel(WINDOW_WIDTH - 16, WINDOW_HEIGHT - 48);
             if (DUI_Button("Dump VRAM")) {
+                bool allzeroes = true;
                 for (int x = 0; x < VRAM_SIZE; x += 0x10) {
+                            half a = gba_read_half(0x06000000 + x);
+                            half b = gba_read_half(0x06000000 + x + 0x2);
+                            half c = gba_read_half(0x06000000 + x + 0x4);
+                            half d = gba_read_half(0x06000000 + x + 0x6);
+                            half e = gba_read_half(0x06000000 + x + 0x8);
+                            half f = gba_read_half(0x06000000 + x + 0xA);
+                            half g = gba_read_half(0x06000000 + x + 0xC);
+                            half h = gba_read_half(0x06000000 + x + 0xE);
+                            if (a != 0 || b != 0 || c != 0 || d != 0 || e != 0 || f != 0 || g != 0 || h != 0) {
+                                allzeroes = false;
+                            }
                     printf("%08X: %04X %04X %04X %04X %04X %04X %04X %04X\n",
-                           0x06000000 + x,
-                           gba_read_half(0x06000000 + x),
-                           gba_read_half(0x06000000 + x + 0x2),
-                           gba_read_half(0x06000000 + x + 0x4),
-                           gba_read_half(0x06000000 + x + 0x6),
-                           gba_read_half(0x06000000 + x + 0x8),
-                           gba_read_half(0x06000000 + x + 0xA),
-                           gba_read_half(0x06000000 + x + 0xC),
-                           gba_read_half(0x06000000 + x + 0xE));
+                           0x06000000 + x, a, b, c, d, e, f, g, h);
+                }
+                if (allzeroes) {
+                    printf("Warning: all zeroes!\n");
                 }
             }
         }
