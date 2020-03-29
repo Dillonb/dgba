@@ -52,22 +52,22 @@ gbabus_t* init_gbabus(gbamem_t* new_mem, arm7tdmi_t* new_cpu, gba_ppu_t* new_ppu
         }
         if (memcmp("EEPROM", &mem->rom[addr], 6) == 0) {
             backup_type = EEPROM;
-            logwarn("Determined backup type: EEPROM")
+            logfatal("Determined backup type: EEPROM")
             break;
         }
         if (memcmp("FLASH_", &mem->rom[addr], 6) == 0) {
             backup_type = FLASH64K;
-            logwarn("Determined backup type: FLASH64K")
+            logfatal("Determined backup type: FLASH64K")
             break;
         }
         if (memcmp("FLASH512_", &mem->rom[addr], 9) == 0) {
             backup_type = FLASH64K;
-            logwarn("Determined backup type: FLASH64K")
+            logfatal("Determined backup type: FLASH64K")
             break;
         }
         if (memcmp("FLASH1M_", &mem->rom[addr], 8) == 0) {
             backup_type = FLASH128K;
-            logwarn("Determined backup type: FLASH128K")
+            logfatal("Determined backup type: FLASH128K")
             break;
         }
     }
