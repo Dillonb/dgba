@@ -183,7 +183,20 @@ void dbg_tick() {
         if (DUI_Tab("Tile Data", TAB_TILE_DATA, &tab_index)) {
             DUI_MoveCursor(8, 40);
             DUI_Panel(WINDOW_WIDTH - 16, WINDOW_HEIGHT - 48);
-            DUI_Println("TAB #3");
+            if (DUI_Button("Dump VRAM")) {
+                for (int x = 0; x < VRAM_SIZE; x += 0x10) {
+                    printf("%08X: %04X %04X %04X %04X %04X %04X %04X %04X\n",
+                           0x06000000 + x,
+                           gba_read_half(0x06000000 + x),
+                           gba_read_half(0x06000000 + x + 0x2),
+                           gba_read_half(0x06000000 + x + 0x4),
+                           gba_read_half(0x06000000 + x + 0x6),
+                           gba_read_half(0x06000000 + x + 0x8),
+                           gba_read_half(0x06000000 + x + 0xA),
+                           gba_read_half(0x06000000 + x + 0xC),
+                           gba_read_half(0x06000000 + x + 0xE));
+                }
+            }
         }
 
         if (DUI_Tab("Tile Map", TAB_TILE_MAP, &tab_index)) {
