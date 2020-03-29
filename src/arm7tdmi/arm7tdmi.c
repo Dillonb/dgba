@@ -577,17 +577,19 @@ int arm7tdmi_step(arm7tdmi_t* state) {
          thumbinstr_t instr = next_thumb_instr(state);
          state->instr = instr.raw;
          word adjusted_pc = state->pc - 4;
-         //half fakelittleendian = FAKELITTLE_HALF(instr.raw);
-         disassemble_thumb(adjusted_pc, instr.raw, (char *) &disassembled, sizeof(disassembled));
-         loginfo("[THM] 0x%08X: %s", adjusted_pc, disassembled)
+         if (log_get_verbosity() >= LOG_VERBOSITY_INFO) {
+             disassemble_thumb(adjusted_pc, instr.raw, (char *) &disassembled, sizeof(disassembled));
+             loginfo("[THM] 0x%08X: %s", adjusted_pc, disassembled)
+         }
          cycles = thumb_mode_step(state, &instr);
      } else {
          arminstr_t instr = next_arm_instr(state);
          state->instr = instr.raw;
          word adjusted_pc = state->pc - 8;
-         //word fakelittleendian = FAKELITTLE_WORD(instr.raw);
-         disassemble_arm(adjusted_pc, instr.raw, (char *) &disassembled, sizeof(disassembled));
-         loginfo("[ARM] 0x%08X: %s", adjusted_pc, disassembled)
+         if (log_get_verbosity() >= LOG_VERBOSITY_INFO) {
+             disassemble_arm(adjusted_pc, instr.raw, (char *) &disassembled, sizeof(disassembled));
+             loginfo("[ARM] 0x%08X: %s", adjusted_pc, disassembled)
+         }
          cycles = arm_mode_step(state, &instr);
      }
 
