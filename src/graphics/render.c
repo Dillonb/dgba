@@ -121,6 +121,4 @@ void render_screen(color_t (*screen)[GBA_SCREEN_Y][GBA_SCREEN_X]) {
     SDL_RenderCopy(renderer, buffer, NULL, NULL);
     loginfo("Updating renderer")
     SDL_RenderPresent(renderer);
-
-    dbg_tick();
 }
