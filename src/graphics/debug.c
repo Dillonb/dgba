@@ -142,7 +142,7 @@ void dbg_tick() {
             DUI_MoveCursor(8, 40);
             DUI_Panel(WINDOW_WIDTH - 16, WINDOW_HEIGHT - 48);
 
-            DUI_Println("DISPSTAT: 0x%08Xh\nvbl: %d hbl: %d vcnt %d\n IRQ: vbl: %d hbl: %d vcount: %d vcount_setting: %02Xh\n",
+            DUI_Println("DISPSTAT: 0x%08Xh\n vbl: %d\n hbl: %d\n vcnt %d\n IRQ:\n  vbl: %d\n  hbl: %d\n  vcount: %d\n  vcount_setting: %02Xh\n",
                         ppu->DISPSTAT.raw,
                         ppu->DISPSTAT.vblank,
                         ppu->DISPSTAT.hblank,
@@ -152,8 +152,8 @@ void dbg_tick() {
                         ppu->DISPSTAT.vcount_irq_enable,
                         ppu->DISPSTAT.vcount_setting);
 
-            DUI_Println("DISPCNT: %08Xh\n[mode: %d, cgbmode: %d, d_f_s: %d, hbl_i_f: %d, obj_c_vrm: %s\n"
-                        "forced_blank: %d, display: bg0: %d bg1: %d bg2: %d bg3: %d win0: %d win1: %d objwin %d]\n\n",
+            DUI_Println("DISPCNT: %08Xh\n mode: %d\n cgbmode: %d\n display_frame_select: %d\n hblank_interval_free: %d\n obj_c_vrm: %s\n"
+                        " forced_blank: %d\n display: bg0: %d bg1: %d bg2: %d bg3: %d win0: %d win1: %d objwin %d]\n\n",
                         ppu->DISPCNT.raw,
                         ppu->DISPCNT.mode,
                         ppu->DISPCNT.cgbmode,
