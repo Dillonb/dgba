@@ -17,6 +17,7 @@ add_library(core
         graphics/ppu.c graphics/ppu.h
         graphics/render.c graphics/render.h
         graphics/debug.c graphics/debug.h
+        mem/dma.c mem/dma.h
         mem/ioreg_util.h)
 
 add_subdirectory(arm7tdmi)

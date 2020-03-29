@@ -5,6 +5,7 @@
 #include "gbamem.h"
 #include "../common/log.h"
 #include "gbabios.h"
+#include "dma.h"
 
 gbamem_t* mem;
 arm7tdmi_t* cpu;
@@ -655,248 +656,21 @@ int dma0() {
     return 0;
 }
 
-int dma1() {
-    int dma_cycles = 0;
-    if (state.DMA1CNT_H.dma_enable) {
-        if (state.DMA1CNT_H.dma_start_time == Special) {
-            return 0; // Ignore special start time for DMA1 for now. This is sound fifo, which is unimplemented for now
-        } else if (state.DMA1CNT_H.dma_start_time != Immediately) {
-            logfatal("unimplemented (non-immediate non-special) DMA1 start time: %d", state.DMA1CNT_H.dma_start_time)
-        }
-
-        unimplemented(state.DMA1CNT_H.dma_start_time != 0, "Non-immediate DMA start time (grr)")
-        // When newly enabled, reload everything
-        if (!state.DMA1INT.previously_enabled) {
-            state.DMA1INT.previously_enabled = true;
-            state.DMA1INT.current_source_address = state.DMA1SAD.addr;
-            state.DMA1INT.current_dest_address = state.DMA1DAD.addr;
-
-            state.DMA1INT.remaining = state.DMA1CNT_L.wc;
-            if (state.DMA1INT.remaining == 0) {
-                state.DMA1INT.remaining = 0x4000; // Value of 0 means max value +1
-            }
-        }
-
-        if (state.DMA1INT.remaining > 0) {
-            if (state.DMA1CNT_H.dma_transfer_type == 0) {// 16 bits
-                word source_address = state.DMA1INT.current_source_address;
-                half value = gba_read_half(source_address);
-                switch (state.DMA1CNT_H.source_addr_control) {
-                    case 0: state.DMA1INT.current_source_address += sizeof(half); break;
-                    case 1: state.DMA1INT.current_source_address -= sizeof(half); break;
-                    case 2: break; // No change
-                    default: logfatal("Unimplemented source address control type: %d", state.DMA1CNT_H.source_addr_control)
-                }
-
-                word dest_address = state.DMA1INT.current_dest_address;
-                gba_write_half(dest_address, value);
-                switch (state.DMA1CNT_H.dest_addr_control) {
-                    case 0: state.DMA1INT.current_dest_address += sizeof(half); break;
-                    case 1: state.DMA1INT.current_dest_address -= sizeof(half); break;
-                    case 2: break; // No change
-                    default: logfatal("Unimplemented dest address control type: %d", state.DMA1CNT_H.dest_addr_control)
-                }
-                logwarn("DMA1: transferred 0x%04X from 0x%08X to 0x%08X", value, source_address, dest_address)
-            } else { // 32 bits
-                word source_address = state.DMA1INT.current_source_address;
-                word value = gba_read_word(source_address);
-                dma_cycles++; // TODO real mem access time
-                switch (state.DMA1CNT_H.source_addr_control) {
-                    case 0: state.DMA1INT.current_source_address += sizeof(word); break;
-                    case 1: state.DMA1INT.current_source_address -= sizeof(word); break;
-                    case 2: break; // No change
-                    default: logfatal("Unimplemented source address control type: %d", state.DMA1CNT_H.source_addr_control)
-                }
-
-                word dest_address = state.DMA1INT.current_dest_address;
-                gba_write_word(dest_address, value);
-                dma_cycles++; // TODO real mem access time
-                switch (state.DMA1CNT_H.dest_addr_control) {
-                    case 0: state.DMA1INT.current_dest_address += sizeof(word); break;
-                    case 1: state.DMA1INT.current_dest_address -= sizeof(word); break;
-                    case 2: break; // No change
-                    default: logfatal("Unimplemented dest address control type: %d", state.DMA1CNT_H.dest_addr_control)
-                }
-
-                logwarn("DMA1: transferred 0x%08X from 0x%08X to 0x%08X", value, source_address, dest_address)
-            }
-            state.DMA1INT.remaining--;
-        } else {
-            unimplemented(state.DMA1CNT_H.irq_on_end_of_wc, "IRQ on end of DMA1. I mean, this shouldn't be hard")
-            unimplemented(state.DMA1CNT_H.dma_repeat, "DMA1 repeat")
-            state.DMA1CNT_H.dma_enable = false;
-            dma_cycles++;
-        }
-    } else if (state.DMA1INT.previously_enabled) {
-        state.DMA1INT.previously_enabled = false;
-    }
-    return dma_cycles;
-}
-
-int dma2() {
-    int dma_cycles = 0;
-    if (state.DMA2CNT_H.dma_enable) {
-        if (state.DMA2CNT_H.dma_start_time == Special) {
-            return 0; // Ignore special start time for DMA2 for now. This is sound fifo, which is unimplemented for now
-        } else if (state.DMA2CNT_H.dma_start_time != Immediately) {
-            logfatal("unimplemented (non-immediate non-special) DMA2 start time: %d", state.DMA2CNT_H.dma_start_time)
-        }
-
-        unimplemented(state.DMA2CNT_H.dma_start_time != 0, "Non-immediate DMA start time (grr)")
-        // When newly enabled, reload everything
-        if (!state.DMA2INT.previously_enabled) {
-            state.DMA2INT.previously_enabled = true;
-            state.DMA2INT.current_source_address = state.DMA2SAD.addr;
-            state.DMA2INT.current_dest_address = state.DMA2DAD.addr;
-
-            state.DMA2INT.remaining = state.DMA2CNT_L.wc;
-            if (state.DMA2INT.remaining == 0) {
-                state.DMA2INT.remaining = 0x4000; // Value of 0 means max value +1
-            }
-        }
-
-        if (state.DMA2INT.remaining > 0) {
-            if (state.DMA2CNT_H.dma_transfer_type == 0) {// 16 bits
-                word source_address = state.DMA2INT.current_source_address;
-                half value = gba_read_half(source_address);
-                switch (state.DMA2CNT_H.source_addr_control) {
-                    case 0: state.DMA2INT.current_source_address += sizeof(half); break;
-                    case 1: state.DMA2INT.current_source_address -= sizeof(half); break;
-                    case 2: break; // No change
-                    default: logfatal("Unimplemented source address control type: %d", state.DMA2CNT_H.source_addr_control)
-                }
-
-                word dest_address = state.DMA2INT.current_dest_address;
-                gba_write_half(dest_address, value);
-                switch (state.DMA2CNT_H.dest_addr_control) {
-                    case 0: state.DMA2INT.current_dest_address += sizeof(half); break;
-                    case 1: state.DMA2INT.current_dest_address -= sizeof(half); break;
-                    case 2: break; // No change
-                    default: logfatal("Unimplemented dest address control type: %d", state.DMA2CNT_H.dest_addr_control)
-                }
-                logwarn("DMA2: transferred 0x%04X from 0x%08X to 0x%08X", value, source_address, dest_address)
-            } else { // 32 bits
-                word source_address = state.DMA2INT.current_source_address;
-                word value = gba_read_word(source_address);
-                dma_cycles++; // TODO real mem access time
-                switch (state.DMA2CNT_H.source_addr_control) {
-                    case 0: state.DMA2INT.current_source_address += sizeof(word); break;
-                    case 1: state.DMA2INT.current_source_address -= sizeof(word); break;
-                    case 2: break; // No change
-                    default: logfatal("Unimplemented source address control type: %d", state.DMA2CNT_H.source_addr_control)
-                }
-
-                word dest_address = state.DMA2INT.current_dest_address;
-                gba_write_word(dest_address, value);
-                dma_cycles++; // TODO real mem access time
-                switch (state.DMA2CNT_H.dest_addr_control) {
-                    case 0: state.DMA2INT.current_dest_address += sizeof(word); break;
-                    case 1: state.DMA2INT.current_dest_address -= sizeof(word); break;
-                    case 2: break; // No change
-                    default: logfatal("Unimplemented dest address control type: %d", state.DMA2CNT_H.dest_addr_control)
-                }
-
-                logwarn("DMA2: transferred 0x%08X from 0x%08X to 0x%08X", value, source_address, dest_address)
-            }
-            state.DMA2INT.remaining--;
-        } else {
-            unimplemented(state.DMA2CNT_H.irq_on_end_of_wc, "IRQ on end of DMA2. I mean, this shouldn't be hard")
-            unimplemented(state.DMA2CNT_H.dma_repeat, "DMA2 repeat")
-            state.DMA2CNT_H.dma_enable = false;
-            dma_cycles++;
-        }
-    } else if (state.DMA2INT.previously_enabled) {
-        state.DMA2INT.previously_enabled = false;
-    }
-    return dma_cycles;
-}
-
-int dma3() {
-    int dma_cycles = 0;
-    if (state.DMA3CNT_H.dma_enable) {
-
-        unimplemented(state.DMA3CNT_H.game_pak_drq_dma3_only, "Game pak DRQ")
-        unimplemented(state.DMA3CNT_H.dma_start_time != 0, "Non-immediate DMA start time (grr)")
-        // When newly enabled, reload everything
-        if (!state.DMA3INT.previously_enabled) {
-            state.DMA3INT.previously_enabled = true;
-            state.DMA3INT.current_source_address = state.DMA3SAD.addr;
-            state.DMA3INT.current_dest_address = state.DMA3DAD.addr;
-
-            state.DMA3INT.remaining = state.DMA3CNT_L.wc;
-            if (state.DMA3INT.remaining == 0) {
-                state.DMA3INT.remaining = 0x10000; // Value of 0 means max value +1
-            }
-        }
-
-        if (state.DMA3INT.remaining > 0) {
-            if (state.DMA3CNT_H.dma_transfer_type == 0) {// 16 bits
-                word source_address = state.DMA3INT.current_source_address;
-                half value = gba_read_half(source_address);
-                switch (state.DMA3CNT_H.source_addr_control) {
-                    case 0: state.DMA3INT.current_source_address += sizeof(half); break;
-                    case 1: state.DMA3INT.current_source_address -= sizeof(half); break;
-                    case 2: break; // No change
-                    default: logfatal("Unimplemented source address control type: %d", state.DMA3CNT_H.source_addr_control)
-                }
-
-                word dest_address = state.DMA3INT.current_dest_address;
-                gba_write_half(dest_address, value);
-                switch (state.DMA3CNT_H.dest_addr_control) {
-                    case 0: state.DMA3INT.current_dest_address += sizeof(half); break;
-                    case 1: state.DMA3INT.current_dest_address -= sizeof(half); break;
-                    case 2: break; // No change
-                    default: logfatal("Unimplemented dest address control type: %d", state.DMA3CNT_H.dest_addr_control)
-                }
-                logwarn("DMA3: transferred 0x%04X from 0x%08X to 0x%08X", value, source_address, dest_address)
-            } else { // 32 bits
-                word source_address = state.DMA3INT.current_source_address;
-                word value = gba_read_word(source_address);
-                dma_cycles++; // TODO real mem access time
-                switch (state.DMA3CNT_H.source_addr_control) {
-                    case 0: state.DMA3INT.current_source_address += sizeof(word); break;
-                    case 1: state.DMA3INT.current_source_address -= sizeof(word); break;
-                    case 2: break; // No change
-                    default: logfatal("Unimplemented source address control type: %d", state.DMA3CNT_H.source_addr_control)
-                }
-
-                word dest_address = state.DMA3INT.current_dest_address;
-                gba_write_word(dest_address, value);
-                dma_cycles++; // TODO real mem access time
-                switch (state.DMA3CNT_H.dest_addr_control) {
-                    case 0: state.DMA3INT.current_dest_address += sizeof(word); break;
-                    case 1: state.DMA3INT.current_dest_address -= sizeof(word); break;
-                    case 2: break; // No change
-                    default: logfatal("Unimplemented dest address control type: %d", state.DMA3CNT_H.dest_addr_control)
-                }
-
-                logwarn("DMA3: transferred 0x%08X from 0x%08X to 0x%08X", value, source_address, dest_address)
-            }
-            state.DMA3INT.remaining--;
-        } else {
-            unimplemented(state.DMA3CNT_H.irq_on_end_of_wc, "IRQ on end of DMA3. I mean, this shouldn't be hard")
-            state.DMA3CNT_H.dma_enable = state.DMA3CNT_H.dma_repeat;
-            state.DMA3INT.previously_enabled = false;
-            dma_cycles++;
-        }
-    }
-    return dma_cycles;
-}
 
 int gba_dma() {
     // Run one cycle of the highest priority DMA.
-    int dma_cycles = dma0();
+    int dma_cycles = dma(0, &state.DMA0CNT_H, &state.DMA0INT, state.DMA0SAD.addr, state.DMA0DAD.addr, state.DMA0CNT_L.wc, 0x4000);
 
     if (dma_cycles == 0) {
-        dma_cycles = dma1();
+        dma_cycles = dma(1, &state.DMA1CNT_H, &state.DMA1INT, state.DMA1SAD.addr, state.DMA1DAD.addr, state.DMA1CNT_L.wc, 0x4000);
     }
 
     if (dma_cycles == 0) {
-        dma_cycles = dma2();
+        dma_cycles = dma(2, &state.DMA2CNT_H, &state.DMA2INT, state.DMA2SAD.addr, state.DMA2DAD.addr, state.DMA2CNT_L.wc, 0x4000);
     }
 
     if (dma_cycles == 0) {
-        dma_cycles = dma3();
+        dma_cycles = dma(3, &state.DMA3CNT_H, &state.DMA3INT, state.DMA3SAD.addr, state.DMA3DAD.addr, state.DMA3CNT_L.wc, 0x10000);
     }
 
     return dma_cycles;
