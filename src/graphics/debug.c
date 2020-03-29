@@ -5,6 +5,7 @@
 
 #include "debug.h"
 #include "../common/log.h"
+#include "render.h"
 
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
@@ -91,6 +92,11 @@ int tab_index = TAB_VIDEO_REGISTERS;
 
 void dbg_tick() {
     if (dbg_window_visible) {
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            debug_handle_event(&event);
+            gba_handle_event(&event);
+        }
         DUI_Update();
         SDL_SetRenderDrawColor(dbg_renderer, 0x33, 0x33, 0x33, 0xFF);
         SDL_RenderClear(dbg_renderer);

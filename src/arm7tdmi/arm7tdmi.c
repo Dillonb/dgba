@@ -31,6 +31,8 @@
 #include "thumb_instr/unconditional_branch.h"
 #include "thumb_instr/long_branch_link.h"
 #include "thumb_instr/add_subtract.h"
+#include "../graphics/debug.h"
+#include "../disassemble.h"
 
 const char MODE_NAMES[32][11] = {
 "UNKNOWN",    // 0b00000
@@ -526,11 +528,8 @@ int thumb_mode_step(arm7tdmi_t* state, thumbinstr_t* instr) {
     return this_step_ticks;
 }
 
-#define FAKELITTLE_HALF(h) ((((h) >> 8u) & 0xFFu) | (((h) << 8u) & 0xFF00u))
-#define FAKELITTLE_WORD(w) (FAKELITTLE_HALF((w) >> 16u) | (FAKELITTLE_HALF((w) & 0xFFFFu)) << 16u)
-
 void handle_irq(arm7tdmi_t* state) {
-    loginfo("IRQ!")
+    logwarn("IRQ!")
     state->irq = false;
     state->halt = false;
     status_register_t cpsr = state->cpsr;
@@ -545,6 +544,8 @@ void handle_irq(arm7tdmi_t* state) {
     set_pc(state, 0x18); // IRQ handler
 }
 
+char disassembled[50];
+
 int arm7tdmi_step(arm7tdmi_t* state) {
     if (state->irq) {
         if (state->cpsr.disable_irq) {
@@ -557,6 +558,9 @@ int arm7tdmi_step(arm7tdmi_t* state) {
     if (state->halt) {
         return 1;
     }
+
+
+    dbg_tick();
 
     this_step_ticks = 0;
     logdebug("r0:  %08X   r1: %08X   r2: %08X   r3: %08X", get_register(state, 0), get_register(state, 1), get_register(state, 2), get_register(state, 3))
@@ -573,15 +577,17 @@ int arm7tdmi_step(arm7tdmi_t* state) {
          thumbinstr_t instr = next_thumb_instr(state);
          state->instr = instr.raw;
          word adjusted_pc = state->pc - 4;
-         half fakelittleendian = FAKELITTLE_HALF(instr.raw);
-         loginfo("[THM] adjusted pc: 0x%08X read: (big: 0x%04X) (little: 0x%04X)", adjusted_pc, instr.raw, fakelittleendian)
+         //half fakelittleendian = FAKELITTLE_HALF(instr.raw);
+         disassemble_thumb(adjusted_pc, instr.raw, (char *) &disassembled, sizeof(disassembled));
+         loginfo("[THM] 0x%08X: %s", adjusted_pc, disassembled)
          cycles = thumb_mode_step(state, &instr);
      } else {
          arminstr_t instr = next_arm_instr(state);
          state->instr = instr.raw;
          word adjusted_pc = state->pc - 8;
-         word fakelittleendian = FAKELITTLE_WORD(instr.raw);
-         loginfo("[ARM] adjusted pc: 0x%08X read: (big: 0x%08X) (little: 0x%08X)", adjusted_pc, instr.raw, fakelittleendian)
+         //word fakelittleendian = FAKELITTLE_WORD(instr.raw);
+         disassemble_arm(adjusted_pc, instr.raw, (char *) &disassembled, sizeof(disassembled));
+         loginfo("[ARM] 0x%08X: %s", adjusted_pc, disassembled)
          cycles = arm_mode_step(state, &instr);
      }
 

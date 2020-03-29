@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
     bool debug = false;
     bool should_skip_bios = false;
     const char* bios_file = NULL;
-    cflags_add_bool(flags, 'd', "debug", &debug, "enable debug mode");
+    cflags_add_bool(flags, 'd', "debug", &debug, "enable debug mode at start");
     cflags_add_string(flags, 'b', "bios", &bios_file, "Alternative BIOS to load");
     cflags_add_bool(flags, 's', "skip-bios", &should_skip_bios, "skip-bios");
 
@@ -62,6 +62,9 @@ int main(int argc, char** argv) {
 
     loginfo("Beginning CPU loop")
 
+    if (debug) {
+        set_dbg_window_visibility(true);
+    }
     while(true) {
         gba_system_step(cpu, ppu);
     }

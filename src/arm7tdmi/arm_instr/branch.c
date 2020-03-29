@@ -38,8 +38,6 @@ void branch(arm7tdmi_t* state, branch_t* instr) {
 
     int signed_offset = negative ? -1 * (int)offset : (int)offset;
 
-    loginfo("My offset is %d", signed_offset)
-
     if (instr->link) {
         word returnaddress = state->pc - 4; // PC is 3 bytes ahead, need to make it just 1 byte ahead for returning.
         state->lr = returnaddress;

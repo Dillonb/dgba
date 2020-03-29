@@ -131,6 +131,7 @@ void write_byte_ioreg(word addr, byte value) {
         switch (regnum) {
             case IO_HALTCNT: {
                 if ((value & 1) == 0) {
+                    logwarn("HALTING CPU!")
                     cpu->halt = true;
                 } else {
                     logfatal("Wrote to HALTCNT with bit 0 being 1")
@@ -332,7 +333,7 @@ void write_word_ioreg_masked(word addr, word value, word mask) {
 void write_word_ioreg(word addr, word value) {
     // 0x04XX0800 is the only address that's mirrored.
     if ((addr & 0xFF00FFFFu) == 0x04000800u) {
-        addr = 0xFF00FFFFu;
+        addr = 0x04000800;
     }
 
     if (!is_ioreg_writable(addr)) {

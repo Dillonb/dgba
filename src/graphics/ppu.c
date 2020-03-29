@@ -2,15 +2,27 @@
 #include "../common/log.h"
 #include "../mem/gbabus.h"
 #include "render.h"
-#include "debug.h"
 
 gba_ppu_t* init_ppu() {
     gba_ppu_t* ppu = malloc(sizeof(gba_ppu_t));
 
     ppu->DISPCNT.raw = 0;
+    ppu->DISPSTAT.raw = 0;
 
     ppu->x = 0;
     ppu->y = 0;
+
+    for (int i = 0; i < VRAM_SIZE; i++) {
+        ppu->vram[i] = 0;
+    }
+
+    for (int i = 0; i < PRAM_SIZE; i++) {
+        ppu->pram[i] = 0;
+    }
+
+    for (int i = 0; i < OAM_SIZE; i++) {
+        ppu->oam[i] = 0;
+    }
 
     return ppu;
 }
@@ -178,7 +190,6 @@ void ppu_step(gba_ppu_t* ppu) {
             ppu->DISPSTAT.vblank = true;
             render_screen(&ppu->screen);
         }
-        dbg_tick();
 
         if (ppu->y == ppu->DISPSTAT.vcount_setting) {
             ppu->DISPSTAT.vcount = true;

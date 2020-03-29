@@ -60,7 +60,7 @@ int dma(int n, DMACNTH_t* cnth, DMAINT_t* dmaint, word sad, word dad, word wc, w
                     case 2: break; // No change
                     default: logfatal("Unimplemented dest address control type: %d", cnth->dest_addr_control)
                 }
-                //logwarn("DMA%d: pc: 0x%08X transferred 0x%04X from 0x%08X to 0x%08X", n, cpu->pc, value, source_address, dest_address)
+                logwarn("DMA%d: transferred 0x%04X from 0x%08X to 0x%08X", n, value, source_address, dest_address)
             } else { // 32 bits
                 word source_address = dmaint->current_source_address;
                 word value = gba_read_word(source_address);
@@ -82,10 +82,11 @@ int dma(int n, DMACNTH_t* cnth, DMAINT_t* dmaint, word sad, word dad, word wc, w
                     default: logfatal("Unimplemented dest address control type: %d", cnth->dest_addr_control)
                 }
 
-                //logwarn("DMA%d: pc: 0x%08X, transferred 0x%08X from 0x%08X to 0x%08X", n, cpu->pc, value, source_address, dest_address)
+                logwarn("DMA%d: transferred 0x%08X from 0x%08X to 0x%08X", n, value, source_address, dest_address)
             }
             dmaint->remaining--;
         } else {
+            logwarn("DMA%d finished", n)
             unimplemented(cnth->irq_on_end_of_wc, "IRQ on end of DMA. I mean, this shouldn't be hard")
             cnth->dma_enable = cnth->dma_repeat;
             dmaint->previously_enabled = false;
