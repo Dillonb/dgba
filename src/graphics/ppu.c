@@ -9,6 +9,20 @@ gba_ppu_t* init_ppu() {
     ppu->DISPCNT.raw = 0;
     ppu->DISPSTAT.raw = 0;
 
+    ppu->BG0CNT.raw = 0;
+    ppu->BG1CNT.raw = 0;
+    ppu->BG2CNT.raw = 0;
+    ppu->BG3CNT.raw = 0;
+
+    ppu->BG0HOFS.raw = 0;
+    ppu->BG0VOFS.raw = 0;
+    ppu->BG1HOFS.raw = 0;
+    ppu->BG1VOFS.raw = 0;
+    ppu->BG2HOFS.raw = 0;
+    ppu->BG2VOFS.raw = 0;
+    ppu->BG3HOFS.raw = 0;
+    ppu->BG3VOFS.raw = 0;
+
     ppu->x = 0;
     ppu->y = 0;
 
