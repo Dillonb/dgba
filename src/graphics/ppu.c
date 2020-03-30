@@ -117,8 +117,6 @@ void render_line_mode0(gba_ppu_t* ppu) {
         return;
     }
 
-    unimplemented(bgcnt->is_256color == 1, "256 color mode")
-
     // Tileset (like pattern tables in the NES)
     word character_base_addr = 0x06000000 + bgcnt->character_base_block * CHARBLOCK_SIZE;
     // Tile map (like nametables in the NES)
@@ -171,7 +169,12 @@ void render_line_mode0(gba_ppu_t* ppu) {
         }
 
         gba_color_t color;
-        word palette_address = 0x05000000 + (0x20 * se.pb + 2 * tile);
+        word palette_address = 0x05000000;
+        if (bgcnt->is_256color) {
+            palette_address += 2 * tile;
+        } else {
+            palette_address += (0x20 * se.pb + 2 * tile);
+        }
         color.raw = gba_read_half(palette_address);
 
         ppu->screen[ppu->y][x].a = 0xFF;
@@ -211,6 +214,12 @@ void ppu_step(gba_ppu_t* ppu) {
         ppu->x = 0;
         ppu->DISPSTAT.hblank = false;
         ppu->y++;
+
+        if (ppu->y > GBA_SCREEN_Y + GBA_SCREEN_VBLANK) {
+            ppu->y = 0;
+            ppu->DISPSTAT.vblank = false;
+        }
+
         if (!ppu->DISPSTAT.vblank && is_vblank(ppu)) {
             if (ppu->DISPSTAT.vblank_irq_enable) {
                 request_interrupt(IRQ_VBLANK);
@@ -229,9 +238,5 @@ void ppu_step(gba_ppu_t* ppu) {
             ppu->DISPSTAT.vcount = false;
         }
 
-        if (ppu->y > GBA_SCREEN_Y + GBA_SCREEN_VBLANK) {
-            ppu->y = 0;
-            ppu->DISPSTAT.vblank = false;
-        }
     }
 }

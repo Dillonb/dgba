@@ -110,8 +110,9 @@
 #define IO_IF           0x202
 #define IO_WAITCNT      0x204
 #define IO_IME          0x208
-#define IO_POSTFLG     0x300
+#define IO_POSTFLG      0x300
 #define IO_HALTCNT      0x301
+#define IO_IMEM_CTRL    0x800
 
 #define IO_UNDOCUMENTED_GREEN_SWAP 0x002
 

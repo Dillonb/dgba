@@ -315,6 +315,7 @@ word* get_word_ioreg_ptr(word addr) {
         case IO_FIFO_B:
         case IO_JOY_RECV:
         case IO_JOY_TRANS:
+        case IO_IMEM_CTRL:
             return NULL;
         default: logfatal("Tried to get the address of an unknown (but valid) word ioreg addr: 0x%08X", addr)
     }
@@ -469,7 +470,7 @@ byte gba_read_byte(word addr) {
         return read_byte_ioreg(addr);
     } else if (addr < 0x05000000) {
         logwarn("Tried to read from 0x%08X", addr)
-        unimplemented(1, "Tried to read from unused portion of general internal memory")
+        return open_bus(addr);
     } else if (addr < 0x06000000) { // Palette RAM
         word index = (addr - 0x5000000) % 0x400;
         return ppu->pram[index];
@@ -489,7 +490,8 @@ byte gba_read_byte(word addr) {
             case SRAM:
                 return mem->backup[addr & 0x7FFF];
             case UNKNOWN:
-                logfatal("Tried to access backup when backup type unknown!")
+                logwarn("Tried to access backup when backup type unknown!")
+                return 0;
             case EEPROM:
                 logfatal("Backup type EEPROM unimplemented!")
             case FLASH64K:
@@ -511,7 +513,7 @@ half gba_read_half(word address) {
         unimplemented(ioreg_size > sizeof(half), "Reading from a too-large ioreg from gba_read_half")
         if (ioreg_size == sizeof(half)) {
             return read_half_ioreg(address);
-        } else if (!is_ioreg_readable(address)) {
+        } else if (!is_ioreg_readable(address % sizeof(word))) {
             return open_bus(address);
         } else if (ioreg_size == 0) {
             // Unused io register
@@ -612,7 +614,7 @@ word gba_read_word(word address) {
         if(ioreg_size == sizeof(word)) {
             return read_word_ioreg(address);
         } else if (ioreg_size == 0) {
-            logfatal("Read from unused word size ioregister!")
+            return open_bus(address);
         } else if (!is_ioreg_readable(address)
                    && !is_ioreg_readable(address + 1)
                    && !is_ioreg_readable(address + 2)

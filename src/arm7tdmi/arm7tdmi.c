@@ -530,17 +530,14 @@ int thumb_mode_step(arm7tdmi_t* state, thumbinstr_t* instr) {
 
 void handle_irq(arm7tdmi_t* state) {
     logwarn("IRQ!")
+    status_register_t cpsr = state->cpsr;
     state->irq = false;
     state->halt = false;
-    status_register_t cpsr = state->cpsr;
     state->cpsr.mode = MODE_IRQ;
     set_spsr(state, cpsr.raw);
-
-    state->lr_irq = state->pc - 2 * (cpsr.thumb ? 2 : 4) + 4;
-
     state->cpsr.thumb = 0;
     state->cpsr.disable_irq = 1;
-
+    state->lr_irq = state->pc - (cpsr.thumb ? 2 : 4) + 4;
     set_pc(state, 0x18); // IRQ handler
 }
 
@@ -555,9 +552,6 @@ int arm7tdmi_step(arm7tdmi_t* state) {
         }
     }
 
-    if (state->halt) {
-        return 1;
-    }
 
 
     dbg_tick();

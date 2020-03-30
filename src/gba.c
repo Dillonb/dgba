@@ -66,7 +66,7 @@ int main(int argc, char** argv) {
         set_dbg_window_visibility(true);
     }
     while(true) {
-        gba_system_step(cpu, ppu);
+        gba_system_step(cpu, ppu, bus);
     }
 
     cflags_free(flags);
