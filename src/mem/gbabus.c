@@ -513,11 +513,12 @@ half gba_read_half(word address) {
         unimplemented(ioreg_size > sizeof(half), "Reading from a too-large ioreg from gba_read_half")
         if (ioreg_size == sizeof(half)) {
             return read_half_ioreg(address);
-        } else if (!is_ioreg_readable(address % sizeof(word))) {
+        } else if (!is_ioreg_readable(address &= ~(sizeof(word) - 1))) {
             return open_bus(address);
         } else if (ioreg_size == 0) {
             // Unused io register
-            logfatal("Read from unused half size ioregister!")
+            logwarn("Read from unused half size ioregister!")
+            return 0;
         }
     }
 
