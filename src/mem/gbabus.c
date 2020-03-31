@@ -525,6 +525,7 @@ half gba_read_half(word address) {
             return open_bus(address);
         } else if (ioreg_size == 0) {
             // Unused io register
+            logwarn("Read from unused half size ioregister!")
             return 0;
         }
     }
