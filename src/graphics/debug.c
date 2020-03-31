@@ -70,7 +70,7 @@ enum {
     TAB_TILE_MAP
 };
 
-int tab_index = TAB_VIDEO_REGISTERS;
+int tab_index = TAB_CPU_REGISTERS;
 
 #define cpsrflag(f, c) (f == 1?c:"-")
 #define printcpsr(cpsr) DUI_Println("CPSR: %08Xh [%s%s%s%s%s%s%s]", cpsr.raw, cpsrflag(cpsr.N, "N"), cpsrflag(cpsr.Z, "Z"), \
@@ -89,6 +89,36 @@ int tab_index = TAB_VIDEO_REGISTERS;
             reg.screen_size)
 
 #define print_bgofs(n, hofs, vofs) DUI_Println("BG%dOFS: %08Xh / %08Xh", n, hofs.raw, vofs.raw)
+
+void print_timer(int n, TMCNT_H_t* tmcnth, int timer_reload) {
+    const char* prescaler_selection = "UNKNOWN";
+    switch (tmcnth->prescaler_selection) {
+        case 0:
+            prescaler_selection = "F/1";
+            break;
+        case 1:
+            prescaler_selection = "F/64";
+            break;
+        case 2:
+            prescaler_selection = "F/256";
+            break;
+        case 3:
+            prescaler_selection = "F/1024";
+            break;
+    }
+    const char* enabled = tmcnth->start ? "ENABLED" : "disabled";
+    DUI_Println("\nTimer %d: %s", n, enabled);
+    const char* tm0msg = n == 0 ? " (unused in Timer 0)" : "";
+    DUI_Println(" Reload: 0x%08X\n"
+                " Prescaler: %s\n"
+                " Count-Up Timing:%s %d\n"
+                " IRQ: %d\n",
+                timer_reload,
+                prescaler_selection,
+                tm0msg,
+                tmcnth->countup_timing,
+                tmcnth->timer_irq_enable);
+}
 
 void dbg_tick() {
     if (dbg_window_visible) {
@@ -143,117 +173,12 @@ void dbg_tick() {
                 DUI_Println("r%02d:  %08Xh", r, get_register(cpu, r));
             }
 
-            DUI_Println("--- Timers ---");
+            DUI_Println("\n--- Timers ---");
 
-            const char* prescaler_selection = "UNKNOWN";
-            switch (bus->TM0CNT_H.prescaler_selection) {
-                case 0:
-                    prescaler_selection = "F/1";
-                    break;
-                case 1:
-                    prescaler_selection = "F/64";
-                    break;
-                case 2:
-                    prescaler_selection = "F/256";
-                    break;
-                case 3:
-                    prescaler_selection = "F/1024";
-                    break;
-            }
-            DUI_Println("\nTimer 0");
-            DUI_Println(" Reload: 0x%08X\n"
-                        " Prescaler: %s\n"
-                        " Count-Up Timing (unused in Timer 0): %d\n"
-                        " IRQ: %d\n"
-                        " Operate: %d",
-                        bus->TM0CNT_L.timer_reload,
-                        prescaler_selection,
-                        bus->TM0CNT_H.countup_timing,
-                        bus->TM0CNT_H.timer_irq_enable,
-                        bus->TM0CNT_H.start);
-
-            prescaler_selection = "UNKNOWN";
-            switch (bus->TM1CNT_H.prescaler_selection) {
-                case 0:
-                    prescaler_selection = "F/1";
-                    break;
-                case 1:
-                    prescaler_selection = "F/64";
-                    break;
-                case 2:
-                    prescaler_selection = "F/256";
-                    break;
-                case 3:
-                    prescaler_selection = "F/1024";
-                    break;
-            }
-            DUI_Println("\nTimer 1");
-            DUI_Println(" Reload: 0x%08X\n"
-                        " Prescaler: %s\n"
-                        " Count-Up Timing: %d\n"
-                        " IRQ: %d\n"
-                        " Operate: %d",
-                        bus->TM1CNT_L.timer_reload,
-                        prescaler_selection,
-                        bus->TM1CNT_H.countup_timing,
-                        bus->TM1CNT_H.timer_irq_enable,
-                        bus->TM1CNT_H.start);
-
-
-            prescaler_selection = "UNKNOWN";
-            switch (bus->TM2CNT_H.prescaler_selection) {
-                case 0:
-                    prescaler_selection = "F/1";
-                    break;
-                case 1:
-                    prescaler_selection = "F/64";
-                    break;
-                case 2:
-                    prescaler_selection = "F/256";
-                    break;
-                case 3:
-                    prescaler_selection = "F/1024";
-                    break;
-            }
-            DUI_Println("\nTimer 2");
-            DUI_Println(" Reload: 0x%08X\n"
-                        " Prescaler: %s\n"
-                        " Count-Up Timing: %d\n"
-                        " IRQ: %d\n"
-                        " Operate: %d",
-                        bus->TM2CNT_L.timer_reload,
-                        prescaler_selection,
-                        bus->TM2CNT_H.countup_timing,
-                        bus->TM2CNT_H.timer_irq_enable,
-                        bus->TM2CNT_H.start);
-
-
-            prescaler_selection = "UNKNOWN";
-            switch (bus->TM3CNT_H.prescaler_selection) {
-                case 0:
-                    prescaler_selection = "F/1";
-                    break;
-                case 1:
-                    prescaler_selection = "F/64";
-                    break;
-                case 2:
-                    prescaler_selection = "F/256";
-                    break;
-                case 3:
-                    prescaler_selection = "F/1024";
-                    break;
-            }
-            DUI_Println("\nTimer 3");
-            DUI_Println(" Reload: 0x%08X\n"
-                        " Prescaler: %s\n"
-                        " Count-Up Timing: %d\n"
-                        " IRQ: %d\n"
-                        " Operate: %d",
-                        bus->TM3CNT_L.timer_reload,
-                        prescaler_selection,
-                        bus->TM3CNT_H.countup_timing,
-                        bus->TM3CNT_H.timer_irq_enable,
-                        bus->TM3CNT_H.start);
+            print_timer(0, &bus->TM0CNT_H, bus->TM0CNT_L.timer_reload);
+            print_timer(1, &bus->TM1CNT_H, bus->TM1CNT_L.timer_reload);
+            print_timer(2, &bus->TM2CNT_H, bus->TM2CNT_L.timer_reload);
+            print_timer(3, &bus->TM3CNT_H, bus->TM3CNT_L.timer_reload);
         }
 
         if (DUI_Tab("Video Registers", TAB_VIDEO_REGISTERS, &tab_index)) {
