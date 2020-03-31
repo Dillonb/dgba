@@ -29,7 +29,7 @@ void debug_init(arm7tdmi_t* new_cpu, gba_ppu_t* new_ppu, gbabus_t* new_bus) {
 }
 
 void setup_dbg_sdl_window() {
-    dbg_window = SDL_CreateWindow("dgb dbg",
+    dbg_window = SDL_CreateWindow("dgb gba dbg",
                                   SDL_WINDOWPOS_UNDEFINED,
                                   SDL_WINDOWPOS_UNDEFINED,
                                   WINDOW_WIDTH * SCREEN_SCALE,
