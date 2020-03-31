@@ -142,6 +142,118 @@ void dbg_tick() {
             for (int r = 0; r < 16; r++) {
                 DUI_Println("r%02d:  %08Xh", r, get_register(cpu, r));
             }
+
+            DUI_Println("--- Timers ---");
+
+            const char* prescaler_selection = "UNKNOWN";
+            switch (bus->TM0CNT_H.prescaler_selection) {
+                case 0:
+                    prescaler_selection = "F/1";
+                    break;
+                case 1:
+                    prescaler_selection = "F/64";
+                    break;
+                case 2:
+                    prescaler_selection = "F/256";
+                    break;
+                case 3:
+                    prescaler_selection = "F/1024";
+                    break;
+            }
+            DUI_Println("\nTimer 0");
+            DUI_Println(" Reload: 0x%08X\n"
+                        " Prescaler: %s\n"
+                        " Count-Up Timing (unused in Timer 0): %d\n"
+                        " IRQ: %d\n"
+                        " Operate: %d",
+                        bus->TM0CNT_L.timer_reload,
+                        prescaler_selection,
+                        bus->TM0CNT_H.countup_timing,
+                        bus->TM0CNT_H.timer_irq_enable,
+                        bus->TM0CNT_H.start);
+
+            prescaler_selection = "UNKNOWN";
+            switch (bus->TM1CNT_H.prescaler_selection) {
+                case 0:
+                    prescaler_selection = "F/1";
+                    break;
+                case 1:
+                    prescaler_selection = "F/64";
+                    break;
+                case 2:
+                    prescaler_selection = "F/256";
+                    break;
+                case 3:
+                    prescaler_selection = "F/1024";
+                    break;
+            }
+            DUI_Println("\nTimer 1");
+            DUI_Println(" Reload: 0x%08X\n"
+                        " Prescaler: %s\n"
+                        " Count-Up Timing: %d\n"
+                        " IRQ: %d\n"
+                        " Operate: %d",
+                        bus->TM1CNT_L.timer_reload,
+                        prescaler_selection,
+                        bus->TM1CNT_H.countup_timing,
+                        bus->TM1CNT_H.timer_irq_enable,
+                        bus->TM1CNT_H.start);
+
+
+            prescaler_selection = "UNKNOWN";
+            switch (bus->TM2CNT_H.prescaler_selection) {
+                case 0:
+                    prescaler_selection = "F/1";
+                    break;
+                case 1:
+                    prescaler_selection = "F/64";
+                    break;
+                case 2:
+                    prescaler_selection = "F/256";
+                    break;
+                case 3:
+                    prescaler_selection = "F/1024";
+                    break;
+            }
+            DUI_Println("\nTimer 2");
+            DUI_Println(" Reload: 0x%08X\n"
+                        " Prescaler: %s\n"
+                        " Count-Up Timing: %d\n"
+                        " IRQ: %d\n"
+                        " Operate: %d",
+                        bus->TM2CNT_L.timer_reload,
+                        prescaler_selection,
+                        bus->TM2CNT_H.countup_timing,
+                        bus->TM2CNT_H.timer_irq_enable,
+                        bus->TM2CNT_H.start);
+
+
+            prescaler_selection = "UNKNOWN";
+            switch (bus->TM3CNT_H.prescaler_selection) {
+                case 0:
+                    prescaler_selection = "F/1";
+                    break;
+                case 1:
+                    prescaler_selection = "F/64";
+                    break;
+                case 2:
+                    prescaler_selection = "F/256";
+                    break;
+                case 3:
+                    prescaler_selection = "F/1024";
+                    break;
+            }
+            DUI_Println("\nTimer 3");
+            DUI_Println(" Reload: 0x%08X\n"
+                        " Prescaler: %s\n"
+                        " Count-Up Timing: %d\n"
+                        " IRQ: %d\n"
+                        " Operate: %d",
+                        bus->TM3CNT_L.timer_reload,
+                        prescaler_selection,
+                        bus->TM3CNT_H.countup_timing,
+                        bus->TM3CNT_H.timer_irq_enable,
+                        bus->TM3CNT_H.start);
         }
 
         if (DUI_Tab("Video Registers", TAB_VIDEO_REGISTERS, &tab_index)) {
