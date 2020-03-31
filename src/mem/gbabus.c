@@ -98,6 +98,14 @@ void request_interrupt(gba_interrupt_t interrupt) {
                     logwarn("HBlank interrupt blocked by IE")
                 }
                 break;
+            case IRQ_VCOUNT:
+                if (state.interrupt_enable.lcd_vcounter_match) {
+                    cpu->irq = true;
+                    state.IF.vcount = true;
+                } else {
+                    logwarn("VCount interrupt blocked by IE")
+                }
+                break;
             default:
                 logfatal("Unknown interrupt index %d requested!", interrupt)
         }

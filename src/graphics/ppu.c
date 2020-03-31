@@ -117,6 +117,11 @@ void render_bg(gba_ppu_t* ppu, BGCNT_t* bgcnt, int hofs, int vofs) {
                 // 0 1
                 screenblock_number = ((x + hofs) % 512) > 255 ? 1 : 0;
                 break;
+            case 2:
+                // 0
+                // 1
+                screenblock_number = ((ppu->y + vofs) % 512) > 255 ? 1 : 0;
+                break;
             case 3:
                 // 0 1
                 // 2 3
