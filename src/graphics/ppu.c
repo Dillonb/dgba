@@ -96,27 +96,7 @@ typedef union reg_se {
 
 #define SCREENBLOCK_SIZE 0x800
 #define CHARBLOCK_SIZE  0x4000
-void render_line_mode0(gba_ppu_t* ppu) {
-    unimplemented(ppu->DISPCNT.screen_display_bg0 && ppu->DISPCNT.screen_display_bg1, "mode0 bg0 AND bg1 at the same time")
-    unimplemented(ppu->DISPCNT.screen_display_bg2, "mode0 bg2")
-    unimplemented(ppu->DISPCNT.screen_display_bg3, "mode0 bg3")
-
-    BGCNT_t* bgcnt;
-    int hofs;
-    int vofs;
-
-    if (ppu->DISPCNT.screen_display_bg0) {
-        bgcnt = &ppu->BG0CNT;
-        hofs = ppu->BG0HOFS.offset;
-        vofs = ppu->BG0VOFS.offset;
-    } else if (ppu->DISPCNT.screen_display_bg1) {
-        bgcnt = &ppu->BG1CNT;
-        hofs = ppu->BG1HOFS.offset;
-        vofs = ppu->BG1VOFS.offset;
-    } else {
-        return;
-    }
-
+void render_bg(gba_ppu_t* ppu, BGCNT_t* bgcnt, int hofs, int vofs) {
     // Tileset (like pattern tables in the NES)
     word character_base_addr = 0x06000000 + bgcnt->character_base_block * CHARBLOCK_SIZE;
     // Tile map (like nametables in the NES)
@@ -128,23 +108,28 @@ void render_line_mode0(gba_ppu_t* ppu) {
     reg_se_t se;
     for (int x = 0; x < GBA_SCREEN_X; x++) {
         int screenblock_number;
-        int tilemap_x;
-        int tilemap_y;
         switch (bgcnt->screen_size) {
             case 0:
-                tilemap_x = (x + hofs) % 256;
-                tilemap_y = (ppu->y + vofs) % 256;
+                // 0
                 screenblock_number = 0;
                 break;
             case 1:
+                // 0 1
                 screenblock_number = ((x + hofs) % 512) > 255 ? 1 : 0;
-                tilemap_x = (x + hofs) % 256;
-                tilemap_y = (ppu->y + vofs) % 256;
+                break;
+            case 3:
+                // 0 1
+                // 2 3
+                screenblock_number =  ((x + hofs) % 512) > 255 ? 1 : 0;
+                screenblock_number += ((ppu->y + vofs) % 512) > 255 ? 2 : 0;
                 break;
             default:
                 logfatal("Unimplemented screen size: %d", bgcnt->screen_size);
 
         }
+
+        int tilemap_x = (x + hofs) % 256;
+        int tilemap_y = (ppu->y + vofs) % 256;
         int se_number = (tilemap_x / 8) + (tilemap_y / 8) * 32;
         se.raw = gba_read_half(screen_base_addr + screenblock_number * SCREENBLOCK_SIZE + se_number * 2);
 
@@ -182,6 +167,22 @@ void render_line_mode0(gba_ppu_t* ppu) {
         ppu->screen[ppu->y][x].g = FIVEBIT_TO_EIGHTBIT_COLOR(color.g);
         ppu->screen[ppu->y][x].b = FIVEBIT_TO_EIGHTBIT_COLOR(color.b);
     }
+}
+
+
+void render_line_mode0(gba_ppu_t* ppu) {
+    unimplemented(ppu->DISPCNT.screen_display_bg0 && ppu->DISPCNT.screen_display_bg1, "mode0 bg0 AND bg1 at the same time")
+    unimplemented(ppu->DISPCNT.screen_display_bg2, "mode0 bg2")
+    unimplemented(ppu->DISPCNT.screen_display_bg3, "mode0 bg3")
+
+    if (ppu->DISPCNT.screen_display_bg0) {
+        render_bg(ppu, &ppu->BG0CNT, ppu->BG0HOFS.offset, ppu->BG0VOFS.offset);
+    } else if (ppu->DISPCNT.screen_display_bg1) {
+        render_bg(ppu, &ppu->BG1CNT, ppu->BG1HOFS.offset, ppu->BG1VOFS.offset);
+    } else {
+        return;
+    }
+
 }
 
 void render_line(gba_ppu_t* ppu) {
