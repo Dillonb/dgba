@@ -3,6 +3,8 @@
 #include "../mem/gbabus.h"
 #include "render.h"
 
+gba_color_t bgbuf[4][GBA_SCREEN_X];
+
 gba_ppu_t* init_ppu() {
     gba_ppu_t* ppu = malloc(sizeof(gba_ppu_t));
 
@@ -96,7 +98,7 @@ typedef union reg_se {
 
 #define SCREENBLOCK_SIZE 0x800
 #define CHARBLOCK_SIZE  0x4000
-void render_bg(gba_ppu_t* ppu, BGCNT_t* bgcnt, int hofs, int vofs) {
+void render_bg(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X], BGCNT_t* bgcnt, int hofs, int vofs) {
     // Tileset (like pattern tables in the NES)
     word character_base_addr = 0x06000000 + bgcnt->character_base_block * CHARBLOCK_SIZE;
     // Tile map (like nametables in the NES)
@@ -158,34 +160,89 @@ void render_bg(gba_ppu_t* ppu, BGCNT_t* bgcnt, int hofs, int vofs) {
             tile &= 0xF;
         }
 
-        gba_color_t color;
         word palette_address = 0x05000000;
         if (bgcnt->is_256color) {
             palette_address += 2 * tile;
         } else {
             palette_address += (0x20 * se.pb + 2 * tile);
         }
-        color.raw = gba_read_half(palette_address);
-
-        ppu->screen[ppu->y][x].a = 0xFF;
-        ppu->screen[ppu->y][x].r = FIVEBIT_TO_EIGHTBIT_COLOR(color.r);
-        ppu->screen[ppu->y][x].g = FIVEBIT_TO_EIGHTBIT_COLOR(color.g);
-        ppu->screen[ppu->y][x].b = FIVEBIT_TO_EIGHTBIT_COLOR(color.b);
+        (*line)[x].raw = gba_read_half(palette_address);
+        (*line)[x].transparent = tile == 0; // This color should only be drawn if we need transparency
     }
 }
 
+int background_priorities[4];
+
+void refresh_background_priorities(gba_ppu_t* ppu) {
+    int insert_index = 0;
+    // Insert all backgrounds with a certain priority, counting up
+    for (int priority = 0; priority < 4; priority++) {
+        if (ppu->BG0CNT.priority == priority) {
+            background_priorities[insert_index] = 0;
+            insert_index++;
+        }
+        if (ppu->BG1CNT.priority == priority) {
+            background_priorities[insert_index] = 1;
+            insert_index++;
+        }
+        if (ppu->BG2CNT.priority == priority) {
+            background_priorities[insert_index] = 2;
+            insert_index++;
+        }
+        if (ppu->BG3CNT.priority == priority) {
+            background_priorities[insert_index] = 3;
+            insert_index++;
+        }
+    }
+}
 
 void render_line_mode0(gba_ppu_t* ppu) {
-    unimplemented(ppu->DISPCNT.screen_display_bg0 && ppu->DISPCNT.screen_display_bg1, "mode0 bg0 AND bg1 at the same time")
-    unimplemented(ppu->DISPCNT.screen_display_bg2, "mode0 bg2")
-    unimplemented(ppu->DISPCNT.screen_display_bg3, "mode0 bg3")
-
     if (ppu->DISPCNT.screen_display_bg0) {
-        render_bg(ppu, &ppu->BG0CNT, ppu->BG0HOFS.offset, ppu->BG0VOFS.offset);
-    } else if (ppu->DISPCNT.screen_display_bg1) {
-        render_bg(ppu, &ppu->BG1CNT, ppu->BG1HOFS.offset, ppu->BG1VOFS.offset);
-    } else {
-        return;
+        render_bg(ppu, &bgbuf[0], &ppu->BG0CNT, ppu->BG0HOFS.offset, ppu->BG0VOFS.offset);
+    }
+
+    if (ppu->DISPCNT.screen_display_bg1) {
+        render_bg(ppu, &bgbuf[1], &ppu->BG1CNT, ppu->BG1HOFS.offset, ppu->BG1VOFS.offset);
+    }
+
+    if (ppu->DISPCNT.screen_display_bg2) {
+        render_bg(ppu, &bgbuf[2], &ppu->BG2CNT, ppu->BG2HOFS.offset, ppu->BG2VOFS.offset);
+    }
+
+    if (ppu->DISPCNT.screen_display_bg3) {
+        render_bg(ppu, &bgbuf[3], &ppu->BG3CNT, ppu->BG3HOFS.offset, ppu->BG3VOFS.offset);
+    }
+
+    refresh_background_priorities(ppu);
+
+    bool bg_enabled[] = {
+            ppu->DISPCNT.screen_display_bg0,
+            ppu->DISPCNT.screen_display_bg1,
+            ppu->DISPCNT.screen_display_bg2,
+            ppu->DISPCNT.screen_display_bg3};
+
+    for (int x = 0; x < GBA_SCREEN_X; x++) {
+        bool non_transparent_drawn = false;
+        for (int i = 3; i >= 0; i--) { // Draw them in reverse priority order, so the highest priority BG is drawn last.
+            int bg = background_priorities[i];
+            gba_color_t pixel = bgbuf[bg][x];
+            bool should_draw = bg_enabled[bg];
+            if (pixel.transparent) {
+                // If the pixel is transparent, only draw it if we haven't drawn a non-transparent
+                should_draw &= !non_transparent_drawn;
+            }
+
+            if (should_draw) {
+                ppu->screen[ppu->y][x].a = 0xFF;
+                ppu->screen[ppu->y][x].r = FIVEBIT_TO_EIGHTBIT_COLOR(pixel.r);
+                ppu->screen[ppu->y][x].g = FIVEBIT_TO_EIGHTBIT_COLOR(pixel.g);
+                ppu->screen[ppu->y][x].b = FIVEBIT_TO_EIGHTBIT_COLOR(pixel.b);
+
+                if (!pixel.transparent) {
+                    non_transparent_drawn = true;
+                }
+            }
+        }
     }
 
 }

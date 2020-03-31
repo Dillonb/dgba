@@ -86,8 +86,8 @@ typedef union gba_color {
         unsigned r:5;
         unsigned g:5;
         unsigned b:5;
-        unsigned:1;
-    };
+        bool transparent:1;
+    } __attribute__ ((__packed__));
     half raw;
 } gba_color_t;
 
