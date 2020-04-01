@@ -52,7 +52,7 @@ gbabus_t* init_gbabus(gbamem_t* new_mem, arm7tdmi_t* new_cpu, gba_ppu_t* new_ppu
         }
         if (memcmp("EEPROM", &mem->rom[addr], 6) == 0) {
             backup_type = EEPROM;
-            logfatal("Determined backup type: EEPROM")
+            //logfatal("Determined backup type: EEPROM")
             break;
         }
         if (memcmp("FLASH_", &mem->rom[addr], 6) == 0) {

@@ -142,6 +142,14 @@ void ramdump(word base_address, word size) {
     }
 }
 
+void print_bgparam(int bg, bg_rotation_scaling_t pa, bg_rotation_scaling_t pb, bg_rotation_scaling_t pc, bg_rotation_scaling_t pd) {
+    DUI_Println("BG%d - PA: %s%d.%d PB: %s%d.%d PC: %s%d.%d PD: %s%d.%d", bg,
+                pa.sign ? "-" : "+", pa.integer, pa.fractional,
+                pb.sign ? "-" : "+", pb.integer, pb.fractional,
+                pc.sign ? "-" : "+", pc.integer, pc.fractional,
+                pd.sign ? "-" : "+", pd.integer, pd.fractional);
+}
+
 void dbg_tick() {
     if (dbg_window_visible) {
         SDL_Event event;
@@ -243,6 +251,9 @@ void dbg_tick() {
             print_bgofs(1, ppu->BG1HOFS, ppu->BG1VOFS);
             print_bgofs(2, ppu->BG2HOFS, ppu->BG2VOFS);
             print_bgofs(3, ppu->BG3HOFS, ppu->BG3VOFS);
+
+            print_bgparam(2, ppu->BG2PA, ppu->BG2PB, ppu->BG2PC, ppu->BG2PD);
+            print_bgparam(3, ppu->BG3PA, ppu->BG3PB, ppu->BG3PC, ppu->BG3PD);
         }
 
         if (DUI_Tab("RAM Dumping", TAB_TILE_DATA, &tab_index)) {
