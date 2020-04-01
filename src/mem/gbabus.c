@@ -484,10 +484,10 @@ byte gba_read_byte(word addr) {
         return ppu->pram[index];
     } else if (addr < 0x07000000) {
         word index = addr - 0x06000000;
-        unimplemented(index > 0x17FFF, "VRAM mirroring")
+        index %= VRAM_SIZE;
         return ppu->vram[index];
     } else if (addr < 0x08000000) {
-        word index = addr - 0x08000000;
+        word index = addr - 0x07000000;
         index %= OAM_SIZE;
         return ppu->oam[index];
     } else if (addr < 0x08000000 + mem->rom_size) {
@@ -565,7 +565,7 @@ void gba_write_byte(word addr, byte value) {
         }
         ppu->vram[index] = value;
     } else if (addr < 0x08000000) {
-        word index = addr - 0x08000000;
+        word index = addr - 0x07000000;
         index %= OAM_SIZE;
         ppu->oam[index] = value;
     } else if (addr < 0x08000000 + mem->rom_size) {
