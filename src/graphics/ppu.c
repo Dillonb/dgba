@@ -4,6 +4,8 @@
 #include "render.h"
 
 gba_color_t bgbuf[4][GBA_SCREEN_X];
+gba_color_t objbuf[GBA_SCREEN_X];
+byte obj_priorities[GBA_SCREEN_X];
 
 gba_ppu_t* init_ppu() {
     gba_ppu_t* ppu = malloc(sizeof(gba_ppu_t));
@@ -82,6 +84,125 @@ void render_line_mode4(gba_ppu_t* ppu) {
             ppu->screen[ppu->y][x].r = 0;
             ppu->screen[ppu->y][x].g = 0;
             ppu->screen[ppu->y][x].b = 0;
+        }
+    }
+}
+
+typedef union obj_attr0 {
+    struct {
+        unsigned y:8;
+        unsigned affine_object_mode:2;
+        unsigned graphics_mode:2;
+        bool mosaic:1;
+        bool is_256color:1;
+        unsigned shape:2;
+    };
+    half raw;
+} obj_attr0_t;
+
+typedef union obj_attr1 {
+    struct {
+        unsigned x:9;
+        unsigned affine_index:5;
+        unsigned size:2;
+    };
+    struct {
+        unsigned:11;
+        bool hflip:1;
+        bool vflip:1;
+        unsigned:3;
+    };
+    half raw;
+} obj_attr1_t;
+
+typedef union obj_attr2 {
+    struct {
+        unsigned tid:10;
+        unsigned priority:2;
+        unsigned pb:4;
+    };
+    half raw;
+} obj_attr2_t;
+
+// [shape][size]
+int sprite_heights[3][4] = {
+        {8,16,32,64},
+        {16,32,32,64},
+        {8,8,16,32}
+};
+
+// [shape][size]
+int sprite_widths[3][4] = {
+        {8,16,32,64},
+        {8,8,16,32},
+        {16,32,32,64}
+};
+
+
+#define OBJ_TILE_SIZE 0x20
+void render_obj(gba_ppu_t* ppu) {
+    obj_attr0_t attr0;
+    obj_attr1_t attr1;
+    obj_attr2_t attr2;
+    for (int x = 0; x < GBA_SCREEN_X; x++) {
+        obj_priorities[x] = 0;
+        objbuf[x].transparent = true;
+    }
+
+    for (int sprite = 0; sprite < 128; sprite++) {
+        attr0.raw = gba_read_half(0x07000000 + (sprite * 8) + 0);
+        attr1.raw = gba_read_half(0x07000000 + (sprite * 8) + 2);
+        attr2.raw = gba_read_half(0x07000000 + (sprite * 8) + 4);
+        int in_tile_offset_divisor = attr0.is_256color ? 1 : 2;
+
+        int height = sprite_heights[attr0.shape][attr1.size];
+        int width = sprite_widths[attr0.shape][attr1.size];
+
+        if (ppu->y >= attr0.y && ppu->y <= attr0.y + height) { // If the sprite is visible, we should draw it.
+            if (attr0.affine_object_mode == 0b00) { // Enabled
+                //printf("Sprite of size %dx%d at %d,%d - visible on line %d\n", width, height, attr1.x, attr0.y, ppu->y);
+                unimplemented(attr0.is_256color, "256 color sprite");
+                unimplemented(attr1.hflip, "hflip sprite")
+                unimplemented(attr1.vflip, "vflip sprite")
+                int tile_y = (ppu->y % height);
+                int tid = attr2.tid;
+                if (ppu->DISPCNT.obj_character_vram_mapping) { // 1D
+                    int y_tid_offset = (width / 8) * (tile_y / 8);
+                    tid += y_tid_offset;
+                } else {
+                    printf("WARNING: ignoring printing 2D mapping! If you see this at another time than the start of the game, worry!\n");
+                    continue;
+                }
+                // At this point, we don't need to worry about 1D vs 2D
+                // because in either case they'll be right next to each other in memory.
+                for (int x = 0; x < width; x++) {
+                    word tile_address = 0x06010000 + (tid + (x / 8)) * OBJ_TILE_SIZE;
+
+                    int in_tile_offset = (x % 8) + (tile_y % 8);
+                    tile_address += in_tile_offset / in_tile_offset_divisor;
+
+                    byte tile = gba_read_byte(tile_address);
+
+                    if (!attr0.is_256color) {
+                        tile >>= (in_tile_offset % 2) * 4;
+                        tile &= 0xF;
+                    }
+
+                    word palette_address = 0x05000000;
+                    if (attr0.is_256color) {
+                        palette_address += 2 * tile;
+                    } else {
+                        palette_address += (0x20 * attr2.pb + 2 * tile);
+                    }
+                    objbuf[x].raw = gba_read_half(palette_address);
+                    objbuf[x].transparent = tile == 0; // This color should only be drawn if we need transparency
+                    if (!objbuf[x].transparent) {
+                        printf("NOT TRANSPARENT\n");
+                    }
+                }
+            } else {
+                unimplemented(attr0.affine_object_mode != 0b10, "Sprite with an affine object mode != 0b00 or 0b10")
+            }
         }
     }
 }
@@ -197,6 +318,7 @@ void refresh_background_priorities(gba_ppu_t* ppu) {
 }
 
 void render_line_mode0(gba_ppu_t* ppu) {
+    render_obj(ppu);
     if (ppu->DISPCNT.screen_display_bg0) {
         render_bg(ppu, &bgbuf[0], &ppu->BG0CNT, ppu->BG0HOFS.offset, ppu->BG0VOFS.offset);
     }
@@ -242,6 +364,15 @@ void render_line_mode0(gba_ppu_t* ppu) {
                     non_transparent_drawn = true;
                 }
             }
+        }
+        // Draw OBJ layer
+        // TODO: respect OBJ priorities
+
+        if (!objbuf[x].transparent) {
+            ppu->screen[ppu->y][x].a = 0xFF;
+            ppu->screen[ppu->y][x].r = FIVEBIT_TO_EIGHTBIT_COLOR(objbuf[x].r);
+            ppu->screen[ppu->y][x].g = FIVEBIT_TO_EIGHTBIT_COLOR(objbuf[x].g);
+            ppu->screen[ppu->y][x].b = FIVEBIT_TO_EIGHTBIT_COLOR(objbuf[x].b);
         }
     }
 
