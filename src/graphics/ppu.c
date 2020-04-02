@@ -156,29 +156,39 @@ void render_obj(gba_ppu_t* ppu) {
         int in_tile_offset_divisor = attr0.is_256color ? 1 : 2;
 
         int height = sprite_heights[attr0.shape][attr1.size];
+        //int tiles_high = height / 8;
         int width = sprite_widths[attr0.shape][attr1.size];
+        int tiles_wide = width / 8;
+
+        int sprite_y = (ppu->y % height);
+        int sprite_tile_y = sprite_y / 8;
 
         if (ppu->y >= attr0.y && ppu->y <= attr0.y + height) { // If the sprite is visible, we should draw it.
             if (attr0.affine_object_mode == 0b00) { // Enabled
-                //printf("Sprite of size %dx%d at %d,%d - visible on line %d\n", width, height, attr1.x, attr0.y, ppu->y);
                 unimplemented(attr0.is_256color, "256 color sprite");
                 unimplemented(attr1.hflip, "hflip sprite")
                 unimplemented(attr1.vflip, "vflip sprite")
-                int tile_y = (ppu->y % height);
                 int tid = attr2.tid;
+                int y_tid_offset;
                 if (ppu->DISPCNT.obj_character_vram_mapping) { // 1D
-                    int y_tid_offset = (width / 8) * (tile_y / 8);
-                    tid += y_tid_offset;
+                    y_tid_offset = tiles_wide * sprite_tile_y;
                 } else {
                     printf("WARNING: ignoring printing 2D mapping! If you see this at another time than the start of the game, worry!\n");
                     continue;
                 }
+                tid += y_tid_offset;
                 // At this point, we don't need to worry about 1D vs 2D
                 // because in either case they'll be right next to each other in memory.
-                for (int x = 0; x < width; x++) {
-                    word tile_address = 0x06010000 + (tid + (x / 8)) * OBJ_TILE_SIZE;
+                for (int sprite_x = 0; sprite_x < width; sprite_x++) {
+                    int screen_x = sprite_x + attr1.x;
+                    int x_tid_offset = sprite_x / 8;
+                    int tid_offset_by_x = tid + x_tid_offset;
+                    word tile_address = 0x06010000 + tid_offset_by_x * OBJ_TILE_SIZE;
 
-                    int in_tile_offset = (x % 8) + (tile_y % 8);
+                    int tile_x = sprite_x % 8;
+                    int tile_y = sprite_y % 8;
+
+                    int in_tile_offset = tile_x + tile_y * 8;
                     tile_address += in_tile_offset / in_tile_offset_divisor;
 
                     byte tile = gba_read_byte(tile_address);
@@ -188,17 +198,14 @@ void render_obj(gba_ppu_t* ppu) {
                         tile &= 0xF;
                     }
 
-                    word palette_address = 0x05000000;
+                    word palette_address = 0x05000200; // OBJ palette base
                     if (attr0.is_256color) {
                         palette_address += 2 * tile;
                     } else {
                         palette_address += (0x20 * attr2.pb + 2 * tile);
                     }
-                    objbuf[x].raw = gba_read_half(palette_address);
-                    objbuf[x].transparent = tile == 0; // This color should only be drawn if we need transparency
-                    if (!objbuf[x].transparent) {
-                        printf("NOT TRANSPARENT\n");
-                    }
+                    objbuf[screen_x].raw = gba_read_half(palette_address);
+                    objbuf[screen_x].transparent = tile == 0; // This color should only be drawn if we need transparency
                 }
             } else {
                 unimplemented(attr0.affine_object_mode != 0b10, "Sprite with an affine object mode != 0b00 or 0b10")
