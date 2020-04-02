@@ -135,7 +135,7 @@ void ramdump(word base_address, word size) {
             allzeroes = false;
         }
         printf("%08X: %04X %04X %04X %04X %04X %04X %04X %04X\n",
-               0x06000000 + x, a, b, c, d, e, f, g, h);
+               base_address + x, a, b, c, d, e, f, g, h);
     }
     if (allzeroes) {
         printf("Warning: all zeroes!\n");
@@ -225,7 +225,7 @@ void dbg_tick() {
                         ppu->DISPSTAT.vcount_irq_enable,
                         ppu->DISPSTAT.vcount_setting);
 
-            DUI_Println("DISPCNT: %08Xh\n mode: %d\n cgbmode: %d\n display_frame_select: %d\n hblank_interval_free: %d\n obj_c_vrm: %s\n"
+            DUI_Println("DISPCNT: %08Xh\n mode: %d\n cgbmode: %d\n display_frame_select: %d\n hblank_interval_free: %d\n obj_character_vram_mapping: %s\n"
                         " forced_blank: %d\n display: bg0: %d bg1: %d bg2: %d bg3: %d win0: %d win1: %d objwin %d]\n\n",
                         ppu->DISPCNT.raw,
                         ppu->DISPCNT.mode,
