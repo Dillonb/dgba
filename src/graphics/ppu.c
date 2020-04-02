@@ -160,7 +160,7 @@ void render_obj(gba_ppu_t* ppu) {
         int width = sprite_widths[attr0.shape][attr1.size];
         int tiles_wide = width / 8;
 
-        int sprite_y = (ppu->y % height);
+        int sprite_y = ppu->y - attr0.y;
         int sprite_tile_y = sprite_y / 8;
 
         if (ppu->y >= attr0.y && ppu->y <= attr0.y + height) { // If the sprite is visible, we should draw it.
