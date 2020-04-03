@@ -121,4 +121,11 @@ void render_screen(color_t (*screen)[GBA_SCREEN_Y][GBA_SCREEN_X]) {
     SDL_RenderCopy(renderer, buffer, NULL, NULL);
     loginfo("Updating renderer")
     SDL_RenderPresent(renderer);
+    for (int y = 0; y < GBA_SCREEN_Y; y++) {
+        for (int x = 0; x < GBA_SCREEN_X; x++) {
+            (*screen)[y][x].r = 0;
+            (*screen)[y][x].g = 0;
+            (*screen)[y][x].b = 0;
+        }
+    }
 }

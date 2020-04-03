@@ -147,6 +147,9 @@ void render_obj(gba_ppu_t* ppu) {
     for (int x = 0; x < GBA_SCREEN_X; x++) {
         obj_priorities[x] = 0;
         objbuf[x].transparent = true;
+        objbuf[x].r = 0;
+        objbuf[x].g = 0;
+        objbuf[x].b = 0;
     }
 
     for (int sprite = 0; sprite < 128; sprite++) {
