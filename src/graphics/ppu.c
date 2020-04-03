@@ -164,20 +164,21 @@ void render_obj(gba_ppu_t* ppu) {
         int tiles_wide = width / 8;
 
         int sprite_y = ppu->y - attr0.y;
+        if (attr1.vflip) {
+            sprite_y = height - sprite_y - 1;
+        }
         int sprite_tile_y = sprite_y / 8;
 
         if (ppu->y >= attr0.y && ppu->y <= attr0.y + height) { // If the sprite is visible, we should draw it.
             if (attr0.affine_object_mode == 0b00) { // Enabled
                 unimplemented(attr0.is_256color, "256 color sprite");
                 unimplemented(attr1.hflip, "hflip sprite")
-                unimplemented(attr1.vflip, "vflip sprite")
                 int tid = attr2.tid;
                 int y_tid_offset;
                 if (ppu->DISPCNT.obj_character_vram_mapping) { // 1D
                     y_tid_offset = tiles_wide * sprite_tile_y;
-                } else {
-                    printf("WARNING: ignoring printing 2D mapping! If you see this at another time than the start of the game, worry!\n");
-                    continue;
+                } else { // 2D
+                    y_tid_offset = 32 * sprite_tile_y;
                 }
                 tid += y_tid_offset;
                 // At this point, we don't need to worry about 1D vs 2D
@@ -190,6 +191,9 @@ void render_obj(gba_ppu_t* ppu) {
 
                     int tile_x = sprite_x % 8;
                     int tile_y = sprite_y % 8;
+                    if (attr1.vflip) {
+                        tile_y = 7 - tile_y;
+                    }
 
                     int in_tile_offset = tile_x + tile_y * 8;
                     tile_address += in_tile_offset / in_tile_offset_divisor;
