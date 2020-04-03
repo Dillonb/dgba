@@ -208,8 +208,13 @@ void render_obj(gba_ppu_t* ppu) {
                     } else {
                         palette_address += (0x20 * attr2.pb + 2 * tile);
                     }
-                    objbuf[screen_x].raw = gba_read_half(palette_address);
-                    objbuf[screen_x].transparent = tile == 0; // This color should only be drawn if we need transparency
+                    // Only draw if we've never drawn anything there before. Lower indices have higher priority
+                    // and that's the order we're drawing them here.
+                    if (objbuf[screen_x].transparent) {
+                        obj_priorities[screen_x] = attr2.priority;
+                        objbuf[screen_x].raw = gba_read_half(palette_address);
+                        objbuf[screen_x].transparent = tile == 0; // This color should only be drawn if we need transparency
+                    }
                 }
             } else {
                 unimplemented(attr0.affine_object_mode != 0b10, "Sprite with an affine object mode != 0b00 or 0b10")
@@ -357,33 +362,34 @@ void render_line_mode0(gba_ppu_t* ppu) {
     for (int x = 0; x < GBA_SCREEN_X; x++) {
         bool non_transparent_drawn = false;
         for (int i = 3; i >= 0; i--) { // Draw them in reverse priority order, so the highest priority BG is drawn last.
-            int bg = background_priorities[i];
-            gba_color_t pixel = bgbuf[bg][x];
-            bool should_draw = bg_enabled[bg];
-            if (pixel.transparent) {
-                // If the pixel is transparent, only draw it if we haven't drawn a non-transparent
-                should_draw &= !non_transparent_drawn;
-            }
-
-            if (should_draw) {
+            // If the OBJ pixel here has the same priority as the BG, draw it instead.
+            // "Sprites cover backgrounds of the same priority"
+            if (obj_priorities[x] == i && !objbuf[x].transparent) {
                 ppu->screen[ppu->y][x].a = 0xFF;
-                ppu->screen[ppu->y][x].r = FIVEBIT_TO_EIGHTBIT_COLOR(pixel.r);
-                ppu->screen[ppu->y][x].g = FIVEBIT_TO_EIGHTBIT_COLOR(pixel.g);
-                ppu->screen[ppu->y][x].b = FIVEBIT_TO_EIGHTBIT_COLOR(pixel.b);
+                ppu->screen[ppu->y][x].r = FIVEBIT_TO_EIGHTBIT_COLOR(objbuf[x].r);
+                ppu->screen[ppu->y][x].g = FIVEBIT_TO_EIGHTBIT_COLOR(objbuf[x].g);
+                ppu->screen[ppu->y][x].b = FIVEBIT_TO_EIGHTBIT_COLOR(objbuf[x].b);
+                non_transparent_drawn = true;
+            } else {
+                int bg = background_priorities[i];
+                gba_color_t pixel = bgbuf[bg][x];
+                bool should_draw = bg_enabled[bg];
+                if (pixel.transparent) {
+                    // If the pixel is transparent, only draw it if we haven't drawn a non-transparent
+                    should_draw &= !non_transparent_drawn;
+                }
 
-                if (!pixel.transparent) {
-                    non_transparent_drawn = true;
+                if (should_draw) {
+                    ppu->screen[ppu->y][x].a = 0xFF;
+                    ppu->screen[ppu->y][x].r = FIVEBIT_TO_EIGHTBIT_COLOR(pixel.r);
+                    ppu->screen[ppu->y][x].g = FIVEBIT_TO_EIGHTBIT_COLOR(pixel.g);
+                    ppu->screen[ppu->y][x].b = FIVEBIT_TO_EIGHTBIT_COLOR(pixel.b);
+
+                    if (!pixel.transparent) {
+                        non_transparent_drawn = true;
+                    }
                 }
             }
-        }
-        // Draw OBJ layer
-        // TODO: respect OBJ priorities
-
-        if (!objbuf[x].transparent) {
-            ppu->screen[ppu->y][x].a = 0xFF;
-            ppu->screen[ppu->y][x].r = FIVEBIT_TO_EIGHTBIT_COLOR(objbuf[x].r);
-            ppu->screen[ppu->y][x].g = FIVEBIT_TO_EIGHTBIT_COLOR(objbuf[x].g);
-            ppu->screen[ppu->y][x].b = FIVEBIT_TO_EIGHTBIT_COLOR(objbuf[x].b);
         }
     }
 
