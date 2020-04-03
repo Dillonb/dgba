@@ -191,9 +191,6 @@ void render_obj(gba_ppu_t* ppu) {
 
                     int tile_x = sprite_x % 8;
                     int tile_y = sprite_y % 8;
-                    if (attr1.vflip) {
-                        tile_y = 7 - tile_y;
-                    }
 
                     int in_tile_offset = tile_x + tile_y * 8;
                     tile_address += in_tile_offset / in_tile_offset_divisor;
