@@ -156,6 +156,16 @@ void render_obj(gba_ppu_t* ppu) {
         attr0.raw = gba_read_half(0x07000000 + (sprite * 8) + 0);
         attr1.raw = gba_read_half(0x07000000 + (sprite * 8) + 2);
         attr2.raw = gba_read_half(0x07000000 + (sprite * 8) + 4);
+
+        int adjusted_x = attr1.x;
+        if (adjusted_x >= 240) {
+            adjusted_x -= 512;
+        }
+        int adjusted_y = attr0.y;
+        if (adjusted_y >= 160) {
+            adjusted_y -= 256;
+        }
+
         int in_tile_offset_divisor = attr0.is_256color ? 1 : 2;
 
         int height = sprite_heights[attr0.shape][attr1.size];
@@ -163,13 +173,13 @@ void render_obj(gba_ppu_t* ppu) {
         int width = sprite_widths[attr0.shape][attr1.size];
         int tiles_wide = width / 8;
 
-        int sprite_y = ppu->y - attr0.y;
+        int sprite_y = ppu->y - adjusted_y;
         if (attr1.vflip) {
             sprite_y = height - sprite_y - 1;
         }
         int sprite_tile_y = sprite_y / 8;
 
-        if (ppu->y >= attr0.y && ppu->y <= attr0.y + height) { // If the sprite is visible, we should draw it.
+        if (ppu->y >= adjusted_y && ppu->y <= adjusted_y + height) { // If the sprite is visible, we should draw it.
             if (attr0.affine_object_mode == 0b00) { // Enabled
                 unimplemented(attr0.is_256color, "256 color sprite");
                 unimplemented(attr1.hflip, "hflip sprite")
@@ -184,7 +194,7 @@ void render_obj(gba_ppu_t* ppu) {
                 // At this point, we don't need to worry about 1D vs 2D
                 // because in either case they'll be right next to each other in memory.
                 for (int sprite_x = 0; sprite_x < width; sprite_x++) {
-                    int screen_x = sprite_x + attr1.x;
+                    int screen_x = sprite_x + adjusted_x;
                     int x_tid_offset = sprite_x / 8;
                     int tid_offset_by_x = tid + x_tid_offset;
                     word tile_address = 0x06010000 + tid_offset_by_x * OBJ_TILE_SIZE;
