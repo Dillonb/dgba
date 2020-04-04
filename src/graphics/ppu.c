@@ -107,10 +107,10 @@ typedef union obj_attr1 {
         unsigned size:2;
     };
     struct {
-        unsigned:11;
+        unsigned:12;
         bool hflip:1;
         bool vflip:1;
-        unsigned:3;
+        unsigned:2;
     };
     half raw;
 } obj_attr1_t;
