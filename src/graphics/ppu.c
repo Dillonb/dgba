@@ -182,7 +182,6 @@ void render_obj(gba_ppu_t* ppu) {
         if (ppu->y >= adjusted_y && ppu->y <= adjusted_y + height) { // If the sprite is visible, we should draw it.
             if (attr0.affine_object_mode == 0b00) { // Enabled
                 unimplemented(attr0.is_256color, "256 color sprite");
-                unimplemented(attr1.hflip, "hflip sprite")
                 int tid = attr2.tid;
                 int y_tid_offset;
                 if (ppu->DISPCNT.obj_character_vram_mapping) { // 1D
@@ -194,15 +193,20 @@ void render_obj(gba_ppu_t* ppu) {
                 // At this point, we don't need to worry about 1D vs 2D
                 // because in either case they'll be right next to each other in memory.
                 for (int sprite_x = 0; sprite_x < width; sprite_x++) {
+                    int adjusted_sprite_x = sprite_x;
+                    if (attr1.hflip) {
+                        adjusted_sprite_x = width - sprite_x - 1;
+                    }
+                    // Don't use the adjusted sprite X here. There'd be no point in flipping the sprite, otherwise.
                     int screen_x = sprite_x + adjusted_x;
-                    int x_tid_offset = sprite_x / 8;
+                    int x_tid_offset = adjusted_sprite_x / 8;
                     int tid_offset_by_x = tid + x_tid_offset;
                     word tile_address = 0x06010000 + tid_offset_by_x * OBJ_TILE_SIZE;
 
-                    int tile_x = sprite_x % 8;
-                    int tile_y = sprite_y % 8;
+                    int in_tile_x = adjusted_sprite_x % 8;
+                    int in_tile_y = sprite_y % 8;
 
-                    int in_tile_offset = tile_x + tile_y * 8;
+                    int in_tile_offset = in_tile_x + in_tile_y * 8;
                     tile_address += in_tile_offset / in_tile_offset_divisor;
 
                     byte tile = gba_read_byte(tile_address);
@@ -220,7 +224,7 @@ void render_obj(gba_ppu_t* ppu) {
                     }
                     // Only draw if we've never drawn anything there before. Lower indices have higher priority
                     // and that's the order we're drawing them here.
-                    if (objbuf[screen_x].transparent) {
+                    if (screen_x < GBA_SCREEN_X && objbuf[screen_x].transparent) {
                         obj_priorities[screen_x] = attr2.priority;
                         objbuf[screen_x].raw = gba_read_half(palette_address);
                         objbuf[screen_x].transparent = tile == 0; // This color should only be drawn if we need transparency
