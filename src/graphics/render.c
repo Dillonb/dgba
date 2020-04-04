@@ -45,25 +45,25 @@ void update_key(SDL_Keycode sdlk, bool state) {
             logfatal("User pressed escape")
             break;
         case SDLK_UP:
-        case SDLK_k:
+        case SDLK_w:
             KEYINPUT->up = !state;
             break;
         case SDLK_DOWN:
-        case SDLK_j:
+        case SDLK_s:
             KEYINPUT->down = !state;
             break;
         case SDLK_LEFT:
-        case SDLK_h:
+        case SDLK_a:
             KEYINPUT->left = !state;
             break;
         case SDLK_RIGHT:
-        case SDLK_l:
+        case SDLK_d:
             KEYINPUT->right = !state;
             break;
-        case SDLK_z:
+        case SDLK_j:
             KEYINPUT->a = !state;
             break;
-        case SDLK_x:
+        case SDLK_k:
             KEYINPUT->b = !state;
             break;
         case SDLK_RETURN:
@@ -72,10 +72,10 @@ void update_key(SDL_Keycode sdlk, bool state) {
         case SDLK_RSHIFT:
             KEYINPUT->select = !state;
             break;
-        case SDLK_a:
+        case SDLK_q:
             KEYINPUT->l = !state;
             break;
-        case SDLK_s:
+        case SDLK_e:
             KEYINPUT->r = !state;
             break;
         default:
