@@ -497,8 +497,14 @@ byte gba_read_byte(word addr) {
                 logfatal("Backup type EEPROM unimplemented!")
             case FLASH64K:
                 logfatal("Backup type FLASH64K unimplemented!")
-            case FLASH128K:
+            case FLASH128K: {
+                if (addr == 0x0E000000) {
+                    return 0x62; // Stubbing flash
+                } else if (addr == 0x0E000001) {
+                    return 0x13; // Stubbing flash
+                }
                 logfatal("Backup type FLASH128K unimplemented!")
+            }
             default:
                 logfatal("Unknown backup type index %d!", backup_type)
         }
