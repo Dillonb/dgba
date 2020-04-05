@@ -213,7 +213,7 @@ half* get_half_ioreg_ptr(word addr, bool write) {
         case IO_TM1CNT_H: return &bus_state.TMCNT_H[1].raw;
         case IO_TM2CNT_L: unimplemented(!write, "Read from timer reload (get current counter)") return &bus_state.TMCNT_L[2].raw;
         case IO_TM2CNT_H: return &bus_state.TMCNT_H[2].raw;
-        case IO_TM3CNT_L: /*unimplemented(!write, "Read from timer reload (get current counter)")*/ return &bus_state.TMCNT_L[3].raw;
+        case IO_TM3CNT_L: unimplemented(!write, "Read from timer reload (get current counter)") return &bus_state.TMCNT_L[3].raw;
         case IO_TM3CNT_H: return &bus_state.TMCNT_H[4].raw;
         case IO_KEYCNT: return &bus_state.KEYCNT.raw;
         case IO_IF: return &bus_state.IF.raw;
