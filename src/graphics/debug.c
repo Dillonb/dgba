@@ -6,6 +6,7 @@
 #include "debug.h"
 #include "../common/log.h"
 #include "render.h"
+#include "../gba_system.h"
 
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
@@ -17,16 +18,6 @@ static SDL_Renderer* renderer = NULL;
 static int dbg_window_id;
 
 static bool dbg_window_visible = false;
-
-static gbabus_t* bus = NULL;
-static arm7tdmi_t* cpu = NULL;
-static gba_ppu_t* ppu = NULL;
-
-void debug_init(arm7tdmi_t* new_cpu, gba_ppu_t* new_ppu, gbabus_t* new_bus) {
-    cpu = new_cpu;
-    ppu = new_ppu;
-    bus = new_bus;
-}
 
 void setup_dbg_sdl_window() {
     window = SDL_CreateWindow("dgb gba dbg",
@@ -92,7 +83,7 @@ int tab_index = TAB_CPU_REGISTERS;
 
 void print_timer(int n, TMCNT_H_t* tmcnth, int timer_reload) {
     const char* prescaler_selection = "UNKNOWN";
-    switch (tmcnth->prescaler_selection) {
+    switch (tmcnth->frequency) {
         case 0:
             prescaler_selection = "F/1";
             break;
@@ -116,7 +107,7 @@ void print_timer(int n, TMCNT_H_t* tmcnth, int timer_reload) {
                 timer_reload,
                 prescaler_selection,
                 tm0msg,
-                tmcnth->countup_timing,
+                tmcnth->cascade,
                 tmcnth->timer_irq_enable);
 }
 
@@ -205,10 +196,9 @@ void dbg_tick() {
 
             DUI_Println("\n--- Timers ---");
 
-            print_timer(0, &bus->TM0CNT_H, bus->TM0CNT_L.timer_reload);
-            print_timer(1, &bus->TM1CNT_H, bus->TM1CNT_L.timer_reload);
-            print_timer(2, &bus->TM2CNT_H, bus->TM2CNT_L.timer_reload);
-            print_timer(3, &bus->TM3CNT_H, bus->TM3CNT_L.timer_reload);
+            for (int t = 0; t < 4; t++) {
+                print_timer(t, &bus->TMCNT_H[t], bus->TMCNT_L[t].timer_reload);
+            }
         }
 
         if (DUI_Tab("Video Registers", TAB_VIDEO_REGISTERS, &tab_index)) {

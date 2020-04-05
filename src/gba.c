@@ -35,24 +35,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    gbamem_t* mem = init_mem();
-
-    char* romfile = flags->argv[0];
-    load_gbarom(romfile, mem);
-    if (bios_file) {
-        load_alternate_bios(bios_file);
-    }
-
-    // Initialize the CPU, hook it up to the GBA bus
-    arm7tdmi_t* cpu = init_arm7tdmi(gba_read_byte,
-                                    gba_read_half,
-                                    gba_read_word,
-                                    gba_write_byte,
-                                    gba_write_half,
-                                    gba_write_word);
-    gba_ppu_t* ppu = init_ppu();
-    gbabus_t* bus = init_gbabus(mem, cpu, ppu);
-    debug_init(cpu, ppu, bus);
+    init_gbasystem(flags->argv[0], bios_file);
 
     loginfo("ROM loaded: %lu bytes", mem->rom_size)
     if (should_skip_bios) {

@@ -126,8 +126,8 @@ typedef union TMCNT_L {
 typedef union TMCNT_H {
     half raw;
     struct {
-        unsigned prescaler_selection:2;
-        bool countup_timing:1;
+        unsigned frequency:2;
+        bool cascade:1;
         unsigned:3;
         bool timer_irq_enable:1;
         bool start:1;
@@ -197,21 +197,15 @@ typedef struct gbabus {
 
     SOUNDBIAS_t SOUNDBIAS;
 
-    TMCNT_L_t TM0CNT_L;
-    TMCNT_H_t TM0CNT_H;
-    TMCNT_L_t TM1CNT_L;
-    TMCNT_H_t TM1CNT_H;
-    TMCNT_L_t TM2CNT_L;
-    TMCNT_H_t TM2CNT_H;
-    TMCNT_L_t TM3CNT_L;
-    TMCNT_H_t TM3CNT_H;
+    TMCNT_L_t TMCNT_L[4];
+    TMCNT_H_t TMCNT_H[4];
 
     WAITCNT_t WAITCNT;
 } gbabus_t;
 
 KEYINPUT_t* get_keyinput();
 
-gbabus_t* init_gbabus(gbamem_t* new_mem, arm7tdmi_t* new_cpu, gba_ppu_t* new_ppu);
+gbabus_t* init_gbabus();
 byte gba_read_byte(word addr);
 half gba_read_half(word address);
 void gba_write_byte(word addr, byte value);

@@ -6,12 +6,9 @@
 #include "../common/log.h"
 #include "gbabios.h"
 #include "dma.h"
+#include "../gba_system.h"
 
-static gbamem_t* mem = NULL;
-static arm7tdmi_t* cpu = NULL;
-static gba_ppu_t* ppu = NULL;
-
-static gbabus_t state;
+static gbabus_t bus_state;
 
 word open_bus(word addr);
 
@@ -25,20 +22,16 @@ typedef enum backup_type {
 
 backup_type_t backup_type = UNKNOWN;
 
-gbabus_t* init_gbabus(gbamem_t* new_mem, arm7tdmi_t* new_cpu, gba_ppu_t* new_ppu) {
-    mem = new_mem;
-    cpu = new_cpu;
-    ppu = new_ppu;
+gbabus_t* init_gbabus() {
+    bus_state.interrupt_master_enable.raw = 0;
+    bus_state.interrupt_enable.raw = 0;
+    bus_state.KEYINPUT.raw = 0xFFFF;
+    bus_state.SOUNDBIAS.raw = 0x0200;
 
-    state.interrupt_master_enable.raw = 0;
-    state.interrupt_enable.raw = 0;
-    state.KEYINPUT.raw = 0xFFFF;
-    state.SOUNDBIAS.raw = 0x0200;
-
-    state.DMA0INT.previously_enabled = false;
-    state.DMA1INT.previously_enabled = false;
-    state.DMA2INT.previously_enabled = false;
-    state.DMA3INT.previously_enabled = false;
+    bus_state.DMA0INT.previously_enabled = false;
+    bus_state.DMA1INT.previously_enabled = false;
+    bus_state.DMA2INT.previously_enabled = false;
+    bus_state.DMA3INT.previously_enabled = false;
 
     // Loop through every single word aligned address in the ROM and try to find what backup type it is (you read that right)
     // Start at 0xE4 since everything before that is part of the header
@@ -72,36 +65,36 @@ gbabus_t* init_gbabus(gbamem_t* new_mem, arm7tdmi_t* new_cpu, gba_ppu_t* new_ppu
         }
     }
 
-    return &state;
+    return &bus_state;
 }
 
 KEYINPUT_t* get_keyinput() {
-    return &state.KEYINPUT;
+    return &bus_state.KEYINPUT;
 }
 
 void request_interrupt(gba_interrupt_t interrupt) {
-    if (state.interrupt_master_enable.enable) {
+    if (bus_state.interrupt_master_enable.enable) {
         switch (interrupt) {
             case IRQ_VBLANK:
-                if (state.interrupt_enable.lcd_vblank) {
+                if (bus_state.interrupt_enable.lcd_vblank) {
                     cpu->irq = true;
-                    state.IF.vblank = true;
+                    bus_state.IF.vblank = true;
                 } else {
                     logwarn("VBlank interrupt blocked by IE")
                 }
                 break;
             case IRQ_HBLANK:
-                if (state.interrupt_enable.lcd_hblank) {
+                if (bus_state.interrupt_enable.lcd_hblank) {
                     cpu->irq = true;
-                    state.IF.hblank = true;
+                    bus_state.IF.hblank = true;
                 } else {
                     logwarn("HBlank interrupt blocked by IE")
                 }
                 break;
             case IRQ_VCOUNT:
-                if (state.interrupt_enable.lcd_vcounter_match) {
+                if (bus_state.interrupt_enable.lcd_vcounter_match) {
                     cpu->irq = true;
-                    state.IF.vcount = true;
+                    bus_state.IF.vcount = true;
                 } else {
                     logwarn("VCount interrupt blocked by IE")
                 }
@@ -200,32 +193,32 @@ half* get_half_ioreg_ptr(word addr, bool write) {
         case IO_BLDCNT: return &ppu->BLDCNT.raw;
         case IO_BLDALPHA: return &ppu->BLDALPHA.raw;
         case IO_BLDY: return &ppu->BLDY.raw;
-        case IO_IE: return &state.interrupt_enable.raw;
-        case IO_DMA0CNT_L: return &state.DMA0CNT_L.raw;
-        case IO_DMA0CNT_H: return &state.DMA0CNT_H.raw;
-        case IO_DMA1CNT_L: return &state.DMA1CNT_L.raw;
-        case IO_DMA1CNT_H: return &state.DMA1CNT_H.raw;
-        case IO_DMA2CNT_L: return &state.DMA2CNT_L.raw;
-        case IO_DMA2CNT_H: return &state.DMA2CNT_H.raw;
-        case IO_DMA3CNT_L: return &state.DMA3CNT_L.raw;
-        case IO_DMA3CNT_H: return &state.DMA3CNT_H.raw;
-        case IO_KEYINPUT: return &state.KEYINPUT.raw;
-        case IO_RCNT: return &state.RCNT.raw;
-        case IO_JOYCNT: return &state.JOYCNT.raw;
-        case IO_IME: return &state.interrupt_master_enable.raw;
-        case IO_SOUNDBIAS: return &state.SOUNDBIAS.raw;
-        case IO_TM0CNT_L: unimplemented(!write, "Read from timer reload (get current counter)") return &state.TM0CNT_L.raw;
-        case IO_TM0CNT_H: return &state.TM0CNT_H.raw;
-        case IO_TM1CNT_L: unimplemented(!write, "Read from timer reload (get current counter)") return &state.TM1CNT_L.raw;
-        case IO_TM1CNT_H: return &state.TM1CNT_H.raw;
-        case IO_TM2CNT_L: unimplemented(!write, "Read from timer reload (get current counter)") return &state.TM2CNT_L.raw;
-        case IO_TM2CNT_H: return &state.TM2CNT_H.raw;
-        case IO_TM3CNT_L: unimplemented(!write, "Read from timer reload (get current counter)") return &state.TM3CNT_L.raw;
-        case IO_TM3CNT_H: return &state.TM3CNT_H.raw;
-        case IO_KEYCNT: return &state.KEYCNT.raw;
-        case IO_IF: return &state.IF.raw;
+        case IO_IE: return &bus_state.interrupt_enable.raw;
+        case IO_DMA0CNT_L: return &bus_state.DMA0CNT_L.raw;
+        case IO_DMA0CNT_H: return &bus_state.DMA0CNT_H.raw;
+        case IO_DMA1CNT_L: return &bus_state.DMA1CNT_L.raw;
+        case IO_DMA1CNT_H: return &bus_state.DMA1CNT_H.raw;
+        case IO_DMA2CNT_L: return &bus_state.DMA2CNT_L.raw;
+        case IO_DMA2CNT_H: return &bus_state.DMA2CNT_H.raw;
+        case IO_DMA3CNT_L: return &bus_state.DMA3CNT_L.raw;
+        case IO_DMA3CNT_H: return &bus_state.DMA3CNT_H.raw;
+        case IO_KEYINPUT: return &bus_state.KEYINPUT.raw;
+        case IO_RCNT: return &bus_state.RCNT.raw;
+        case IO_JOYCNT: return &bus_state.JOYCNT.raw;
+        case IO_IME: return &bus_state.interrupt_master_enable.raw;
+        case IO_SOUNDBIAS: return &bus_state.SOUNDBIAS.raw;
+        case IO_TM0CNT_L: unimplemented(!write, "Read from timer reload (get current counter)") return &bus_state.TMCNT_L[0].raw;
+        case IO_TM0CNT_H: return &bus_state.TMCNT_H[0].raw;
+        case IO_TM1CNT_L: unimplemented(!write, "Read from timer reload (get current counter)") return &bus_state.TMCNT_L[1].raw;
+        case IO_TM1CNT_H: return &bus_state.TMCNT_H[1].raw;
+        case IO_TM2CNT_L: unimplemented(!write, "Read from timer reload (get current counter)") return &bus_state.TMCNT_L[2].raw;
+        case IO_TM2CNT_H: return &bus_state.TMCNT_H[2].raw;
+        case IO_TM3CNT_L: /*unimplemented(!write, "Read from timer reload (get current counter)")*/ return &bus_state.TMCNT_L[3].raw;
+        case IO_TM3CNT_H: return &bus_state.TMCNT_H[4].raw;
+        case IO_KEYCNT: return &bus_state.KEYCNT.raw;
+        case IO_IF: return &bus_state.IF.raw;
         case IO_WAITCNT:
-            return &state.WAITCNT.raw;
+            return &bus_state.WAITCNT.raw;
         case IO_UNDOCUMENTED_GREEN_SWAP:
             logwarn("Ignoring access to Green Swap register")
             return NULL;
@@ -282,7 +275,7 @@ void write_half_ioreg_masked(word addr, half value, half mask) {
                 mask = 0b1;
                 break;
             case IO_IF: {
-                state.IF.raw &= ~value;
+                bus_state.IF.raw &= ~value;
                 return;
             }
 
@@ -311,14 +304,14 @@ word* get_word_ioreg_ptr(word addr) {
         case IO_BG2Y:     return &ppu->BG2Y.raw;
         case IO_BG3X:     return &ppu->BG3X.raw;
         case IO_BG3Y:     return &ppu->BG3Y.raw;
-        case IO_DMA0SAD:  return &state.DMA0SAD.raw;
-        case IO_DMA0DAD:  return &state.DMA0DAD.raw;
-        case IO_DMA1SAD:  return &state.DMA1SAD.raw;
-        case IO_DMA1DAD:  return &state.DMA1DAD.raw;
-        case IO_DMA2SAD:  return &state.DMA2SAD.raw;
-        case IO_DMA2DAD:  return &state.DMA2DAD.raw;
-        case IO_DMA3SAD:  return &state.DMA3SAD.raw;
-        case IO_DMA3DAD:  return &state.DMA3DAD.raw;
+        case IO_DMA0SAD:  return &bus_state.DMA0SAD.raw;
+        case IO_DMA0DAD:  return &bus_state.DMA0DAD.raw;
+        case IO_DMA1SAD:  return &bus_state.DMA1SAD.raw;
+        case IO_DMA1DAD:  return &bus_state.DMA1DAD.raw;
+        case IO_DMA2SAD:  return &bus_state.DMA2SAD.raw;
+        case IO_DMA2DAD:  return &bus_state.DMA2DAD.raw;
+        case IO_DMA3SAD:  return &bus_state.DMA3SAD.raw;
+        case IO_DMA3DAD:  return &bus_state.DMA3DAD.raw;
         case IO_FIFO_A:
         case IO_FIFO_B:
         case IO_JOY_RECV:
@@ -664,25 +657,25 @@ void gba_write_word(word address, word value) {
 
 
 int dma0() {
-    unimplemented(state.DMA0CNT_H.dma_enable, "DMA0")
+    unimplemented(bus_state.DMA0CNT_H.dma_enable, "DMA0")
     return 0;
 }
 
 
 int gba_dma() {
     // Run one cycle of the highest priority DMA.
-    int dma_cycles = dma(0, &state.DMA0CNT_H, &state.DMA0INT, state.DMA0SAD.addr, state.DMA0DAD.addr, state.DMA0CNT_L.wc, 0x4000);
+    int dma_cycles = dma(0, &bus_state.DMA0CNT_H, &bus_state.DMA0INT, bus_state.DMA0SAD.addr, bus_state.DMA0DAD.addr, bus_state.DMA0CNT_L.wc, 0x4000);
 
     if (dma_cycles == 0) {
-        dma_cycles = dma(1, &state.DMA1CNT_H, &state.DMA1INT, state.DMA1SAD.addr, state.DMA1DAD.addr, state.DMA1CNT_L.wc, 0x4000);
+        dma_cycles = dma(1, &bus_state.DMA1CNT_H, &bus_state.DMA1INT, bus_state.DMA1SAD.addr, bus_state.DMA1DAD.addr, bus_state.DMA1CNT_L.wc, 0x4000);
     }
 
     if (dma_cycles == 0) {
-        dma_cycles = dma(2, &state.DMA2CNT_H, &state.DMA2INT, state.DMA2SAD.addr, state.DMA2DAD.addr, state.DMA2CNT_L.wc, 0x4000);
+        dma_cycles = dma(2, &bus_state.DMA2CNT_H, &bus_state.DMA2INT, bus_state.DMA2SAD.addr, bus_state.DMA2DAD.addr, bus_state.DMA2CNT_L.wc, 0x4000);
     }
 
     if (dma_cycles == 0) {
-        dma_cycles = dma(3, &state.DMA3CNT_H, &state.DMA3INT, state.DMA3SAD.addr, state.DMA3DAD.addr, state.DMA3CNT_L.wc, 0x10000);
+        dma_cycles = dma(3, &bus_state.DMA3CNT_H, &bus_state.DMA3INT, bus_state.DMA3SAD.addr, bus_state.DMA3DAD.addr, bus_state.DMA3CNT_L.wc, 0x10000);
     }
 
     return dma_cycles;
