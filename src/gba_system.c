@@ -1,14 +1,13 @@
 #include "mem/gbabus.h"
-#include "common/log.h"
 #include "mem/gbarom.h"
 #include "mem/gbabios.h"
 
 int cycles = 0;
 
-arm7tdmi_t* cpu;
-gba_ppu_t* ppu;
-gbabus_t* bus;
-gbamem_t* mem;
+arm7tdmi_t* cpu = NULL;
+gba_ppu_t* ppu = NULL;
+gbabus_t* bus = NULL;
+gbamem_t* mem = NULL;
 
 void init_gbasystem(const char* romfile, const char* bios_file) {
     mem = init_mem();
