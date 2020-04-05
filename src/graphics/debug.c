@@ -12,15 +12,15 @@
 
 #define SCREEN_SCALE 1
 
-SDL_Window* dbg_window = NULL;
-SDL_Renderer* dbg_renderer = NULL;
-int dbg_window_id;
+static SDL_Window* window = NULL;
+static SDL_Renderer* renderer = NULL;
+static int dbg_window_id;
 
-bool dbg_window_visible = false;
+static bool dbg_window_visible = false;
 
-gbabus_t* bus;
-arm7tdmi_t* cpu;
-gba_ppu_t* ppu;
+static gbabus_t* bus = NULL;
+static arm7tdmi_t* cpu = NULL;
+static gba_ppu_t* ppu = NULL;
 
 void debug_init(arm7tdmi_t* new_cpu, gba_ppu_t* new_ppu, gbabus_t* new_bus) {
     cpu = new_cpu;
@@ -29,27 +29,27 @@ void debug_init(arm7tdmi_t* new_cpu, gba_ppu_t* new_ppu, gbabus_t* new_bus) {
 }
 
 void setup_dbg_sdl_window() {
-    dbg_window = SDL_CreateWindow("dgb gba dbg",
-                                  SDL_WINDOWPOS_UNDEFINED,
-                                  SDL_WINDOWPOS_UNDEFINED,
+    window = SDL_CreateWindow("dgb gba dbg",
+                              SDL_WINDOWPOS_UNDEFINED,
+                              SDL_WINDOWPOS_UNDEFINED,
                                   WINDOW_WIDTH * SCREEN_SCALE,
                                   WINDOW_HEIGHT * SCREEN_SCALE,
-                                  SDL_WINDOW_SHOWN);
+                              SDL_WINDOW_SHOWN);
 
 
-    dbg_window_id = SDL_GetWindowID(dbg_window);
+    dbg_window_id = SDL_GetWindowID(window);
 
-    dbg_renderer = SDL_CreateRenderer(dbg_window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
-    SDL_RenderSetScale(dbg_renderer, SCREEN_SCALE, SCREEN_SCALE);
+    SDL_RenderSetScale(renderer, SCREEN_SCALE, SCREEN_SCALE);
 
-    DUI_Init(dbg_window);
+    DUI_Init(window);
 
     DUI_Style * style = DUI_GetStyle();
     style->CharSize = 8 * SCREEN_SCALE;
     style->LineHeight = 10 * SCREEN_SCALE;
 
-    if (dbg_renderer == NULL) {
+    if (renderer == NULL) {
         logfatal("SDL couldn't create a renderer! %s", SDL_GetError());
     }
 
@@ -58,8 +58,8 @@ void setup_dbg_sdl_window() {
 
 void teardown_dbg_sdl_window() {
     DUI_Term();
-    SDL_DestroyRenderer(dbg_renderer);
-    SDL_DestroyWindow(dbg_window);
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
     dbg_window_visible = false;
 }
 
@@ -158,8 +158,8 @@ void dbg_tick() {
             gba_handle_event(&event);
         }
         DUI_Update();
-        SDL_SetRenderDrawColor(dbg_renderer, 0x33, 0x33, 0x33, 0xFF);
-        SDL_RenderClear(dbg_renderer);
+        SDL_SetRenderDrawColor(renderer, 0x33, 0x33, 0x33, 0xFF);
+        SDL_RenderClear(renderer);
         DUI_MoveCursor(8, 8);
 
         DUI_BeginTabBar();
@@ -287,7 +287,7 @@ void dbg_tick() {
             DUI_Println("TAB #4");
         }
 
-        SDL_RenderPresent(dbg_renderer);
+        SDL_RenderPresent(renderer);
     }
 }
 

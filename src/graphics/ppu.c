@@ -455,7 +455,6 @@ void ppu_step(gba_ppu_t* ppu) {
 
         if (ppu->y == ppu->DISPSTAT.vcount_setting) {
             ppu->DISPSTAT.vcount = true;
-            logwarn("VCOUNT flag is set!!!")
             if (ppu->DISPSTAT.vcount_irq_enable) {
                 request_interrupt(IRQ_VCOUNT);
             }

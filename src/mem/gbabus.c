@@ -7,11 +7,11 @@
 #include "gbabios.h"
 #include "dma.h"
 
-gbamem_t* mem;
-arm7tdmi_t* cpu;
-gba_ppu_t* ppu;
+static gbamem_t* mem = NULL;
+static arm7tdmi_t* cpu = NULL;
+static gba_ppu_t* ppu = NULL;
 
-gbabus_t state;
+static gbabus_t state;
 
 word open_bus(word addr);
 

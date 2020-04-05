@@ -8,11 +8,11 @@
 
 #define SCREEN_SCALE 4
 
-bool initialized = false;
-SDL_Window* window = NULL;
-uint32_t window_id;
-SDL_Renderer* renderer = NULL;
-SDL_Texture* buffer = NULL;
+static bool initialized = false;
+static SDL_Window* window = NULL;
+static uint32_t window_id;
+static SDL_Renderer* renderer = NULL;
+static SDL_Texture* buffer = NULL;
 
 void initialize() {
     initialized = true;
