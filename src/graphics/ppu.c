@@ -55,7 +55,6 @@ bool is_vblank(gba_ppu_t* ppu) {
 
 #define PALETTE_BANK_BACKGROUND 0
 
-#define FIVEBIT_TO_EIGHTBIT_COLOR(c) (c<<3)|(c&7)
 
 void render_line_mode4(gba_ppu_t* ppu) {
     if (ppu->DISPCNT.screen_display_bg2) {

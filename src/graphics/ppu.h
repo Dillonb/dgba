@@ -13,6 +13,8 @@
 #define VRAM_SIZE  0x18000
 #define OAM_SIZE   0x400
 
+#define FIVEBIT_TO_EIGHTBIT_COLOR(c) (c<<3)|(c&7)
+
 typedef union DISPCNT {
     struct {
         unsigned mode:3;

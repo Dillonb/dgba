@@ -17,6 +17,10 @@ static SDL_Window* window = NULL;
 static SDL_Renderer* renderer = NULL;
 static int dbg_window_id;
 
+static SDL_Texture* dbg_tilemap_texture = NULL;
+static color_t dbg_tilemap[256][256];
+static int dbg_tilemap_pb = 0;
+
 static bool dbg_window_visible = false;
 
 void setup_dbg_sdl_window() {
@@ -31,6 +35,8 @@ void setup_dbg_sdl_window() {
     dbg_window_id = SDL_GetWindowID(window);
 
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+
+    dbg_tilemap_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB32, SDL_TEXTUREACCESS_STREAMING, 256, 256);
 
     SDL_RenderSetScale(renderer, SCREEN_SCALE, SCREEN_SCALE);
 
@@ -274,7 +280,59 @@ void dbg_tick() {
         if (DUI_Tab("Tile Map", TAB_TILE_MAP, &tab_index)) {
             DUI_MoveCursor(8, 40);
             DUI_Panel(WINDOW_WIDTH - 16, WINDOW_HEIGHT - 48);
-            DUI_Println("TAB #4");
+            DUI_Println("OBJ Tilemap PB: %d", dbg_tilemap_pb);
+
+            if (DUI_Button("PB -1")) {
+                dbg_tilemap_pb--;
+            }
+
+            if (DUI_Button("PB +1")) {
+                dbg_tilemap_pb++;
+            }
+
+
+            for (int y = 0; y < 256; y++) {
+                int tile_y = y / 8;
+                int in_tile_y = y % 8;
+                int tile_y_offset = tile_y * 32;
+                for (int x = 0; x < 256; x++) {
+                    int tile_x = x / 8;
+                    int in_tile_x = x % 8;
+
+                    int tid = tile_y_offset + tile_x;
+
+                    word tile_address = 0x06010000 + tid * 0x20; // 0x20 = obj tile size
+                    int in_tile_offset = in_tile_x + in_tile_y * 8;
+                    in_tile_offset /= 2; // TODO: in 256 color mode, don't do this.
+
+                    tile_address += in_tile_offset;
+
+                    byte tile = gba_read_byte(tile_address);
+
+                    // TODO: in 256 color mode, don't do this.
+                    tile >>= (in_tile_offset % 2) * 4;
+                    tile &= 0xF;
+
+                    word palette_address = 0x05000200; // OBJ palette base
+                    palette_address += (0x20 * dbg_tilemap_pb + 2 * tile); // TODO: in 256 color mode, don't use the palette bank.
+
+                    gba_color_t color;
+                    color.raw = gba_read_half(palette_address);
+
+                    dbg_tilemap[y][x].a = 0xFF;
+                    dbg_tilemap[y][x].r = FIVEBIT_TO_EIGHTBIT_COLOR(color.r);
+                    dbg_tilemap[y][x].g = FIVEBIT_TO_EIGHTBIT_COLOR(color.g);
+                    dbg_tilemap[y][x].b = FIVEBIT_TO_EIGHTBIT_COLOR(color.b);
+                }
+            }
+
+            SDL_UpdateTexture(dbg_tilemap_texture, NULL, dbg_tilemap, 256 * 4);
+            SDL_Rect destRect;
+            DUI_GetCursor(&destRect.x, &destRect.y);
+            destRect.w = 512;
+            destRect.h = 512;
+            DUI_MoveCursorRelative(0, 512);
+            SDL_RenderCopy(renderer, dbg_tilemap_texture, NULL, &destRect);
         }
 
         SDL_RenderPresent(renderer);
