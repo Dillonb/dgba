@@ -94,6 +94,10 @@ typedef struct arm7tdmi {
     bool halt; // Should the CPU do nothing (except interrupts?)
 
     word instr; // last instr the CPU executed
+
+    int this_step_ticks;
+
+    char disassembled[50];
 } arm7tdmi_t;
 
 arm7tdmi_t* init_arm7tdmi(byte (*read_byte)(word),

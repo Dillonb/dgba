@@ -220,10 +220,9 @@ bool check_cond(arm7tdmi_t* state, arminstr_t* instr) {
     return passed;
 }
 
-int this_step_ticks = 0;
 
-void tick(int ticks) {
-    this_step_ticks += ticks;
+void tick(arm7tdmi_t* state, int ticks) {
+    state->this_step_ticks += ticks;
 }
 
 arminstr_t next_arm_instr(arm7tdmi_t* state) {
@@ -453,9 +452,9 @@ int arm_mode_step(arm7tdmi_t* state, arminstr_t* instr) {
     }
     else { // Cond told us not to execute this instruction
         logdebug("Skipping instr because cond %d was not met.", instr->parsed.cond)
-        tick(1);
+        tick(state, 1);
     }
-    return this_step_ticks;
+    return state->this_step_ticks;
 }
 
 int thumb_mode_step(arm7tdmi_t* state, thumbinstr_t* instr) {
@@ -525,7 +524,7 @@ int thumb_mode_step(arm7tdmi_t* state, thumbinstr_t* instr) {
             logfatal("Hit default case in arm_mode_step switch. This should never happen!")
     }
 
-    return this_step_ticks;
+    return state->this_step_ticks;
 }
 
 void handle_irq(arm7tdmi_t* state) {
@@ -541,8 +540,6 @@ void handle_irq(arm7tdmi_t* state) {
     set_pc(state, 0x18); // IRQ handler
 }
 
-char disassembled[50];
-
 int arm7tdmi_step(arm7tdmi_t* state) {
     if (state->irq) {
         if (state->cpsr.disable_irq) {
@@ -556,7 +553,7 @@ int arm7tdmi_step(arm7tdmi_t* state) {
 
     dbg_tick();
 
-    this_step_ticks = 0;
+    state->this_step_ticks = 0;
     logdebug("r0:  %08X   r1: %08X   r2: %08X   r3: %08X", get_register(state, 0), get_register(state, 1), get_register(state, 2), get_register(state, 3))
     logdebug("r4:  %08X   r5: %08X   r6: %08X   r7: %08X", get_register(state, 4), get_register(state, 5), get_register(state, 6), get_register(state, 7))
     logdebug("r8:  %08X   r9: %08X  r10: %08X  r11: %08X", get_register(state, 8), get_register(state, 9), get_register(state, 10), get_register(state, 11))
@@ -572,8 +569,8 @@ int arm7tdmi_step(arm7tdmi_t* state) {
          state->instr = instr.raw;
          word adjusted_pc = state->pc - 4;
          if (log_get_verbosity() >= LOG_VERBOSITY_INFO) {
-             disassemble_thumb(adjusted_pc, instr.raw, (char *) &disassembled, sizeof(disassembled));
-             loginfo("[THM] 0x%08X: %s", adjusted_pc, disassembled)
+             disassemble_thumb(adjusted_pc, instr.raw, (char *) &state->disassembled, sizeof(state->disassembled));
+             loginfo("[THM] 0x%08X: %s", adjusted_pc, state->disassembled)
          }
          cycles = thumb_mode_step(state, &instr);
      } else {
@@ -581,8 +578,8 @@ int arm7tdmi_step(arm7tdmi_t* state) {
          state->instr = instr.raw;
          word adjusted_pc = state->pc - 8;
          if (log_get_verbosity() >= LOG_VERBOSITY_INFO) {
-             disassemble_arm(adjusted_pc, instr.raw, (char *) &disassembled, sizeof(disassembled));
-             loginfo("[ARM] 0x%08X: %s", adjusted_pc, disassembled)
+             disassemble_arm(adjusted_pc, instr.raw, (char *) &state->disassembled, sizeof(state->disassembled));
+             loginfo("[ARM] 0x%08X: %s", adjusted_pc, state->disassembled)
          }
          cycles = arm_mode_step(state, &instr);
      }

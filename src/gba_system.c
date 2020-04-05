@@ -13,7 +13,7 @@ gbamem_t* mem;
 void init_gbasystem(const char* romfile, const char* bios_file) {
     mem = init_mem();
 
-    load_gbarom(romfile, mem);
+    load_gbarom(romfile);
     if (bios_file) {
         load_alternate_bios(bios_file);
     }
