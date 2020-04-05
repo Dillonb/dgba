@@ -8,6 +8,7 @@
 #include "../src/mem/gbarom.h"
 #include "../src/mem/gbabios.h"
 #include "../src/arm7tdmi/arm7tdmi.h"
+#include "../src/gba_system.h"
 
 typedef struct cpu_log {
     word address;
@@ -64,15 +65,8 @@ void load_log(const char* filename, int lines, cpu_log_t* buffer) {
 
 int test_loop(const char* rom_filename, int num_log_lines, const char* log_filename, word test_failed_address) {
     log_set_verbosity(4);
-    gbamem_t* mem = init_mem();
+    init_gbasystem(rom_filename, NULL);
 
-    load_gbarom(rom_filename, mem);
-
-    // Initialize the CPU, hook it up to the GBA bus
-    arm7tdmi_t* cpu = init_arm7tdmi(gba_read_byte, gba_read_half, gba_read_word,
-                                    gba_write_byte, gba_write_half, gba_write_word);
-    gba_ppu_t* ppu = init_ppu();
-    init_gbabus(mem, cpu, ppu);
     skip_bios(cpu);
 
     cpu_log_t lines[num_log_lines];

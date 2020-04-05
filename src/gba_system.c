@@ -10,7 +10,7 @@ gba_ppu_t* ppu;
 gbabus_t* bus;
 gbamem_t* mem;
 
-void init_gbasystem(char* romfile, const char* bios_file) {
+void init_gbasystem(const char* romfile, const char* bios_file) {
     mem = init_mem();
 
     load_gbarom(romfile, mem);
@@ -20,13 +20,14 @@ void init_gbasystem(char* romfile, const char* bios_file) {
 
     // Initialize the CPU, hook it up to the GBA bus
     cpu = init_arm7tdmi(gba_read_byte,
-                                    gba_read_half,
-                                    gba_read_word,
-                                    gba_write_byte,
-                                    gba_write_half,
-                                    gba_write_word);
+                        gba_read_half,
+                        gba_read_word,
+                        gba_write_byte,
+                        gba_write_half,
+                        gba_write_word);
+
     ppu = init_ppu();
-    bus = init_gbabus(mem, cpu, ppu);
+    bus = init_gbabus();
 }
 
 void gba_system_step() {

@@ -10,6 +10,7 @@ add_library(render
 target_link_libraries(render ${SDL2_LIBRARY})
 
 add_library(core
+        gba_system.c gba_system.h
         mem/gbabios.c mem/gbabios.h
         mem/gbabus.c mem/gbabus.h
         mem/gbarom.c mem/gbarom.h
