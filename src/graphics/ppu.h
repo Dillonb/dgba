@@ -279,6 +279,46 @@ typedef struct gba_ppu {
     DISPSTAT_t DISPSTAT;
 } gba_ppu_t;
 
+typedef union obj_attr0 {
+    struct {
+        unsigned y:8;
+        unsigned affine_object_mode:2;
+        unsigned graphics_mode:2;
+        bool mosaic:1;
+        bool is_256color:1;
+        unsigned shape:2;
+    };
+    half raw;
+} obj_attr0_t;
+
+typedef union obj_attr1 {
+    struct {
+        unsigned x:9;
+        unsigned affine_index:5;
+        unsigned size:2;
+    };
+    struct {
+        unsigned:12;
+        bool hflip:1;
+        bool vflip:1;
+        unsigned:2;
+    };
+    half raw;
+} obj_attr1_t;
+
+typedef union obj_attr2 {
+    struct {
+        unsigned tid:10;
+        unsigned priority:2;
+        unsigned pb:4;
+    };
+    half raw;
+} obj_attr2_t;
+
+extern int sprite_heights[3][4];
+extern int sprite_widths[3][4];
+
+
 gba_ppu_t* init_ppu();
 void ppu_step(gba_ppu_t* ppu);
 

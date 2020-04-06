@@ -291,7 +291,48 @@ void dbg_tick(dbg_tick_t tick_time) {
             if (DUI_Button("PB +1")) {
                 dbg_tilemap_pb++;
             }
+            obj_attr0_t attr0;
+            obj_attr1_t attr1;
+            obj_attr2_t attr2;
 
+            int tile_pbs[32][32];
+
+            for (int x = 0; x < 32; x++) {
+                for (int y = 0; y < 32; y++) {
+                    tile_pbs[y][x] = 0;
+                }
+            }
+
+            for (int sprite = 127; sprite >= 0; sprite--) {
+                attr0.raw = gba_read_half(0x07000000 + (sprite * 8) + 0);
+                attr1.raw = gba_read_half(0x07000000 + (sprite * 8) + 2);
+                attr2.raw = gba_read_half(0x07000000 + (sprite * 8) + 4);
+
+                int height = sprite_heights[attr0.shape][attr1.size] / 8;
+                int width = sprite_widths[attr0.shape][attr1.size] / 8;
+
+                int base_tid = attr2.tid;
+                int base_tid_x = base_tid % 32;
+                int base_tid_y = base_tid / 32;
+
+                if (ppu->DISPCNT.obj_character_vram_mapping) { // 2D
+                    for (int sprite_x = 0; sprite_x < width; sprite_x++) {
+                        for (int sprite_y = 0; sprite_y < height; sprite_y++) {
+                            int ofs = base_tid + sprite_x + sprite_y * width;
+                            int x = ofs % 32;
+                            int y = ofs / 32;
+                            tile_pbs[x][y] = attr2.pb;
+                        }
+                    }
+                } else {
+                    for (int x = base_tid_x; x < base_tid_x + width; x++) {
+                        for (int y = base_tid_y; y < base_tid_y + height; y++) {
+                            tile_pbs[x][y] = attr2.pb;
+                        }
+                    }
+
+                }
+            }
 
             for (int y = 0; y < 256; y++) {
                 int tile_y = y / 8;
@@ -316,7 +357,7 @@ void dbg_tick(dbg_tick_t tick_time) {
                     tile &= 0xF;
 
                     word palette_address = 0x05000200; // OBJ palette base
-                    palette_address += (0x20 * dbg_tilemap_pb + 2 * tile); // TODO: in 256 color mode, don't use the palette bank.
+                    palette_address += (0x20 * tile_pbs[tile_x][tile_y] + 2 * tile); // TODO: in 256 color mode, don't use the palette bank.
 
                     gba_color_t color;
                     color.raw = gba_read_half(palette_address);

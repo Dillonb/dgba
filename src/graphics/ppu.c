@@ -88,42 +88,6 @@ void render_line_mode4(gba_ppu_t* ppu) {
     }
 }
 
-typedef union obj_attr0 {
-    struct {
-        unsigned y:8;
-        unsigned affine_object_mode:2;
-        unsigned graphics_mode:2;
-        bool mosaic:1;
-        bool is_256color:1;
-        unsigned shape:2;
-    };
-    half raw;
-} obj_attr0_t;
-
-typedef union obj_attr1 {
-    struct {
-        unsigned x:9;
-        unsigned affine_index:5;
-        unsigned size:2;
-    };
-    struct {
-        unsigned:12;
-        bool hflip:1;
-        bool vflip:1;
-        unsigned:2;
-    };
-    half raw;
-} obj_attr1_t;
-
-typedef union obj_attr2 {
-    struct {
-        unsigned tid:10;
-        unsigned priority:2;
-        unsigned pb:4;
-    };
-    half raw;
-} obj_attr2_t;
-
 // [shape][size]
 int sprite_heights[3][4] = {
         {8,16,32,64},
@@ -152,7 +116,7 @@ void render_obj(gba_ppu_t* ppu) {
         objbuf[x].b = 0;
     }
 
-    for (int sprite = 127; sprite >= 0; sprite--) {
+    for (int sprite = 0; sprite < 128; sprite++) {
         attr0.raw = gba_read_half(0x07000000 + (sprite * 8) + 0);
         attr1.raw = gba_read_half(0x07000000 + (sprite * 8) + 2);
         attr2.raw = gba_read_half(0x07000000 + (sprite * 8) + 4);
