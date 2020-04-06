@@ -2,6 +2,7 @@
 #include "../common/log.h"
 #include "../mem/gbabus.h"
 #include "render.h"
+#include "debug.h"
 
 gba_color_t bgbuf[4][GBA_SCREEN_X];
 gba_color_t objbuf[GBA_SCREEN_X];
@@ -436,11 +437,13 @@ void ppu_step(gba_ppu_t* ppu) {
     }
     if (ppu->x >= GBA_SCREEN_X + GBA_SCREEN_HBLANK) {
         ppu->x = 0;
+        dbg_tick(SCANLINE);
         ppu->DISPSTAT.hblank = false;
         ppu->y++;
 
         if (ppu->y > GBA_SCREEN_Y + GBA_SCREEN_VBLANK) {
             ppu->y = 0;
+            dbg_tick(FRAME);
             ppu->DISPSTAT.vblank = false;
         }
 

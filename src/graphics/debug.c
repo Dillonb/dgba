@@ -8,8 +8,8 @@
 #include "render.h"
 #include "../gba_system.h"
 
-#define WINDOW_WIDTH 800
-#define WINDOW_HEIGHT 600
+#define WINDOW_WIDTH 1400
+#define WINDOW_HEIGHT 1050
 
 #define SCREEN_SCALE 1
 
@@ -22,6 +22,8 @@ static color_t dbg_tilemap[256][256];
 static int dbg_tilemap_pb = 0;
 
 static bool dbg_window_visible = false;
+
+static dbg_tick_t tick_on = INSTRUCTION;
 
 void setup_dbg_sdl_window() {
     window = SDL_CreateWindow("dgb gba dbg",
@@ -147,8 +149,8 @@ void print_bgparam(int bg, bg_rotation_scaling_t pa, bg_rotation_scaling_t pb, b
                 pd.sign ? "-" : "+", pd.integer, pd.fractional);
 }
 
-void dbg_tick() {
-    if (dbg_window_visible) {
+void dbg_tick(dbg_tick_t tick_time) {
+    if (dbg_window_visible && tick_time == tick_on) {
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             debug_handle_event(&event);
@@ -329,10 +331,22 @@ void dbg_tick() {
             SDL_UpdateTexture(dbg_tilemap_texture, NULL, dbg_tilemap, 256 * 4);
             SDL_Rect destRect;
             DUI_GetCursor(&destRect.x, &destRect.y);
-            destRect.w = 512;
-            destRect.h = 512;
-            DUI_MoveCursorRelative(0, 512);
+            destRect.w = 768;
+            destRect.h = 768;
+            DUI_MoveCursorRelative(0, 1024);
             SDL_RenderCopy(renderer, dbg_tilemap_texture, NULL, &destRect);
+        }
+
+        DUI_MoveCursor(16, WINDOW_HEIGHT - 30);
+        DUI_Print("Tick debugger every: ");
+        if (DUI_Radio("Instruction", INSTRUCTION, (int*) &tick_on)) {
+            tick_on = INSTRUCTION;
+        }
+        if (DUI_Radio("Scanline", SCANLINE, (int*) &tick_on)) {
+            tick_on = SCANLINE;
+        }
+        if (DUI_Radio("Frame", FRAME, (int*) &tick_on)) {
+            tick_on = FRAME;
         }
 
         SDL_RenderPresent(renderer);

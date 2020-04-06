@@ -551,7 +551,7 @@ int arm7tdmi_step(arm7tdmi_t* state) {
 
 
 
-    dbg_tick();
+    dbg_tick(INSTRUCTION);
 
     state->this_step_ticks = 0;
     logdebug("r0:  %08X   r1: %08X   r2: %08X   r3: %08X", get_register(state, 0), get_register(state, 1), get_register(state, 2), get_register(state, 3))

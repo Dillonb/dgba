@@ -568,7 +568,7 @@ void gba_write_byte(word addr, byte value) {
         index %= OAM_SIZE;
         ppu->oam[index] = value;
     } else if (addr < 0x08000000 + mem->rom_size) {
-        logwarn("Ignoring write to valid cartridge address!")
+        logwarn("Ignoring write to valid cartridge address 0x%08X!", addr)
     } else if ((addr >> 24) >= 0xE && addr < 0x10000000) {
         // Backup space
         switch (backup_type) {
