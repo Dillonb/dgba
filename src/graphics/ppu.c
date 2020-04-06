@@ -127,15 +127,15 @@ typedef union obj_attr2 {
 // [shape][size]
 int sprite_heights[3][4] = {
         {8,16,32,64},
-        {16,32,32,64},
-        {8,8,16,32}
+        {8,8,16,32},
+        {16,32,32,64}
 };
 
 // [shape][size]
 int sprite_widths[3][4] = {
         {8,16,32,64},
-        {8,8,16,32},
-        {16,32,32,64}
+        {16,32,32,64},
+        {8,8,16,32}
 };
 
 
@@ -152,7 +152,7 @@ void render_obj(gba_ppu_t* ppu) {
         objbuf[x].b = 0;
     }
 
-    for (int sprite = 0; sprite < 128; sprite++) {
+    for (int sprite = 127; sprite >= 0; sprite--) {
         attr0.raw = gba_read_half(0x07000000 + (sprite * 8) + 0);
         attr1.raw = gba_read_half(0x07000000 + (sprite * 8) + 2);
         attr2.raw = gba_read_half(0x07000000 + (sprite * 8) + 4);
@@ -224,14 +224,14 @@ void render_obj(gba_ppu_t* ppu) {
                     }
                     // Only draw if we've never drawn anything there before. Lower indices have higher priority
                     // and that's the order we're drawing them here.
-                    if (screen_x < GBA_SCREEN_X && objbuf[screen_x].transparent) {
+                    if (screen_x < GBA_SCREEN_X && objbuf[screen_x].transparent && attr2.priority >= obj_priorities[screen_x]) {
                         obj_priorities[screen_x] = attr2.priority;
                         objbuf[screen_x].raw = gba_read_half(palette_address);
                         objbuf[screen_x].transparent = tile == 0; // This color should only be drawn if we need transparency
                     }
                 }
             } else {
-                unimplemented(attr0.affine_object_mode != 0b10, "Sprite with an affine object mode != 0b00 or 0b10")
+                //unimplemented(attr0.affine_object_mode != 0b10, "Sprite with an affine object mode != 0b00 or 0b10")
             }
         }
     }
