@@ -143,7 +143,7 @@ void render_obj(gba_ppu_t* ppu) {
         }
         int sprite_tile_y = sprite_y / 8;
 
-        if (ppu->y >= adjusted_y && ppu->y <= adjusted_y + height) { // If the sprite is visible, we should draw it.
+        if (ppu->y >= adjusted_y && ppu->y < adjusted_y + height) { // If the sprite is visible, we should draw it.
             if (attr0.affine_object_mode == 0b00) { // Enabled
                 unimplemented(attr0.is_256color, "256 color sprite");
                 int tid = attr2.tid;
