@@ -31,11 +31,11 @@ void init_gbasystem(const char* romfile, const char* bios_file) {
 
 void gba_system_step() {
     int dma_cycles = gba_dma();
-
+    cpu->irq = (bus->interrupt_enable.raw & bus->IF.raw) != 0;
     if (dma_cycles > 0) {
         cycles += dma_cycles;
     } else {
-        if (cpu->halt && (bus->interrupt_enable.raw & bus->IF.raw) == 0) {
+        if (cpu->halt && !cpu->irq) {
             cycles += 1;
         } else {
             cycles += arm7tdmi_step(cpu);
