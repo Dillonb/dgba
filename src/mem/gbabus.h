@@ -123,6 +123,12 @@ typedef union TMCNT_L {
     half timer_reload;
 }TMCNT_L_t;
 
+typedef struct TMINT {
+    half value;
+    half ticks;
+    bool previously_enabled;
+} TMINT_t;
+
 typedef union TMCNT_H {
     half raw;
     struct {
@@ -199,6 +205,7 @@ typedef struct gbabus {
 
     TMCNT_L_t TMCNT_L[4];
     TMCNT_H_t TMCNT_H[4];
+    TMINT_t TMINT[4];
 
     WAITCNT_t WAITCNT;
 } gbabus_t;

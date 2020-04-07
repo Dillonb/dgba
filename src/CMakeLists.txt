@@ -20,6 +20,7 @@ add_library(core
         graphics/debug.c graphics/debug.h
         mem/dma.c mem/dma.h
         disassemble.c disassemble.h
+        timer.c timer.h
         mem/ioreg_util.h)
 
 add_subdirectory(arm7tdmi)

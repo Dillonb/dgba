@@ -89,7 +89,7 @@ int tab_index = TAB_CPU_REGISTERS;
 
 #define print_bgofs(n, hofs, vofs) DUI_Println("BG%dOFS: %08Xh / %08Xh", n, hofs.raw, vofs.raw)
 
-void print_timer(int n, TMCNT_H_t* tmcnth, int timer_reload) {
+void print_timer(int n, TMCNT_H_t* tmcnth, int timer_reload, TMINT_t* tmint) {
     const char* prescaler_selection = "UNKNOWN";
     switch (tmcnth->frequency) {
         case 0:
@@ -108,15 +108,17 @@ void print_timer(int n, TMCNT_H_t* tmcnth, int timer_reload) {
     const char* enabled = tmcnth->start ? "ENABLED" : "disabled";
     DUI_Println("\nTimer %d: %s", n, enabled);
     const char* tm0msg = n == 0 ? " (unused in Timer 0)" : "";
-    DUI_Println(" Reload: 0x%08X\n"
+    DUI_Println(" Reload: 0x%04X\n"
                 " Prescaler: %s\n"
                 " Count-Up Timing:%s %d\n"
-                " IRQ: %d\n",
+                " IRQ: %d\n"
+                " Value: 0x%04X\n",
                 timer_reload,
                 prescaler_selection,
                 tm0msg,
                 tmcnth->cascade,
-                tmcnth->timer_irq_enable);
+                tmcnth->timer_irq_enable,
+                tmint->value);
 }
 
 void ramdump(word base_address, word size) {
@@ -205,8 +207,10 @@ void dbg_tick(dbg_tick_t tick_time) {
             DUI_Println("\n--- Timers ---");
 
             for (int t = 0; t < 4; t++) {
-                print_timer(t, &bus->TMCNT_H[t], bus->TMCNT_L[t].timer_reload);
+                print_timer(t, &bus->TMCNT_H[t], bus->TMCNT_L[t].timer_reload, &(bus->TMINT[t]));
             }
+
+            DUI_Println("KEYINPUT: 0x%04X", bus->KEYINPUT.raw);
         }
 
         if (DUI_Tab("Video Registers", TAB_VIDEO_REGISTERS, &tab_index)) {

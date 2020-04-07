@@ -1,6 +1,7 @@
 #include "mem/gbabus.h"
 #include "mem/gbarom.h"
 #include "mem/gbabios.h"
+#include "timer.h"
 
 int cycles = 0;
 
@@ -41,6 +42,8 @@ void gba_system_step() {
             cycles += arm7tdmi_step(cpu);
         }
     }
+
+    timer_tick(cycles);
 
     while (cycles > 4) {
         ppu_step(ppu);
