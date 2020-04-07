@@ -661,13 +661,6 @@ void gba_write_word(word address, word value) {
     gba_write_half(address + 2, upper);
 }
 
-
-int dma0() {
-    unimplemented(bus_state.DMA0CNT_H.dma_enable, "DMA0")
-    return 0;
-}
-
-
 int gba_dma() {
     // Run one cycle of the highest priority DMA.
     int dma_cycles = dma(0, &bus_state.DMA0CNT_H, &bus_state.DMA0INT, bus_state.DMA0SAD.addr, bus_state.DMA0DAD.addr, bus_state.DMA0CNT_L.wc, 0x4000);
