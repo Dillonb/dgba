@@ -2,6 +2,7 @@
 #include "../../common/log.h"
 
 void thumb_software_interrupt(arm7tdmi_t* state, thumb_software_interrupt_t* instr) {
+    logwarn("SWI: 0x%X", instr->value) // TODO: log the name of the SWI here
     status_register_t cpsr = state->cpsr;
     state->cpsr.mode = MODE_SUPERVISOR;
     set_spsr(state, cpsr.raw);
