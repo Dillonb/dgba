@@ -557,7 +557,6 @@ int arm7tdmi_step(arm7tdmi_t* state) {
              cpsrflag(state->cpsr.C, "C"), cpsrflag(state->cpsr.V, "V"), cpsrflag(state->cpsr.disable_irq, "I"),
              cpsrflag(state->cpsr.disable_fiq, "F"), cpsrflag(state->cpsr.thumb, "T"))
 
-     logdebug("mode: %s [0x%2X]", MODE_NAMES[state->cpsr.mode], state->cpsr.mode)
      int cycles;
      if (state->cpsr.thumb) {
          thumbinstr_t instr = next_thumb_instr(state);
@@ -565,7 +564,7 @@ int arm7tdmi_step(arm7tdmi_t* state) {
          word adjusted_pc = state->pc - 4;
          if (log_get_verbosity() >= LOG_VERBOSITY_INFO) {
              disassemble_thumb(adjusted_pc, instr.raw, (char *) &state->disassembled, sizeof(state->disassembled));
-             loginfo("[THM] 0x%08X: %s", adjusted_pc, state->disassembled)
+             loginfo("[THM]  [%s] 0x%08X: %s", MODE_NAMES[state->cpsr.mode], adjusted_pc, state->disassembled)
          }
          cycles = thumb_mode_step(state, &instr);
      } else {
@@ -574,7 +573,7 @@ int arm7tdmi_step(arm7tdmi_t* state) {
          word adjusted_pc = state->pc - 8;
          if (log_get_verbosity() >= LOG_VERBOSITY_INFO) {
              disassemble_arm(adjusted_pc, instr.raw, (char *) &state->disassembled, sizeof(state->disassembled));
-             loginfo("[ARM] 0x%08X: %s", adjusted_pc, state->disassembled)
+             loginfo("[ARM] [%s] 0x%08X: %s", MODE_NAMES[state->cpsr.mode], adjusted_pc, state->disassembled)
          }
          cycles = arm_mode_step(state, &instr);
      }
