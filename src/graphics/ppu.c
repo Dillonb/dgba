@@ -188,10 +188,10 @@ void render_obj(gba_ppu_t* ppu) {
                     }
                     // Only draw if we've never drawn anything there before. Lower indices have higher priority
                     // and that's the order we're drawing them here.
-                    if (screen_x < GBA_SCREEN_X && objbuf[screen_x].transparent && attr2.priority >= obj_priorities[screen_x]) {
+                    if (screen_x < GBA_SCREEN_X && tile != 0 && (objbuf[screen_x].transparent || attr2.priority < obj_priorities[screen_x])) {
                         obj_priorities[screen_x] = attr2.priority;
                         objbuf[screen_x].raw = gba_read_half(palette_address);
-                        objbuf[screen_x].transparent = tile == 0; // This color should only be drawn if we need transparency
+                        objbuf[screen_x].transparent = false;
                     }
                 }
             } else {
