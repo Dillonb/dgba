@@ -113,6 +113,7 @@ void write_word_ioreg_masked(word addr, word value, word mask);
 void write_byte_ioreg(word addr, byte value) {
     if (!is_ioreg_writable(addr)) {
         logwarn("Ignoring write to unwriteable byte ioreg 0x%08X", addr)
+        return;
     }
     byte size = get_ioreg_size_for_addr(addr);
     if (size == sizeof(half)) {
@@ -315,7 +316,8 @@ void write_half_ioreg_masked(word addr, half value, half mask) {
 
 void write_half_ioreg(word addr, half value) {
     if (!is_ioreg_writable(addr)) {
-        logwarn("Ignoring write to unwriteable byte ioreg 0x%08X", addr)
+        logwarn("Ignoring write to unwriteable half ioreg 0x%08X", addr)
+        return;
     }
     // Write to the whole thing
     write_half_ioreg_masked(addr, value, 0xFFFF);
@@ -347,6 +349,10 @@ word* get_word_ioreg_ptr(word addr) {
 }
 
 void write_word_ioreg_masked(word addr, word value, word mask) {
+    if (!is_ioreg_writable(addr)) {
+        logwarn("Ignoring write to unwriteable word ioreg 0x%08X", addr)
+        return;
+    }
     word* ioreg = get_word_ioreg_ptr(addr);
     if (ioreg) {
         *ioreg &= (~mask);
