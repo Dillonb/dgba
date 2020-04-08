@@ -33,7 +33,7 @@ void init_gbasystem(const char* romfile, const char* bios_file) {
 
 int timer_freq[4] = {1, 64, 256, 1024};
 
-void timer_tick(int cyc) {
+INLINE void timer_tick(int cyc) {
     bool previous_overflow = false;
     for (int n = 0; n < 4; n++) {
         bool overflow = false;
