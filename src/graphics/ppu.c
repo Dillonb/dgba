@@ -8,6 +8,13 @@ gba_color_t bgbuf[4][GBA_SCREEN_X];
 gba_color_t objbuf[GBA_SCREEN_X];
 byte obj_priorities[GBA_SCREEN_X];
 
+typedef struct obj_affine {
+    int16_t pa;
+    int16_t pb;
+    int16_t pc;
+    int16_t pd;
+} obj_affine_t;
+
 gba_ppu_t* init_ppu() {
     gba_ppu_t* ppu = malloc(sizeof(gba_ppu_t));
 
@@ -121,11 +128,30 @@ void render_obj(gba_ppu_t* ppu) {
         attr1.raw = gba_read_half(0x07000000 + (sprite * 8) + 2);
         attr2.raw = gba_read_half(0x07000000 + (sprite * 8) + 4);
 
+        bool is_affine = attr0.affine_object_mode == 0b01 || attr0.affine_object_mode == 0b11;
+
+        obj_affine_t affine;
+        if (is_affine) {
+            affine.pa = gba_read_half(0x07000000 + attr1.affine_index * 32 + 6);
+            affine.pb = gba_read_half(0x07000000 + attr1.affine_index * 32 + 14);
+            affine.pc = gba_read_half(0x07000000 + attr1.affine_index * 32 + 22);
+            affine.pd = gba_read_half(0x07000000 + attr1.affine_index * 32 + 30);
+        }
+
         int adjusted_x = attr1.x;
+        int adjusted_y = attr0.y;
+
+        if (attr0.affine_object_mode == 0b01) {
+            logfatal("normal affine sprite with index %d and matrix: [[ %d %d ] [ %d %d ]]", attr1.affine_index, affine.pa, affine.pb, affine.pc, affine.pd)
+        }
+
+        if (attr0.affine_object_mode == 0b11) {
+            logfatal("double affine sprite with index %d and matrix: [[ %d %d ] [ %d %d ]]", attr1.affine_index, affine.pa, affine.pb, affine.pc, affine.pd)
+        }
+
         if (adjusted_x >= 240) {
             adjusted_x -= 512;
         }
-        int adjusted_y = attr0.y;
         if (adjusted_y >= 160) {
             adjusted_y -= 256;
         }
@@ -138,13 +164,13 @@ void render_obj(gba_ppu_t* ppu) {
         int tiles_wide = width / 8;
 
         int sprite_y = ppu->y - adjusted_y;
-        if (attr1.vflip) {
+        if (!is_affine && attr1.vflip) {
             sprite_y = height - sprite_y - 1;
         }
         int sprite_tile_y = sprite_y / 8;
 
         if (ppu->y >= adjusted_y && ppu->y < adjusted_y + height) { // If the sprite is visible, we should draw it.
-            if (attr0.affine_object_mode == 0b00) { // Enabled
+            if (attr0.affine_object_mode != 0b10) { // Enabled
                 unimplemented(attr0.is_256color, "256 color sprite");
                 int tid = attr2.tid;
                 int y_tid_offset;
@@ -158,7 +184,7 @@ void render_obj(gba_ppu_t* ppu) {
                 // because in either case they'll be right next to each other in memory.
                 for (int sprite_x = 0; sprite_x < width; sprite_x++) {
                     int adjusted_sprite_x = sprite_x;
-                    if (attr1.hflip) {
+                    if (!is_affine && attr1.hflip) {
                         adjusted_sprite_x = width - sprite_x - 1;
                     }
                     // Don't use the adjusted sprite X here. There'd be no point in flipping the sprite, otherwise.
@@ -194,8 +220,6 @@ void render_obj(gba_ppu_t* ppu) {
                         objbuf[screen_x].transparent = false;
                     }
                 }
-            } else {
-                //unimplemented(attr0.affine_object_mode != 0b10, "Sprite with an affine object mode != 0b00 or 0b10")
             }
         }
     }
@@ -213,7 +237,7 @@ typedef union reg_se {
 
 #define SCREENBLOCK_SIZE 0x800
 #define CHARBLOCK_SIZE  0x4000
-void render_bg(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X], BGCNT_t* bgcnt, int hofs, int vofs) {
+INLINE void render_bg(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X], BGCNT_t* bgcnt, int hofs, int vofs) {
     // Tileset (like pattern tables in the NES)
     word character_base_addr = 0x06000000 + bgcnt->character_base_block * CHARBLOCK_SIZE;
     // Tile map (like nametables in the NES)
