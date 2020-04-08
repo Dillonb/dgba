@@ -9,6 +9,7 @@ arm7tdmi_t* cpu = NULL;
 gba_ppu_t* ppu = NULL;
 gbabus_t* bus = NULL;
 gbamem_t* mem = NULL;
+bool should_quit = false;
 
 void init_gbasystem(const char* romfile, const char* bios_file) {
     mem = init_mem();
@@ -75,23 +76,25 @@ INLINE void timer_tick(int cyc) {
     }
 }
 
-void gba_system_step() {
-    int dma_cycles = gba_dma();
-    cpu->irq = (bus->interrupt_enable.raw & bus->IF.raw) != 0;
-    if (dma_cycles > 0) {
-        cycles += dma_cycles;
-    } else {
-        if (cpu->halt && !cpu->irq) {
-            cycles += 1;
+void gba_system_loop() {
+    while (!should_quit) {
+        int dma_cycles = gba_dma();
+        cpu->irq = (bus->interrupt_enable.raw & bus->IF.raw) != 0;
+        if (dma_cycles > 0) {
+            cycles += dma_cycles;
         } else {
-            cycles += arm7tdmi_step(cpu);
+            if (cpu->halt && !cpu->irq) {
+                cycles += 1;
+            } else {
+                cycles += arm7tdmi_step(cpu);
+            }
         }
-    }
 
 
-    while (cycles > 4) {
-        ppu_step(ppu);
-        timer_tick(4);
-        cycles -= 4;
+        while (cycles > 4) {
+            ppu_step(ppu);
+            timer_tick(4);
+            cycles -= 4;
+        }
     }
 }

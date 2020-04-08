@@ -48,9 +48,8 @@ int main(int argc, char** argv) {
     if (debug) {
         set_dbg_window_visibility(true);
     }
-    while(true) {
-        gba_system_step(cpu, ppu, bus);
-    }
+
+    gba_system_loop(cpu, ppu, bus);
 
     cflags_free(flags);
     return 0;

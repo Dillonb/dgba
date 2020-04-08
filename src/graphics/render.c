@@ -4,6 +4,7 @@
 #include "../common/log.h"
 #include "../mem/gbabus.h"
 #include "debug.h"
+#include "../gba_system.h"
 #include <stdbool.h>
 
 #define SCREEN_SCALE 4
@@ -42,7 +43,8 @@ void update_key(SDL_Keycode sdlk, bool state) {
     KEYINPUT_t* KEYINPUT = get_keyinput();
     switch (sdlk) {
         case SDLK_ESCAPE:
-            logfatal("User pressed escape")
+            logwarn("User pressed escape")
+            should_quit = true;
             break;
         case SDLK_UP:
         case SDLK_w:
@@ -86,7 +88,9 @@ void update_key(SDL_Keycode sdlk, bool state) {
 void gba_handle_event(SDL_Event* event) {
     switch (event->type) {
         case SDL_QUIT:
-            logfatal("User requested quit");
+            logwarn("User requested quit")
+            should_quit = true;
+            break;
         case SDL_KEYDOWN:
             if (event->key.windowID == window_id) {
                 if (event->key.keysym.sym == SDLK_o) {

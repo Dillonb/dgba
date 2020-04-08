@@ -311,7 +311,7 @@ void refresh_background_priorities(gba_ppu_t* ppu) {
     }
 }
 
-void render_line_mode0(gba_ppu_t* ppu) {
+INLINE void render_line_mode0(gba_ppu_t* ppu) {
     render_obj(ppu);
     if (ppu->DISPCNT.screen_display_bg0) {
         render_bg(ppu, &bgbuf[0], &ppu->BG0CNT, ppu->BG0HOFS.offset, ppu->BG0VOFS.offset);
@@ -373,7 +373,7 @@ void render_line_mode0(gba_ppu_t* ppu) {
 
 }
 
-void render_line(gba_ppu_t* ppu) {
+INLINE void render_line(gba_ppu_t* ppu) {
     // Draw a pixel
     switch (ppu->DISPCNT.mode) {
         case 0:
