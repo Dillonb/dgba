@@ -128,26 +128,11 @@ void render_obj(gba_ppu_t* ppu) {
         attr1.raw = gba_read_half(0x07000000 + (sprite * 8) + 2);
         attr2.raw = gba_read_half(0x07000000 + (sprite * 8) + 4);
 
-        bool is_affine = attr0.affine_object_mode == 0b01 || attr0.affine_object_mode == 0b11;
-
-        obj_affine_t affine;
-        if (is_affine) {
-            affine.pa = gba_read_half(0x07000000 + attr1.affine_index * 32 + 6);
-            affine.pb = gba_read_half(0x07000000 + attr1.affine_index * 32 + 14);
-            affine.pc = gba_read_half(0x07000000 + attr1.affine_index * 32 + 22);
-            affine.pd = gba_read_half(0x07000000 + attr1.affine_index * 32 + 30);
-        }
+        bool is_double_affine = attr0.affine_object_mode == 0b11;
+        bool is_affine = attr0.affine_object_mode == 0b01 || is_double_affine;
 
         int adjusted_x = attr1.x;
         int adjusted_y = attr0.y;
-
-        if (attr0.affine_object_mode == 0b01) {
-            logfatal("normal affine sprite with index %d and matrix: [[ %d %d ] [ %d %d ]]", attr1.affine_index, affine.pa, affine.pb, affine.pc, affine.pd)
-        }
-
-        if (attr0.affine_object_mode == 0b11) {
-            logfatal("double affine sprite with index %d and matrix: [[ %d %d ] [ %d %d ]]", attr1.affine_index, affine.pa, affine.pb, affine.pc, affine.pd)
-        }
 
         if (adjusted_x >= 240) {
             adjusted_x -= 512;
@@ -167,34 +152,99 @@ void render_obj(gba_ppu_t* ppu) {
         if (!is_affine && attr1.vflip) {
             sprite_y = height - sprite_y - 1;
         }
-        int sprite_tile_y = sprite_y / 8;
 
-        if (ppu->y >= adjusted_y && ppu->y < adjusted_y + height) { // If the sprite is visible, we should draw it.
-            if (attr0.affine_object_mode != 0b10) { // Enabled
-                unimplemented(attr0.is_256color, "256 color sprite");
-                int tid = attr2.tid;
-                int y_tid_offset;
-                if (ppu->DISPCNT.obj_character_vram_mapping) { // 1D
-                    y_tid_offset = tiles_wide * sprite_tile_y;
-                } else { // 2D
-                    y_tid_offset = 32 * sprite_tile_y;
+        int screen_min_y = adjusted_y;
+        int screen_max_y = adjusted_y + height;
+        //int sprite_midpoint_y = (screen_min_y + screen_max_y) / 2;
+
+        int screen_min_x = adjusted_x;
+        int screen_max_x = adjusted_x + width;
+        //int sprite_midpoint_x = (screen_min_x + screen_max_x) / 2;
+
+        int hheight = height / 2;
+        int hwidth = width / 2;
+
+        obj_affine_t affine;
+        if (is_affine) {
+            affine.pa = gba_read_half(0x07000000 + attr1.affine_index * 32 + 6);
+            affine.pb = gba_read_half(0x07000000 + attr1.affine_index * 32 + 14);
+            affine.pc = gba_read_half(0x07000000 + attr1.affine_index * 32 + 22);
+            affine.pd = gba_read_half(0x07000000 + attr1.affine_index * 32 + 30);
+            if (is_double_affine) { // double rendering area
+                screen_min_y -= hheight;
+                screen_max_y += hheight;
+
+                screen_min_x -= hwidth;
+                screen_max_x += hwidth;
+
+                screen_min_x -= (width / 2);
+                if (screen_min_x < 0) {
+                    screen_min_x = 0;
                 }
-                tid += y_tid_offset;
-                // At this point, we don't need to worry about 1D vs 2D
-                // because in either case they'll be right next to each other in memory.
+                screen_max_x += (width / 2);
+                if (screen_max_x < GBA_SCREEN_X) {
+                    screen_max_x = GBA_SCREEN_X;
+                }
+            }
+
+        } else {
+            // Set to identity matrix
+            affine.pa = 0xFF;
+            affine.pb = 0x00;
+            affine.pc = 0x00;
+            affine.pd = 0xFF;
+        }
+
+        if (ppu->y >= screen_min_y && ppu->y < screen_max_y) { // If the sprite is visible, we should draw it.
+            if (attr0.affine_object_mode != 0b10) { // Not disabled
+                unimplemented(attr0.is_256color, "256 color sprite")
                 for (int sprite_x = 0; sprite_x < width; sprite_x++) {
                     int adjusted_sprite_x = sprite_x;
-                    if (!is_affine && attr1.hflip) {
+                    int adjusted_sprite_y = sprite_y;
+
+                    int x_offset = is_double_affine ? width : hwidth;
+                    int y_offset = is_double_affine ? height : hheight;
+
+                    if (is_affine) {
+                        adjusted_sprite_x = affine.pa * (sprite_x - x_offset) + affine.pb * (sprite_y - y_offset);
+                        adjusted_sprite_x >>= 8;
+                        adjusted_sprite_x += x_offset;
+
+                        if (adjusted_sprite_x > width || adjusted_sprite_x < 0) {
+                            continue;
+                        }
+
+                        adjusted_sprite_y = affine.pc * (sprite_x - x_offset) + affine.pd * (sprite_y - y_offset);
+                        adjusted_sprite_y >>= 8;
+                        adjusted_sprite_y += y_offset;
+
+                        if (adjusted_sprite_y > height || adjusted_sprite_y < 0) {
+                            continue;
+                        }
+
+                    } else if (attr1.hflip) {
                         adjusted_sprite_x = width - sprite_x - 1;
                     }
-                    // Don't use the adjusted sprite X here. There'd be no point in flipping the sprite, otherwise.
+
+                    int y_tid_offset;
+                    int sprite_tile_y = adjusted_sprite_y / 8;
+                    if (ppu->DISPCNT.obj_character_vram_mapping) { // 1D
+                        y_tid_offset = tiles_wide * sprite_tile_y;
+                    } else { // 2D
+                        y_tid_offset = 32 * sprite_tile_y;
+                    }
+                    // After adding this offset, we won't need to worry about 1D vs 2D,
+                    // because in either case they'll be right next to each other in memory.
+                    int tid = attr2.tid + y_tid_offset;
+
+                    // Don't use the adjusted X or Y here. There'd be no point in transforming the sprite, otherwise.
                     int screen_x = sprite_x + adjusted_x;
                     int x_tid_offset = adjusted_sprite_x / 8;
                     int tid_offset_by_x = tid + x_tid_offset;
                     word tile_address = 0x06010000 + tid_offset_by_x * OBJ_TILE_SIZE;
 
                     int in_tile_x = adjusted_sprite_x % 8;
-                    int in_tile_y = sprite_y % 8;
+                    int in_tile_y = adjusted_sprite_y % 8;
 
                     int in_tile_offset = in_tile_x + in_tile_y * 8;
                     tile_address += in_tile_offset / in_tile_offset_divisor;
@@ -214,7 +264,7 @@ void render_obj(gba_ppu_t* ppu) {
                     }
                     // Only draw if we've never drawn anything there before. Lower indices have higher priority
                     // and that's the order we're drawing them here.
-                    if (screen_x < GBA_SCREEN_X && tile != 0 && (objbuf[screen_x].transparent || attr2.priority < obj_priorities[screen_x])) {
+                    if (screen_x >= screen_min_x && screen_x < screen_max_x && tile != 0 && (objbuf[screen_x].transparent || attr2.priority < obj_priorities[screen_x])) {
                         obj_priorities[screen_x] = attr2.priority;
                         objbuf[screen_x].raw = gba_read_half(palette_address);
                         objbuf[screen_x].transparent = false;
