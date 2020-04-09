@@ -201,7 +201,9 @@ void render_obj(gba_ppu_t* ppu) {
         if (ppu->y >= screen_min_y && ppu->y < screen_max_y) { // If the sprite is visible, we should draw it.
             if (attr0.affine_object_mode != 0b10) { // Not disabled
                 unimplemented(attr0.is_256color, "256 color sprite")
-                for (int sprite_x = 0; sprite_x < width; sprite_x++) {
+                int sprite_x_start = is_double_affine ? -hwidth : 0;
+                int sprite_x_end   = is_double_affine ? width + hwidth : width;
+                for (int sprite_x = sprite_x_start; sprite_x < sprite_x_end; sprite_x++) {
                     int adjusted_sprite_x = sprite_x;
                     int adjusted_sprite_y = sprite_y;
 
@@ -239,35 +241,36 @@ void render_obj(gba_ppu_t* ppu) {
 
                     // Don't use the adjusted X or Y here. There'd be no point in transforming the sprite, otherwise.
                     int screen_x = sprite_x + adjusted_x;
-                    int x_tid_offset = adjusted_sprite_x / 8;
-                    int tid_offset_by_x = tid + x_tid_offset;
-                    word tile_address = 0x06010000 + tid_offset_by_x * OBJ_TILE_SIZE;
-
-                    int in_tile_x = adjusted_sprite_x % 8;
-                    int in_tile_y = adjusted_sprite_y % 8;
-
-                    int in_tile_offset = in_tile_x + in_tile_y * 8;
-                    tile_address += in_tile_offset / in_tile_offset_divisor;
-
-                    byte tile = gba_read_byte(tile_address);
-
-                    if (!attr0.is_256color) {
-                        tile >>= (in_tile_offset % 2) * 4;
-                        tile &= 0xF;
-                    }
-
-                    word palette_address = 0x05000200; // OBJ palette base
-                    if (attr0.is_256color) {
-                        palette_address += 2 * tile;
-                    } else {
-                        palette_address += (0x20 * attr2.pb + 2 * tile);
-                    }
                     // Only draw if we've never drawn anything there before. Lower indices have higher priority
                     // and that's the order we're drawing them here.
-                    if (screen_x >= screen_min_x && screen_x < screen_max_x && tile != 0 && (objbuf[screen_x].transparent || attr2.priority < obj_priorities[screen_x])) {
-                        obj_priorities[screen_x] = attr2.priority;
-                        objbuf[screen_x].raw = gba_read_half(palette_address);
-                        objbuf[screen_x].transparent = false;
+                    if (screen_x >= screen_min_x && screen_x < screen_max_x  && (objbuf[screen_x].transparent || attr2.priority < obj_priorities[screen_x])) {
+                        int x_tid_offset = adjusted_sprite_x / 8;
+                        int tid_offset_by_x = tid + x_tid_offset;
+                        word tile_address = 0x06010000 + tid_offset_by_x * OBJ_TILE_SIZE;
+
+                        int in_tile_x = adjusted_sprite_x % 8;
+                        int in_tile_y = adjusted_sprite_y % 8;
+
+                        int in_tile_offset = in_tile_x + in_tile_y * 8;
+                        tile_address += in_tile_offset / in_tile_offset_divisor;
+
+                        byte tile = gba_read_byte(tile_address);
+                        if (tile != 0) {
+                            if (!attr0.is_256color) {
+                                tile >>= (in_tile_offset % 2) * 4;
+                                tile &= 0xF;
+                            }
+
+                            word palette_address = 0x05000200; // OBJ palette base
+                            if (attr0.is_256color) {
+                                palette_address += 2 * tile;
+                            } else {
+                                palette_address += (0x20 * attr2.pb + 2 * tile);
+                            }
+                            obj_priorities[screen_x] = attr2.priority;
+                            objbuf[screen_x].raw = gba_read_half(palette_address);
+                            objbuf[screen_x].transparent = false;
+                        }
                     }
                 }
             }
