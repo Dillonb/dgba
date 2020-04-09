@@ -128,11 +128,23 @@ void render_obj(gba_ppu_t* ppu) {
         attr1.raw = gba_read_half(0x07000000 + (sprite * 8) + 2);
         attr2.raw = gba_read_half(0x07000000 + (sprite * 8) + 4);
 
+        int height = sprite_heights[attr0.shape][attr1.size];
+        int width = sprite_widths[attr0.shape][attr1.size];
+        int tiles_wide = width / 8;
+
+        int hheight = height / 2;
+        int hwidth = width / 2;
+
         bool is_double_affine = attr0.affine_object_mode == 0b11;
         bool is_affine = attr0.affine_object_mode == 0b01 || is_double_affine;
 
         int adjusted_x = attr1.x;
         int adjusted_y = attr0.y;
+
+        if (is_double_affine) {
+            adjusted_x += hwidth;
+            adjusted_y += hheight;
+        }
 
         if (adjusted_x >= 240) {
             adjusted_x -= 512;
@@ -143,11 +155,6 @@ void render_obj(gba_ppu_t* ppu) {
 
         int in_tile_offset_divisor = attr0.is_256color ? 1 : 2;
 
-        int height = sprite_heights[attr0.shape][attr1.size];
-        //int tiles_high = height / 8;
-        int width = sprite_widths[attr0.shape][attr1.size];
-        int tiles_wide = width / 8;
-
         int sprite_y = ppu->y - adjusted_y;
         if (!is_affine && attr1.vflip) {
             sprite_y = height - sprite_y - 1;
@@ -155,14 +162,10 @@ void render_obj(gba_ppu_t* ppu) {
 
         int screen_min_y = adjusted_y;
         int screen_max_y = adjusted_y + height;
-        //int sprite_midpoint_y = (screen_min_y + screen_max_y) / 2;
 
         int screen_min_x = adjusted_x;
         int screen_max_x = adjusted_x + width;
-        //int sprite_midpoint_x = (screen_min_x + screen_max_x) / 2;
 
-        int hheight = height / 2;
-        int hwidth = width / 2;
 
         obj_affine_t affine;
         if (is_affine) {
