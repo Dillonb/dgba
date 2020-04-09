@@ -202,21 +202,18 @@ void render_obj(gba_ppu_t* ppu) {
                     int adjusted_sprite_x = sprite_x;
                     int adjusted_sprite_y = sprite_y;
 
-                    int x_offset = is_double_affine ? width : hwidth;
-                    int y_offset = is_double_affine ? height : hheight;
-
                     if (is_affine) {
-                        adjusted_sprite_x = affine.pa * (sprite_x - x_offset) + affine.pb * (sprite_y - y_offset);
+                        adjusted_sprite_x = affine.pa * (sprite_x - hwidth) + affine.pb * (sprite_y - hheight);
                         adjusted_sprite_x >>= 8;
-                        adjusted_sprite_x += x_offset;
+                        adjusted_sprite_x += hwidth;
 
                         if (adjusted_sprite_x > width || adjusted_sprite_x < 0) {
                             continue;
                         }
 
-                        adjusted_sprite_y = affine.pc * (sprite_x - x_offset) + affine.pd * (sprite_y - y_offset);
+                        adjusted_sprite_y = affine.pc * (sprite_x - hwidth) + affine.pd * (sprite_y - hheight);
                         adjusted_sprite_y >>= 8;
-                        adjusted_sprite_y += y_offset;
+                        adjusted_sprite_y += hheight;
 
                         if (adjusted_sprite_y > height || adjusted_sprite_y < 0) {
                             continue;
