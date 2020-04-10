@@ -312,20 +312,11 @@ typedef union reg_se {
     };
 } reg_se_t;
 
-INLINE void render_screenentry(gba_color_t (*line)[GBA_SCREEN_X], int screen_x, reg_se_t se, bool is_256color, word character_base_addr, int tilemap_x, int tilemap_y) {
+INLINE void render_tile(int tid, int pb, gba_color_t (*line)[GBA_SCREEN_X], int screen_x, bool is_256color, word character_base_addr, int tile_x, int tile_y) {
     int in_tile_offset_divisor = is_256color ? 1 : 2;
     int tile_size = is_256color ? 0x40 : 0x20;
-    // Find the tile
-    word tile_address = character_base_addr + se.tid * tile_size;
-    int tile_x = tilemap_x % 8;
-    if (se.hflip) {
-        tile_x = 7 - tile_x;
-    }
-    int tile_y = tilemap_y % 8;
-    if (se.vflip) {
-        tile_y = 7 - tile_y;
-    }
     int in_tile_offset = tile_x + tile_y * 8;
+    word tile_address = character_base_addr + tid * tile_size;
     tile_address += in_tile_offset / in_tile_offset_divisor;
 
     byte tile = gba_read_byte(tile_address);
@@ -339,10 +330,24 @@ INLINE void render_screenentry(gba_color_t (*line)[GBA_SCREEN_X], int screen_x, 
     if (is_256color) {
         palette_address += 2 * tile;
     } else {
-        palette_address += (0x20 * se.pb + 2 * tile);
+        palette_address += (0x20 * pb + 2 * tile);
     }
     (*line)[screen_x].raw = gba_read_half(palette_address);
     (*line)[screen_x].transparent = tile == 0; // This color should only be drawn if we need transparency
+}
+
+INLINE void render_screenentry(gba_color_t (*line)[GBA_SCREEN_X], int screen_x, reg_se_t se, bool is_256color, word character_base_addr, int tilemap_x, int tilemap_y) {
+    // Find the tile
+    int tile_x = tilemap_x % 8;
+    if (se.hflip) {
+        tile_x = 7 - tile_x;
+    }
+    int tile_y = tilemap_y % 8;
+    if (se.vflip) {
+        tile_y = 7 - tile_y;
+    }
+
+    render_tile(se.tid, se.pb, line, screen_x, is_256color, character_base_addr, tile_x, tile_y);
 }
 
 #define SCREENBLOCK_SIZE 0x800
@@ -426,10 +431,9 @@ void render_bg_affine(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X], BGCNT_t
         // TODO adjust based on affine transformation matrix
 
         if (adjusted_y < bg_height && adjusted_x < bg_width) {
-            int se_number = adjusted_x + adjusted_y * bg_width;
-            reg_se_t se;
-            se.raw = gba_read_half(screen_base_addr + se_number * 2);
-            render_screenentry(line, x, se, bgcnt->is_256color, character_base_addr, adjusted_x, adjusted_y);
+            int se_number = (adjusted_x / 8) + (adjusted_y / 8) * (bg_width / 8);
+            byte tid = gba_read_byte(screen_base_addr + se_number);
+            render_tile(tid, 0, line, x, true, character_base_addr, adjusted_x, adjusted_y);
         } else {
             (*line)[x].r = 0;
             (*line)[x].g = 0;
