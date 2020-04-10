@@ -288,20 +288,47 @@ typedef union reg_se {
     };
 } reg_se_t;
 
-typedef struct bg_affine {
+INLINE void render_screenentry(gba_color_t (*line)[GBA_SCREEN_X], int screen_x, reg_se_t se, bool is_256color, word character_base_addr, int tilemap_x, int tilemap_y) {
+    int in_tile_offset_divisor = is_256color ? 1 : 2;
+    int tile_size = is_256color ? 0x40 : 0x20;
+    // Find the tile
+    word tile_address = character_base_addr + se.tid * tile_size;
+    int tile_x = tilemap_x % 8;
+    if (se.hflip) {
+        tile_x = 7 - tile_x;
+    }
+    int tile_y = tilemap_y % 8;
+    if (se.vflip) {
+        tile_y = 7 - tile_y;
+    }
+    int in_tile_offset = tile_x + tile_y * 8;
+    tile_address += in_tile_offset / in_tile_offset_divisor;
 
-} bg_affine_t;
+    byte tile = gba_read_byte(tile_address);
+
+    if (!is_256color) {
+        tile >>= (in_tile_offset % 2) * 4;
+        tile &= 0xF;
+    }
+
+    word palette_address = 0x05000000;
+    if (is_256color) {
+        palette_address += 2 * tile;
+    } else {
+        palette_address += (0x20 * se.pb + 2 * tile);
+    }
+    (*line)[screen_x].raw = gba_read_half(palette_address);
+    (*line)[screen_x].transparent = tile == 0; // This color should only be drawn if we need transparency
+}
 
 #define SCREENBLOCK_SIZE 0x800
 #define CHARBLOCK_SIZE  0x4000
-INLINE void render_bg(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X], BGCNT_t* bgcnt, int hofs, int vofs) {
+INLINE void render_bg_regular(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X], BGCNT_t* bgcnt, int hofs, int vofs) {
     // Tileset (like pattern tables in the NES)
     word character_base_addr = 0x06000000 + bgcnt->character_base_block * CHARBLOCK_SIZE;
     // Tile map (like nametables in the NES)
     word screen_base_addr = 0x06000000 + bgcnt->screen_base_block * SCREENBLOCK_SIZE;
 
-    int tile_size = bgcnt->is_256color ? 0x40 : 0x20;
-    int in_tile_offset_divisor = bgcnt->is_256color ? 1 : 2;
 
     reg_se_t se;
     for (int x = 0; x < GBA_SCREEN_X; x++) {
@@ -335,35 +362,56 @@ INLINE void render_bg(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X], BGCNT_t
 
         int se_number = (tilemap_x / 8) + (tilemap_y / 8) * 32;
         se.raw = gba_read_half(screen_base_addr + screenblock_number * SCREENBLOCK_SIZE + se_number * 2);
+        render_screenentry(line, x, se, bgcnt->is_256color, character_base_addr, tilemap_x, tilemap_y);
+    }
+}
 
-        // Find the tile
-        word tile_address = character_base_addr + se.tid * tile_size;
-        int tile_x = tilemap_x % 8;
-        if (se.hflip) {
-            tile_x = 7 - tile_x;
-        }
-        int tile_y = tilemap_y % 8;
-        if (se.vflip) {
-            tile_y = 7 - tile_y;
-        }
-        int in_tile_offset = tile_x + tile_y * 8;
-        tile_address += in_tile_offset / in_tile_offset_divisor;
+void render_bg_affine(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X], BGCNT_t* bgcnt) {
+    // Tileset (like pattern tables in the NES)
+    word character_base_addr = 0x06000000 + bgcnt->character_base_block * CHARBLOCK_SIZE;
+    // Tile map (like nametables in the NES)
+    word screen_base_addr = 0x06000000 + bgcnt->screen_base_block * SCREENBLOCK_SIZE;
 
-        byte tile = gba_read_byte(tile_address);
+    int bg_width;
+    int bg_height;
+    switch (bgcnt->screen_size) {
+        case 0:
+            bg_width = 128;
+            bg_height = 128;
+            break;
+        case 1:
+            bg_width = 256;
+            bg_height = 256;
+            break;
+        case 2:
+            bg_width = 512;
+            bg_height = 512;
+            break;
+        case 3:
+            bg_width = 1024;
+            bg_height = 1024;
+            break;
+        default:
+            logfatal("Unimplemented screen size: %d", bgcnt->screen_size);
+    }
 
-        if (!bgcnt->is_256color) {
-            tile >>= (in_tile_offset % 2) * 4;
-            tile &= 0xF;
-        }
+    for (int x = 0; x < GBA_SCREEN_X; x++) {
+        int adjusted_y = ppu->y;
+        int adjusted_x = x;
 
-        word palette_address = 0x05000000;
-        if (bgcnt->is_256color) {
-            palette_address += 2 * tile;
+        // TODO adjust based on affine transformation matrix
+
+        if (adjusted_y < bg_height && adjusted_x < bg_width) {
+            int se_number = adjusted_x + adjusted_y * bg_width;
+            reg_se_t se;
+            se.raw = gba_read_half(screen_base_addr + se_number * 2);
+            render_screenentry(line, x, se, bgcnt->is_256color, character_base_addr, adjusted_x, adjusted_y);
         } else {
-            palette_address += (0x20 * se.pb + 2 * tile);
+            (*line)[x].r = 0;
+            (*line)[x].g = 0;
+            (*line)[x].b = 0;
+            (*line)[x].transparent = true;
         }
-        (*line)[x].raw = gba_read_half(palette_address);
-        (*line)[x].transparent = tile == 0; // This color should only be drawn if we need transparency
     }
 }
 
@@ -437,19 +485,19 @@ INLINE void merge_bgs(gba_ppu_t* ppu) {
 INLINE void render_line_mode0(gba_ppu_t* ppu) {
     render_obj(ppu);
     if (ppu->DISPCNT.screen_display_bg0) {
-        render_bg(ppu, &bgbuf[0], &ppu->BG0CNT, ppu->BG0HOFS.offset, ppu->BG0VOFS.offset);
+        render_bg_regular(ppu, &bgbuf[0], &ppu->BG0CNT, ppu->BG0HOFS.offset, ppu->BG0VOFS.offset);
     }
 
     if (ppu->DISPCNT.screen_display_bg1) {
-        render_bg(ppu, &bgbuf[1], &ppu->BG1CNT, ppu->BG1HOFS.offset, ppu->BG1VOFS.offset);
+        render_bg_regular(ppu, &bgbuf[1], &ppu->BG1CNT, ppu->BG1HOFS.offset, ppu->BG1VOFS.offset);
     }
 
     if (ppu->DISPCNT.screen_display_bg2) {
-        render_bg(ppu, &bgbuf[2], &ppu->BG2CNT, ppu->BG2HOFS.offset, ppu->BG2VOFS.offset);
+        render_bg_regular(ppu, &bgbuf[2], &ppu->BG2CNT, ppu->BG2HOFS.offset, ppu->BG2VOFS.offset);
     }
 
     if (ppu->DISPCNT.screen_display_bg3) {
-        render_bg(ppu, &bgbuf[3], &ppu->BG3CNT, ppu->BG3HOFS.offset, ppu->BG3VOFS.offset);
+        render_bg_regular(ppu, &bgbuf[3], &ppu->BG3CNT, ppu->BG3HOFS.offset, ppu->BG3VOFS.offset);
     }
 
     refresh_background_priorities(ppu);
@@ -461,15 +509,15 @@ INLINE void render_line_mode1(gba_ppu_t* ppu) {
     render_obj(ppu);
 
     if (ppu->DISPCNT.screen_display_bg0) {
-        render_bg(ppu, &bgbuf[0], &ppu->BG0CNT, ppu->BG0HOFS.offset, ppu->BG0VOFS.offset);
+        render_bg_regular(ppu, &bgbuf[0], &ppu->BG0CNT, ppu->BG0HOFS.offset, ppu->BG0VOFS.offset);
     }
 
     if (ppu->DISPCNT.screen_display_bg1) {
-        render_bg(ppu, &bgbuf[1], &ppu->BG1CNT, ppu->BG1HOFS.offset, ppu->BG1VOFS.offset);
+        render_bg_regular(ppu, &bgbuf[1], &ppu->BG1CNT, ppu->BG1HOFS.offset, ppu->BG1VOFS.offset);
     }
 
     if (ppu->DISPCNT.screen_display_bg2) {
-        render_bg(ppu, &bgbuf[2], &ppu->BG2CNT, ppu->BG2HOFS.offset, ppu->BG2VOFS.offset);
+        render_bg_affine(ppu, &bgbuf[2], &ppu->BG2CNT);
     }
 
     refresh_background_priorities(ppu);

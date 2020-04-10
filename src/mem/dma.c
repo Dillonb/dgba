@@ -14,9 +14,6 @@ int dma(int n, DMACNTH_t* cnth, DMAINT_t* dmaint, word sad, word dad, word wc, w
         if (cnth->dma_start_time != Immediately && cnth->dma_start_time != dma_trigger) {
             return 0;
         }
-        if (cnth->dma_start_time != Immediately) {
-            printf("DMA starting not-immediately!\n");
-        }
         // When newly enabled, reload everything
         if (!dmaint->previously_enabled) {
             dmaint->previously_enabled = true;
