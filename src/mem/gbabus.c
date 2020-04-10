@@ -707,5 +707,7 @@ int gba_dma() {
         dma_cycles = dma(3, &bus_state.DMA3CNT_H, &bus_state.DMA3INT, bus_state.DMA3SAD.addr, bus_state.DMA3DAD.addr, bus_state.DMA3CNT_L.wc, 0x10000);
     }
 
+    dma_done_hook();
+
     return dma_cycles;
 }

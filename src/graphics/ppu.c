@@ -3,6 +3,7 @@
 #include "../mem/gbabus.h"
 #include "render.h"
 #include "debug.h"
+#include "../mem/dma.h"
 
 gba_color_t bgbuf[4][GBA_SCREEN_X];
 gba_color_t objbuf[GBA_SCREEN_X];
@@ -468,6 +469,7 @@ void ppu_step(gba_ppu_t* ppu) {
     // Update coords and set V/HBLANK flags
     ppu->x++;
     if (!ppu->DISPSTAT.hblank && is_hblank(ppu)) {
+        dma_start_trigger(HBlank);
         if (ppu->DISPSTAT.hblank_irq_enable) {
             request_interrupt(IRQ_HBLANK);
         }
@@ -489,6 +491,7 @@ void ppu_step(gba_ppu_t* ppu) {
         }
 
         if (!ppu->DISPSTAT.vblank && is_vblank(ppu)) {
+            dma_start_trigger(VBlank);
             if (ppu->DISPSTAT.vblank_irq_enable) {
                 request_interrupt(IRQ_VBLANK);
             }

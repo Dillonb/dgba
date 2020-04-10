@@ -1,25 +1,21 @@
-//
-// Created by dillon on 3/29/20.
-//
-
 #include "dma.h"
 #include "../common/log.h"
+
+static dma_start_time_t dma_trigger = Immediately;
+
+void dma_start_trigger(dma_start_time_t trigger) {
+    dma_trigger = trigger;
+}
 
 int dma(int n, DMACNTH_t* cnth, DMAINT_t* dmaint, word sad, word dad, word wc, word max_wc) {
     int dma_cycles = 0;
     if (cnth->dma_enable) {
-
         unimplemented(cnth->game_pak_drq_dma3_only, "Game pak DRQ")
-        if (cnth->dma_start_time != 0) {
-            if (n != 1 && n != 2) {
-                logfatal("Non-immediate DMA start time (grr)")
-            } else {
-                if (cnth->dma_start_time == Special) {
-                    return 0; // Ignored
-                } else {
-                    logfatal("Non-immediate Non-Special DMA start time (grr)")
-                }
-            }
+        if (cnth->dma_start_time != Immediately && cnth->dma_start_time != dma_trigger) {
+            return 0;
+        }
+        if (cnth->dma_start_time != Immediately) {
+            printf("DMA starting not-immediately!\n");
         }
         // When newly enabled, reload everything
         if (!dmaint->previously_enabled) {
@@ -39,7 +35,7 @@ int dma(int n, DMACNTH_t* cnth, DMAINT_t* dmaint, word sad, word dad, word wc, w
             logwarn("DMA%dCNT_H set to 0x%08X", n, cnth->raw);
         }
 
-        if (dmaint->remaining > 0) {
+        while (dmaint->remaining > 0) {
             if (cnth->dma_transfer_type == 0) {// 16 bits
                 word source_address = dmaint->current_source_address;
                 half value = gba_read_half(source_address);
@@ -58,6 +54,7 @@ int dma(int n, DMACNTH_t* cnth, DMAINT_t* dmaint, word sad, word dad, word wc, w
                     case 0: dmaint->current_dest_address += sizeof(half); break;
                     case 1: dmaint->current_dest_address -= sizeof(half); break;
                     case 2: break; // No change
+                    case 3: dmaint->current_dest_address += sizeof(half); break; // Reset after transfer on repeat
                     default: logfatal("Unimplemented dest address control type: %d", cnth->dest_addr_control)
                 }
                 logwarn("DMA%d: transferred 0x%04X from 0x%08X to 0x%08X", n, value, source_address, dest_address)
@@ -85,13 +82,15 @@ int dma(int n, DMACNTH_t* cnth, DMAINT_t* dmaint, word sad, word dad, word wc, w
                 logwarn("DMA%d: transferred 0x%08X from 0x%08X to 0x%08X", n, value, source_address, dest_address)
             }
             dmaint->remaining--;
-        } else {
-            logwarn("DMA%d finished", n)
-            unimplemented(cnth->irq_on_end_of_wc, "IRQ on end of DMA. I mean, this shouldn't be hard")
-            cnth->dma_enable = cnth->dma_repeat;
-            dmaint->previously_enabled = false;
-            dma_cycles++;
         }
+        logwarn("DMA%d finished", n)
+        unimplemented(cnth->irq_on_end_of_wc, "IRQ on end of DMA. I mean, this shouldn't be hard")
+        cnth->dma_enable = cnth->dma_repeat;
+        dmaint->previously_enabled = false;
     }
     return dma_cycles;
+}
+
+void dma_done_hook() {
+    dma_trigger = Immediately;
 }
