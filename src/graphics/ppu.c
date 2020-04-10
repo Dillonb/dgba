@@ -255,11 +255,12 @@ void render_obj(gba_ppu_t* ppu) {
                         tile_address += in_tile_offset / in_tile_offset_divisor;
 
                         byte tile = gba_read_byte(tile_address);
+                        if (!attr0.is_256color) {
+                            tile >>= (in_tile_offset % 2) * 4;
+                            tile &= 0xF;
+                        }
+
                         if (tile != 0) {
-                            if (!attr0.is_256color) {
-                                tile >>= (in_tile_offset % 2) * 4;
-                                tile &= 0xF;
-                            }
 
                             word palette_address = 0x05000200; // OBJ palette base
                             if (attr0.is_256color) {
