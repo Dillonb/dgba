@@ -64,6 +64,29 @@ bool is_vblank(gba_ppu_t* ppu) {
 
 #define PALETTE_BANK_BACKGROUND 0
 
+void render_line_mode3(gba_ppu_t* ppu) {
+    if (ppu->DISPCNT.screen_display_bg2) {
+        for (int x = 0; x < GBA_SCREEN_X; x++) {
+            int offset = x + (ppu->y * GBA_SCREEN_X); // Calculate this based on BG2X/Y/VOFS/HOFS/etc
+            offset *= 2;
+
+            gba_color_t color;
+            color.raw = gba_read_half(0x06000000 + offset) & 0x7FFF;
+
+            ppu->screen[ppu->y][x].a = 0xFF;
+            ppu->screen[ppu->y][x].r = FIVEBIT_TO_EIGHTBIT_COLOR(color.r);
+            ppu->screen[ppu->y][x].g = FIVEBIT_TO_EIGHTBIT_COLOR(color.g);
+            ppu->screen[ppu->y][x].b = FIVEBIT_TO_EIGHTBIT_COLOR(color.b);
+        }
+    } else {
+        for (int x = 0; x < GBA_SCREEN_X; x++) {
+            ppu->screen[ppu->y][x].a = 0;
+            ppu->screen[ppu->y][x].r = 0;
+            ppu->screen[ppu->y][x].g = 0;
+            ppu->screen[ppu->y][x].b = 0;
+        }
+    }
+}
 
 void render_line_mode4(gba_ppu_t* ppu) {
     if (ppu->DISPCNT.screen_display_bg2) {
@@ -534,6 +557,9 @@ INLINE void render_line(gba_ppu_t* ppu) {
             break;
         case 1:
             render_line_mode1(ppu);
+            break;
+        case 3:
+            render_line_mode3(ppu);
             break;
         case 4:
             render_line_mode4(ppu);
