@@ -54,12 +54,24 @@ gba_ppu_t* init_ppu() {
     return ppu;
 }
 
-bool is_hblank(gba_ppu_t* ppu) {
+INLINE bool is_hblank(gba_ppu_t* ppu) {
     return ppu->x > GBA_SCREEN_X;
 }
 
-bool is_vblank(gba_ppu_t* ppu) {
+INLINE bool is_vblank(gba_ppu_t* ppu) {
     return ppu->y > GBA_SCREEN_Y && ppu->y != 227;
+}
+
+INLINE bool is_win(int x, int y, int x1, int x2, int y1, int y2) {
+    return (x >= x1 && x <= x2) && (y >= y1 && y <= y2);
+}
+
+INLINE bool is_win0(gba_ppu_t* ppu, int x, int y) {
+    return is_win(x, y, ppu->WIN0H.x1, ppu->WIN0H.x2, ppu->WIN0V.y1, ppu->WIN0V.y2);
+}
+
+INLINE bool is_win1(gba_ppu_t* ppu, int x, int y) {
+    return is_win(x, y, ppu->WIN1H.x1, ppu->WIN1H.x2, ppu->WIN1V.y1, ppu->WIN1V.y2);
 }
 
 #define PALETTE_BANK_BACKGROUND 0
@@ -350,9 +362,29 @@ INLINE void render_screenentry(gba_color_t (*line)[GBA_SCREEN_X], int screen_x, 
     render_tile(se.tid, se.pb, line, screen_x, is_256color, character_base_addr, tile_x, tile_y);
 }
 
+INLINE bool should_render_bg_pixel(gba_ppu_t* ppu, int x, int y, bool win0in, bool win1in, bool winout, bool objout) {
+    bool is_win0in = is_win0(ppu, x, y);
+    bool is_win1in = is_win1(ppu, x, y);
+    bool is_winout = !(is_win0in || is_win1in);
+
+    if (is_win0in && !win0in) {
+        return false;
+    }
+
+    if (is_win1in && !win1in) {
+        return false;
+    }
+
+    if (is_winout && !winout) {
+        return false;
+    }
+
+    return true;
+}
+
 #define SCREENBLOCK_SIZE 0x800
 #define CHARBLOCK_SIZE  0x4000
-INLINE void render_bg_regular(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X], BGCNT_t* bgcnt, int hofs, int vofs) {
+INLINE void render_bg_regular(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X], BGCNT_t* bgcnt, int hofs, int vofs, bool win0in, bool win1in, bool winout, bool objout) {
     // Tileset (like pattern tables in the NES)
     word character_base_addr = 0x06000000 + bgcnt->character_base_block * CHARBLOCK_SIZE;
     // Tile map (like nametables in the NES)
@@ -361,37 +393,44 @@ INLINE void render_bg_regular(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X],
 
     reg_se_t se;
     for (int x = 0; x < GBA_SCREEN_X; x++) {
-        int screenblock_number;
-        switch (bgcnt->screen_size) {
-            case 0:
-                // 0
-                screenblock_number = 0;
-                break;
-            case 1:
-                // 0 1
-                screenblock_number = ((x + hofs) % 512) > 255 ? 1 : 0;
-                break;
-            case 2:
-                // 0
-                // 1
-                screenblock_number = ((ppu->y + vofs) % 512) > 255 ? 1 : 0;
-                break;
-            case 3:
-                // 0 1
-                // 2 3
-                screenblock_number = ((x + hofs) % 512) > 255 ? 1 : 0;
-                screenblock_number += ((ppu->y + vofs) % 512) > 255 ? 2 : 0;
-                break;
-            default:
-                logfatal("Unimplemented screen size: %d", bgcnt->screen_size);
+        if (should_render_bg_pixel(ppu, x, ppu->y, win0in, win1in, winout, objout)) {
+            int screenblock_number;
+            switch (bgcnt->screen_size) {
+                case 0:
+                    // 0
+                    screenblock_number = 0;
+                    break;
+                case 1:
+                    // 0 1
+                    screenblock_number = ((x + hofs) % 512) > 255 ? 1 : 0;
+                    break;
+                case 2:
+                    // 0
+                    // 1
+                    screenblock_number = ((ppu->y + vofs) % 512) > 255 ? 1 : 0;
+                    break;
+                case 3:
+                    // 0 1
+                    // 2 3
+                    screenblock_number = ((x + hofs) % 512) > 255 ? 1 : 0;
+                    screenblock_number += ((ppu->y + vofs) % 512) > 255 ? 2 : 0;
+                    break;
+                default:
+                    logfatal("Unimplemented screen size: %d", bgcnt->screen_size);
 
+            }
+            int tilemap_x = (x + hofs) % 256;
+            int tilemap_y = (ppu->y + vofs) % 256;
+
+            int se_number = (tilemap_x / 8) + (tilemap_y / 8) * 32;
+            se.raw = gba_read_half(screen_base_addr + screenblock_number * SCREENBLOCK_SIZE + se_number * 2);
+            render_screenentry(line, x, se, bgcnt->is_256color, character_base_addr, tilemap_x, tilemap_y);
+        } else {
+            (*line)[x].r = 0;
+            (*line)[x].g = 0;
+            (*line)[x].b = 0;
+            (*line)[x].transparent = true;
         }
-        int tilemap_x = (x + hofs) % 256;
-        int tilemap_y = (ppu->y + vofs) % 256;
-
-        int se_number = (tilemap_x / 8) + (tilemap_y / 8) * 32;
-        se.raw = gba_read_half(screen_base_addr + screenblock_number * SCREENBLOCK_SIZE + se_number * 2);
-        render_screenentry(line, x, se, bgcnt->is_256color, character_base_addr, tilemap_x, tilemap_y);
     }
 }
 
@@ -513,19 +552,23 @@ INLINE void merge_bgs(gba_ppu_t* ppu) {
 INLINE void render_line_mode0(gba_ppu_t* ppu) {
     render_obj(ppu);
     if (ppu->DISPCNT.screen_display_bg0) {
-        render_bg_regular(ppu, &bgbuf[0], &ppu->BG0CNT, ppu->BG0HOFS.offset, ppu->BG0VOFS.offset);
+        render_bg_regular(ppu, &bgbuf[0], &ppu->BG0CNT, ppu->BG0HOFS.offset, ppu->BG0VOFS.offset,
+                          ppu->WININ.win0_bg0_enable, ppu->WININ.win1_bg0_enable, ppu->WINOUT.outside_bg0_enable, ppu->WINOUT.obj_bg0_enable);
     }
 
     if (ppu->DISPCNT.screen_display_bg1) {
-        render_bg_regular(ppu, &bgbuf[1], &ppu->BG1CNT, ppu->BG1HOFS.offset, ppu->BG1VOFS.offset);
+        render_bg_regular(ppu, &bgbuf[1], &ppu->BG1CNT, ppu->BG1HOFS.offset, ppu->BG1VOFS.offset,
+                          ppu->WININ.win0_bg1_enable, ppu->WININ.win1_bg1_enable, ppu->WINOUT.outside_bg1_enable, ppu->WINOUT.obj_bg1_enable);
     }
 
     if (ppu->DISPCNT.screen_display_bg2) {
-        render_bg_regular(ppu, &bgbuf[2], &ppu->BG2CNT, ppu->BG2HOFS.offset, ppu->BG2VOFS.offset);
+        render_bg_regular(ppu, &bgbuf[2], &ppu->BG2CNT, ppu->BG2HOFS.offset, ppu->BG2VOFS.offset,
+                          ppu->WININ.win0_bg2_enable, ppu->WININ.win1_bg2_enable, ppu->WINOUT.outside_bg2_enable, ppu->WINOUT.obj_bg2_enable);
     }
 
     if (ppu->DISPCNT.screen_display_bg3) {
-        render_bg_regular(ppu, &bgbuf[3], &ppu->BG3CNT, ppu->BG3HOFS.offset, ppu->BG3VOFS.offset);
+        render_bg_regular(ppu, &bgbuf[3], &ppu->BG3CNT, ppu->BG3HOFS.offset, ppu->BG3VOFS.offset,
+                          ppu->WININ.win0_bg3_enable, ppu->WININ.win1_bg3_enable, ppu->WINOUT.outside_bg3_enable, ppu->WINOUT.obj_bg3_enable);
     }
 
     refresh_background_priorities(ppu);
@@ -537,11 +580,13 @@ INLINE void render_line_mode1(gba_ppu_t* ppu) {
     render_obj(ppu);
 
     if (ppu->DISPCNT.screen_display_bg0) {
-        render_bg_regular(ppu, &bgbuf[0], &ppu->BG0CNT, ppu->BG0HOFS.offset, ppu->BG0VOFS.offset);
+        render_bg_regular(ppu, &bgbuf[0], &ppu->BG0CNT, ppu->BG0HOFS.offset, ppu->BG0VOFS.offset,
+                          ppu->WININ.win0_bg0_enable, ppu->WININ.win1_bg0_enable, ppu->WINOUT.outside_bg0_enable, ppu->WINOUT.obj_bg0_enable);
     }
 
     if (ppu->DISPCNT.screen_display_bg1) {
-        render_bg_regular(ppu, &bgbuf[1], &ppu->BG1CNT, ppu->BG1HOFS.offset, ppu->BG1VOFS.offset);
+        render_bg_regular(ppu, &bgbuf[1], &ppu->BG1CNT, ppu->BG1HOFS.offset, ppu->BG1VOFS.offset,
+                          ppu->WININ.win0_bg1_enable, ppu->WININ.win1_bg1_enable, ppu->WINOUT.outside_bg1_enable, ppu->WINOUT.obj_bg1_enable);
     }
 
     if (ppu->DISPCNT.screen_display_bg2) {
