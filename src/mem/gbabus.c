@@ -303,12 +303,33 @@ void write_half_ioreg_masked(word addr, half value, half mask) {
                 bus_state.IF.raw &= ~value;
                 return;
             }
-
             default:
                 break; // No special case
         }
         *ioreg &= (~mask);
         *ioreg |= (value & mask);
+        switch (addr & 0xFFF) {
+            case IO_DMA0CNT_H:
+                if (!bus_state.DMA0CNT_H.dma_enable) {
+                    bus_state.DMA0INT.previously_enabled = false;
+                }
+                break;
+            case IO_DMA1CNT_H:
+                if (!bus_state.DMA1CNT_H.dma_enable) {
+                    bus_state.DMA1INT.previously_enabled = false;
+                }
+                break;
+            case IO_DMA2CNT_H:
+                if (!bus_state.DMA2CNT_H.dma_enable) {
+                    bus_state.DMA2INT.previously_enabled = false;
+                }
+                break;
+            case IO_DMA3CNT_H:
+                if (!bus_state.DMA3CNT_H.dma_enable) {
+                    bus_state.DMA3INT.previously_enabled = false;
+                }
+                break;
+        }
     } else {
         logwarn("Ignoring write to half ioreg 0x%08X", addr)
     }

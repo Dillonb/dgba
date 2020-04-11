@@ -3,6 +3,13 @@
 
 static dma_start_time_t dma_trigger = Immediately;
 
+static const char* dma_triggers[] = {
+        "Immediate",
+        "VBlank",
+        "HBlank",
+        "Refresh"
+};
+
 void dma_start_trigger(dma_start_time_t trigger) {
     dma_trigger = trigger;
 }
@@ -19,18 +26,20 @@ int dma(int n, DMACNTH_t* cnth, DMAINT_t* dmaint, word sad, word dad, word wc, w
             dmaint->previously_enabled = true;
             dmaint->current_source_address = sad;
             dmaint->current_dest_address = dad;
-
-
-            dmaint->remaining = wc;
-            if (dmaint->remaining == 0) {
-                dmaint->remaining = max_wc;
-            }
-
-            logwarn("DMA%d initialized: 0x%08X => 0x%08X * %d width: %s src: %d, dest: %d",
-                    n, sad, dad, dmaint->remaining, cnth->dma_transfer_type ? "32b" : "16b",
-                    cnth->source_addr_control, cnth->dest_addr_control)
-            logwarn("DMA%dCNT_H set to 0x%08X", n, cnth->raw);
+        } else if (cnth->dest_addr_control == 3) {
+            dmaint->previously_enabled = true;
+            dmaint->current_dest_address = dad;
         }
+
+        dmaint->remaining = wc;
+        if (dmaint->remaining == 0) {
+            dmaint->remaining = max_wc;
+        }
+
+        logwarn("DMA%d triggered: at %s - 0x%08X => 0x%08X * %d width: %s src: %d, dest: %d",
+                n, dma_triggers[cnth->dma_start_time], sad, dad, dmaint->remaining, cnth->dma_transfer_type ? "32b" : "16b",
+                cnth->source_addr_control, cnth->dest_addr_control)
+        logwarn("DMA%dCNT_H set to 0x%08X", n, cnth->raw);
 
         while (dmaint->remaining > 0) {
             if (cnth->dma_transfer_type == 0) {// 16 bits
@@ -63,6 +72,7 @@ int dma(int n, DMACNTH_t* cnth, DMAINT_t* dmaint, word sad, word dad, word wc, w
                     case 0: dmaint->current_source_address += sizeof(word); break;
                     case 1: dmaint->current_source_address -= sizeof(word); break;
                     case 2: break; // No change
+                    case 3: dmaint->current_source_address += sizeof(word); break; // Reset after transfer on repeat
                     default: logfatal("Unimplemented source address control type: %d", cnth->source_addr_control)
                 }
 
@@ -83,7 +93,7 @@ int dma(int n, DMACNTH_t* cnth, DMAINT_t* dmaint, word sad, word dad, word wc, w
         logwarn("DMA%d finished", n)
         unimplemented(cnth->irq_on_end_of_wc, "IRQ on end of DMA. I mean, this shouldn't be hard")
         cnth->dma_enable = cnth->dma_repeat;
-        dmaint->previously_enabled = false;
+        dmaint->previously_enabled = cnth->dma_enable;
     }
     return dma_cycles;
 }
