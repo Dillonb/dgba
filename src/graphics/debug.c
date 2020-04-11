@@ -19,7 +19,7 @@ static int dbg_window_id;
 
 static SDL_Texture* dbg_tilemap_texture = NULL;
 static color_t dbg_tilemap[256][256];
-static int dbg_tilemap_pb = 0;
+static int dbg_tilemap_pb = -1;
 
 static bool dbg_window_visible = false;
 
@@ -288,7 +288,12 @@ void dbg_tick(dbg_tick_t tick_time) {
         if (DUI_Tab("Tile Map", TAB_TILE_MAP, &tab_index)) {
             DUI_MoveCursor(8, 40);
             DUI_Panel(WINDOW_WIDTH - 16, WINDOW_HEIGHT - 48);
-            DUI_Println("OBJ Tilemap PB: %d", dbg_tilemap_pb);
+            if (dbg_tilemap_pb < 0) {
+                dbg_tilemap_pb = -1;
+                DUI_Println("OBJ Tilemap PB: AUTO");
+            } else {
+                DUI_Println("OBJ Tilemap PB: %d", dbg_tilemap_pb);
+            }
 
             if (DUI_Button("PB -1")) {
                 dbg_tilemap_pb--;
@@ -363,7 +368,8 @@ void dbg_tick(dbg_tick_t tick_time) {
                     tile &= 0xF;
 
                     word palette_address = 0x05000200; // OBJ palette base
-                    palette_address += (0x20 * tile_pbs[tile_x][tile_y] + 2 * tile); // TODO: in 256 color mode, don't use the palette bank.
+                    int pb = dbg_tilemap_pb >= 0 ? dbg_tilemap_pb : tile_pbs[tile_x][tile_y];
+                    palette_address += (0x20 * pb + 2 * tile); // TODO: in 256 color mode, don't use the palette bank.
 
                     gba_color_t color;
                     color.raw = gba_read_half(palette_address);
