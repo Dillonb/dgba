@@ -433,7 +433,7 @@ void render_bg_affine(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X], BGCNT_t
         if (adjusted_y < bg_height && adjusted_x < bg_width) {
             int se_number = (adjusted_x / 8) + (adjusted_y / 8) * (bg_width / 8);
             byte tid = gba_read_byte(screen_base_addr + se_number);
-            render_tile(tid, 0, line, x, true, character_base_addr, adjusted_x, adjusted_y);
+            render_tile(tid, 0, line, x, true, character_base_addr, adjusted_x % 8, adjusted_y % 8);
         } else {
             (*line)[x].r = 0;
             (*line)[x].g = 0;
