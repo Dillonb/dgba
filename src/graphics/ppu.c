@@ -622,7 +622,9 @@ void ppu_step(gba_ppu_t* ppu) {
     // Update coords and set V/HBLANK flags
     ppu->x++;
     if (!ppu->DISPSTAT.hblank && is_hblank(ppu)) {
-        dma_start_trigger(HBlank);
+        if (!is_vblank(ppu)) {
+            dma_start_trigger(HBlank);
+        }
         if (ppu->DISPSTAT.hblank_irq_enable) {
             request_interrupt(IRQ_HBLANK);
         }
