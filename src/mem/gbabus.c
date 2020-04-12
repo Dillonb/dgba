@@ -401,7 +401,13 @@ word read_word_ioreg(word addr) {
         logwarn("Returning 0 (UNREADABLE BUT VALID WORD IOREG 0x%08X)", addr)
         return 0;
     }
-    logfatal("read from unknown (but valid) word ioreg addr 0x%08x", addr)
+    word* ioreg = get_word_ioreg_ptr(addr);
+    if (ioreg) {
+        return *ioreg;
+    } else {
+        logwarn("Ignoring read from word ioreg at 0x%08X and returning 0.", addr)
+        return 0;
+    }
 }
 
 half read_half_ioreg(word addr) {

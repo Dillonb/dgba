@@ -624,6 +624,26 @@ INLINE void render_line_mode1(gba_ppu_t* ppu) {
     merge_bgs(ppu);
 }
 
+INLINE void render_line_mode2(gba_ppu_t* ppu) {
+    render_obj(ppu);
+
+    if (ppu->DISPCNT.screen_display_bg2) {
+        render_bg_affine(ppu, &bgbuf[2], &ppu->BG2CNT,
+                         ppu->WININ.win0_bg2_enable, ppu->WININ.win1_bg2_enable, ppu->WINOUT.outside_bg2_enable, ppu->WINOUT.obj_bg2_enable,
+                         &ppu->BG2X, &ppu->BG2Y, &ppu->BG2PA, &ppu->BG2PB, &ppu->BG2PC, &ppu->BG2PD);
+    }
+
+    if (ppu->DISPCNT.screen_display_bg3) {
+        render_bg_affine(ppu, &bgbuf[3], &ppu->BG3CNT,
+                         ppu->WININ.win0_bg3_enable, ppu->WININ.win1_bg3_enable, ppu->WINOUT.outside_bg3_enable, ppu->WINOUT.obj_bg3_enable,
+                         &ppu->BG3X, &ppu->BG3Y, &ppu->BG3PA, &ppu->BG3PB, &ppu->BG3PC, &ppu->BG3PD);
+    }
+
+    refresh_background_priorities(ppu);
+
+    merge_bgs(ppu);
+}
+
 INLINE void render_line(gba_ppu_t* ppu) {
     // Draw a pixel
     switch (ppu->DISPCNT.mode) {
@@ -632,6 +652,9 @@ INLINE void render_line(gba_ppu_t* ppu) {
             break;
         case 1:
             render_line_mode1(ppu);
+            break;
+        case 2:
+            render_line_mode2(ppu);
             break;
         case 3:
             render_line_mode3(ppu);
