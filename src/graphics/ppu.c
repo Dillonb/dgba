@@ -263,7 +263,8 @@ void render_obj(gba_ppu_t* ppu) {
                     int y_tid_offset;
                     int sprite_tile_y = adjusted_sprite_y / 8;
                     if (ppu->DISPCNT.obj_character_vram_mapping) { // 1D
-                        y_tid_offset = tiles_wide * sprite_tile_y;
+                        // Tiles are twice as wide in 256 color mode
+                        y_tid_offset = tiles_wide * (sprite_tile_y << attr0.is_256color);
                     } else { // 2D
                         y_tid_offset = 32 * sprite_tile_y;
                     }
@@ -276,10 +277,8 @@ void render_obj(gba_ppu_t* ppu) {
                     // Only draw if we've never drawn anything there before. Lower indices have higher priority
                     // and that's the order we're drawing them here.
                     if (screen_x >= screen_min_x && screen_x < screen_max_x  && (objbuf[screen_x].transparent || attr2.priority < obj_priorities[screen_x])) {
-                        int x_tid_offset = adjusted_sprite_x / 8;
-                        if (attr0.is_256color) {
-                            x_tid_offset *= 2;
-                        }
+                        // Tiles are twice as wide in 256 color mode
+                        int x_tid_offset = (adjusted_sprite_x / 8) << attr0.is_256color;
                         int tid_offset_by_x = tid + x_tid_offset;
                         word tile_address = 0x06010000 + tid_offset_by_x * OBJ_TILE_SIZE;
 
