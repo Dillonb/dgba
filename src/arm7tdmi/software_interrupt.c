@@ -1,4 +1,5 @@
 #include "software_interrupt.h"
+#include "../common/log.h"
 #include <stdio.h>
 
 
@@ -84,7 +85,7 @@ static const char* SWI_NAMES[] = {
 
 void software_interrupt(arm7tdmi_t* state, byte comment) {
     word adjusted_pc = state->pc - (state->cpsr.thumb ? 4 : 8);
-    printf("adjusted pc: 0x%08X: SWI: 0x%X - %s\n", adjusted_pc, comment, SWI_NAMES[comment]);
+    logwarn("adjusted pc: 0x%08X: SWI: 0x%X - %s", adjusted_pc, comment, SWI_NAMES[comment])
     status_register_t cpsr = state->cpsr;
     state->cpsr.mode = MODE_SUPERVISOR;
     set_spsr(state, cpsr.raw);
