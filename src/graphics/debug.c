@@ -370,15 +370,18 @@ void dbg_tick(dbg_tick_t tick_time) {
 
                     word tile_address = 0x06010000 + tid * 0x20; // 0x20 = obj tile size
                     int in_tile_offset = in_tile_x + in_tile_y * 8;
-                    in_tile_offset /= 2; // TODO: in 256 color mode, don't do this.
+                    if (!attr0.is_256color) {
+                        in_tile_offset /= 2;
+                    }
 
                     tile_address += in_tile_offset;
 
                     byte tile = gba_read_byte(tile_address);
 
-                    // TODO: in 256 color mode, don't do this.
-                    tile >>= (in_tile_offset % 2) * 4;
-                    tile &= 0xF;
+                    if (!attr0.is_256color) {
+                        tile >>= (in_tile_offset % 2) * 4;
+                        tile &= 0xF;
+                    }
 
                     word palette_address = 0x05000200; // OBJ palette base
                     int pb = dbg_tilemap_pb >= 0 ? dbg_tilemap_pb : tile_pbs[tile_x][tile_y];
