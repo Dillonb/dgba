@@ -438,7 +438,13 @@ INLINE void render_bg_regular(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X],
     }
 }
 
-void render_bg_affine(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X], BGCNT_t* bgcnt) {
+#define REF_TO_DOUBLE(x) ((x->sign ? -1 : 1) * x->integer)
+#define ROTSCALE_TO_DOUBLE(x) ((x->sign ? -1 : 1) * x->integer)
+
+void render_bg_affine(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X], BGCNT_t* bgcnt,
+                      bool win0in, bool win1in, bool winout, bool objout,
+                      bg_referencepoint_t* x, bg_referencepoint_t* y,
+                      bg_rotation_scaling_t* pa, bg_rotation_scaling_t* pb, bg_rotation_scaling_t* pc, bg_rotation_scaling_t* pd) {
     // Tileset (like pattern tables in the NES)
     word character_base_addr = 0x06000000 + bgcnt->character_base_block * CHARBLOCK_SIZE;
     // Tile map (like nametables in the NES)
@@ -467,21 +473,35 @@ void render_bg_affine(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X], BGCNT_t
             logfatal("Unimplemented screen size: %d", bgcnt->screen_size);
     }
 
-    for (int x = 0; x < GBA_SCREEN_X; x++) {
-        int adjusted_y = ppu->y;
-        int adjusted_x = x;
+    for (int screen_x = 0; screen_x < GBA_SCREEN_X; screen_x++) {
+        double adjusted_y;
+        double adjusted_x;
 
-        // TODO adjust based on affine transformation matrix
+        double ref_x = REF_TO_DOUBLE(x);
+        double ref_y = REF_TO_DOUBLE(y);
 
-        if (adjusted_y < bg_height && adjusted_x < bg_width) {
-            int se_number = (adjusted_x / 8) + (adjusted_y / 8) * (bg_width / 8);
+        double d_pa = ROTSCALE_TO_DOUBLE(pa);
+        double d_pb = ROTSCALE_TO_DOUBLE(pb);
+        double d_pc = ROTSCALE_TO_DOUBLE(pc);
+        double d_pd = ROTSCALE_TO_DOUBLE(pd);
+
+        adjusted_x = (screen_x - ref_x) * d_pa + (ppu->y - ref_y) * d_pb;
+        adjusted_x += ref_x;
+        adjusted_y = (screen_x - ref_x) * d_pc + (ppu->y - ref_y) * d_pd;
+        adjusted_y += ref_y;
+
+        int render_x = (int)adjusted_x;
+        int render_y = (int)adjusted_y;
+
+        if (render_y < bg_height && render_x < bg_width && should_render_bg_pixel(ppu, screen_x, ppu->y, win0in, win1in, winout, objout)) {
+            int se_number = (render_x / 8) + (render_y / 8) * (bg_width / 8);
             byte tid = gba_read_byte(screen_base_addr + se_number);
-            render_tile(tid, 0, line, x, true, character_base_addr, adjusted_x % 8, adjusted_y % 8);
+            render_tile(tid, 0, line, screen_x, true, character_base_addr, render_x % 8, render_y % 8);
         } else {
-            (*line)[x].r = 0;
-            (*line)[x].g = 0;
-            (*line)[x].b = 0;
-            (*line)[x].transparent = true;
+            (*line)[screen_x].r = 0;
+            (*line)[screen_x].g = 0;
+            (*line)[screen_x].b = 0;
+            (*line)[screen_x].transparent = true;
         }
     }
 }
@@ -594,7 +614,9 @@ INLINE void render_line_mode1(gba_ppu_t* ppu) {
     }
 
     if (ppu->DISPCNT.screen_display_bg2) {
-        render_bg_affine(ppu, &bgbuf[2], &ppu->BG2CNT);
+        render_bg_affine(ppu, &bgbuf[2], &ppu->BG2CNT,
+                         ppu->WININ.win0_bg2_enable, ppu->WININ.win1_bg2_enable, ppu->WINOUT.outside_bg2_enable, ppu->WINOUT.obj_bg2_enable,
+                         &ppu->BG2X, &ppu->BG2Y, &ppu->BG2PA, &ppu->BG2PB, &ppu->BG2PC, &ppu->BG2PD);
     }
 
     refresh_background_priorities(ppu);
