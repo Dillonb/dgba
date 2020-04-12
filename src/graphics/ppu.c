@@ -367,15 +367,19 @@ INLINE bool should_render_bg_pixel(gba_ppu_t* ppu, int x, int y, bool win0in, bo
     bool is_win1in = is_win1(ppu, x, y);
     bool is_winout = !(is_win0in || is_win1in);
 
-    if (is_win0in && !win0in) {
+    bool win0_enable = ppu->DISPCNT.window0_display;
+    bool win1_enable = ppu->DISPCNT.window1_display;
+    bool winout_enable = win0_enable || win1_enable;
+
+    if (win0_enable && is_win0in && !win0in) {
         return false;
     }
 
-    if (is_win1in && !win1in) {
+    if (win1_enable && is_win1in && !win1in) {
         return false;
     }
 
-    if (is_winout && !winout) {
+    if (winout_enable && is_winout && !winout) {
         return false;
     }
 
