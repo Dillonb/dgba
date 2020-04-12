@@ -188,8 +188,6 @@ void render_obj(gba_ppu_t* ppu) {
             adjusted_y -= 256;
         }
 
-        int in_tile_offset_divisor = attr0.is_256color ? 1 : 2;
-
         int sprite_y = ppu->y - adjusted_y;
         if (!is_affine && attr1.vflip) {
             sprite_y = height - sprite_y - 1;
@@ -235,7 +233,6 @@ void render_obj(gba_ppu_t* ppu) {
 
         if (ppu->y >= screen_min_y && ppu->y < screen_max_y) { // If the sprite is visible, we should draw it.
             if (attr0.affine_object_mode != 0b10) { // Not disabled
-                unimplemented(attr0.is_256color, "256 color sprite")
                 int sprite_x_start = is_double_affine ? -hwidth : 0;
                 int sprite_x_end   = is_double_affine ? width + hwidth : width;
                 for (int sprite_x = sprite_x_start; sprite_x < sprite_x_end; sprite_x++) {
@@ -280,6 +277,9 @@ void render_obj(gba_ppu_t* ppu) {
                     // and that's the order we're drawing them here.
                     if (screen_x >= screen_min_x && screen_x < screen_max_x  && (objbuf[screen_x].transparent || attr2.priority < obj_priorities[screen_x])) {
                         int x_tid_offset = adjusted_sprite_x / 8;
+                        if (attr0.is_256color) {
+                            x_tid_offset *= 2;
+                        }
                         int tid_offset_by_x = tid + x_tid_offset;
                         word tile_address = 0x06010000 + tid_offset_by_x * OBJ_TILE_SIZE;
 
@@ -287,7 +287,10 @@ void render_obj(gba_ppu_t* ppu) {
                         int in_tile_y = adjusted_sprite_y % 8;
 
                         int in_tile_offset = in_tile_x + in_tile_y * 8;
-                        tile_address += in_tile_offset / in_tile_offset_divisor;
+                        if (!attr0.is_256color) {
+                            in_tile_offset /= 2;
+                        }
+                        tile_address += in_tile_offset;
 
                         byte tile = gba_read_byte(tile_address);
                         if (!attr0.is_256color) {
