@@ -286,10 +286,7 @@ void render_obj(gba_ppu_t* ppu) {
                         int in_tile_y = adjusted_sprite_y % 8;
 
                         int in_tile_offset = in_tile_x + in_tile_y * 8;
-                        if (!attr0.is_256color) {
-                            in_tile_offset /= 2;
-                        }
-                        tile_address += in_tile_offset;
+                        tile_address += in_tile_offset >> (!attr0.is_256color);
 
                         byte tile = gba_read_byte(tile_address);
                         if (!attr0.is_256color) {
