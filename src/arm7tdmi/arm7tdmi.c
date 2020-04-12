@@ -33,6 +33,7 @@
 #include "thumb_instr/add_subtract.h"
 #include "../graphics/debug.h"
 #include "../disassemble.h"
+#include "arm_instr/arm_software_interrupt.h"
 
 const char MODE_NAMES[32][11] = {
 "UNKNOWN",    // 0b00000
@@ -445,7 +446,8 @@ int arm_mode_step(arm7tdmi_t* state, arminstr_t* instr) {
             case COPROCESSOR_REGISTER_TRANSFER:
                 logfatal("Unimplemented instruction type: COPROCESSOR_REGISTER_TRANSFER")
             case SOFTWARE_INTERRUPT:
-                logfatal("Unimplemented instruction type: SOFTWARE_INTERRUPT")
+                arm_software_interrupt(state, &instr->parsed.SOFTWARE_INTERRUPT);
+                break;
             default:
                 logfatal("Hit default case in arm_mode_step switch. This should never happen!")
         }

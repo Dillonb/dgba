@@ -165,7 +165,9 @@ typedef struct coprocessor_register_transfer {
 } coprocessor_register_transfer_t;
 
 typedef struct software_interrupt {
-    unsigned TODO:32;
+    unsigned comment:24;
+    unsigned opcode:4;
+    arm_cond_t cond:4;
 } software_interrupt_t;
 
 typedef union arminstr {

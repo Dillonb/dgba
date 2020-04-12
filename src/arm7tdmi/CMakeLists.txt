@@ -2,6 +2,7 @@ add_library(arm7tdmi
         arm7tdmi.c arm7tdmi.h
         shifts.c shifts.h
         sign_extension.c sign_extension.h
+        software_interrupt.c software_interrupt.h
 
         arm_instr/arm_instr.c arm_instr/arm_instr.h
         arm_instr/data_processing.c arm_instr/data_processing.h
@@ -12,6 +13,7 @@ add_library(arm7tdmi
         arm_instr/halfword_data_transfer.c arm_instr/halfword_data_transfer.h
         arm_instr/multiply.c arm_instr/multiply.h
         arm_instr/single_data_swap.c arm_instr/single_data_swap.h
+        arm_instr/arm_software_interrupt.c arm_instr/arm_software_interrupt.h
 
         thumb_instr/thumb_instr.c thumb_instr/thumb_instr.h
         thumb_instr/immediate_operations.c thumb_instr/immediate_operations.h
