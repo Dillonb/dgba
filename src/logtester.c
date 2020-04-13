@@ -66,6 +66,8 @@ int main(int argc, char** argv) {
 
     const char* log_file = NULL;
     int log_lines = 0;
+    word skip_to_address = 0x08008d08;
+    bool should_skip_to_address = true;
 
     cflags_add_string(flags, 'f', "log-file", &log_file, "log file to check run against");
     cflags_add_int(flags, 'l', "num-log-lines", &log_lines, "number of lines in the file to check");
@@ -82,7 +84,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    log_set_verbosity(4);
+    log_set_verbosity(0);
 
     init_gbasystem(rom, NULL);
 
@@ -121,6 +123,15 @@ int main(int argc, char** argv) {
     loginfo("ROM loaded: %lu bytes", mem->rom_size)
     loginfo("Beginning CPU loop")
     int step = 0;
+
+    printf("Skipping to correct start address if requested\n");
+
+    while (should_skip_to_address && cpu->pc - (cpu->cpsr.thumb ? 2 : 4) != skip_to_address) {
+        gba_system_step();
+    }
+
+    log_set_verbosity(4);
+    loginfo("Starting trace at 0x%08X", cpu->pc - (cpu->cpsr.thumb ? 4 : 8))
 
     while(true) {
         if (step >= log_lines) {
