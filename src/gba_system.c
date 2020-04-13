@@ -63,7 +63,22 @@ INLINE void timer_tick(int cyc) {
                 if (bus->TMINT[n].value == 0xFFFF) {
                     bus->TMINT[n].value = bus->TMCNT_L[n].timer_reload;
                     overflow = true;
-                    unimplemented(bus->TMCNT_H[n].timer_irq_enable, "IRQ on timer overflow")
+                    if (bus->TMCNT_H[n].timer_irq_enable) {
+                        switch (n) {
+                            case 0:
+                                request_interrupt(IRQ_TIMER0);
+                                break;
+                            case 1:
+                                request_interrupt(IRQ_TIMER1);
+                                break;
+                            case 2:
+                                request_interrupt(IRQ_TIMER2);
+                                break;
+                            case 3:
+                                request_interrupt(IRQ_TIMER3);
+                                break;
+                        }
+                    }
                 } else {
                     bus->TMINT[n].value++;
                 }

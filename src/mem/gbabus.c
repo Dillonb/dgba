@@ -99,6 +99,38 @@ void request_interrupt(gba_interrupt_t interrupt) {
                     logwarn("VCount interrupt blocked by IE")
                 }
                 break;
+            case IRQ_TIMER0:
+                if (bus_state.interrupt_enable.timer0_overflow) {
+                    cpu->irq = true;
+                    bus_state.IF.timer0 = true;
+                } else {
+                    logwarn("Timer0 overflow interrupt blocked by IE")
+                }
+                break;
+            case IRQ_TIMER1:
+                if (bus_state.interrupt_enable.timer1_overflow) {
+                    cpu->irq = true;
+                    bus_state.IF.timer1 = true;
+                } else {
+                    logwarn("Timer1 overflow interrupt blocked by IE")
+                }
+                break;
+            case IRQ_TIMER2:
+                if (bus_state.interrupt_enable.timer2_overflow) {
+                    cpu->irq = true;
+                    bus_state.IF.timer2 = true;
+                } else {
+                    logwarn("Timer2 overflow interrupt blocked by IE")
+                }
+                break;
+            case IRQ_TIMER3:
+                if (bus_state.interrupt_enable.timer3_overflow) {
+                    cpu->irq = true;
+                    bus_state.IF.timer3 = true;
+                } else {
+                    logwarn("Timer3 overflow interrupt blocked by IE")
+                }
+                break;
             default:
                 logfatal("Unknown interrupt index %d requested!", interrupt)
         }

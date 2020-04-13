@@ -10,7 +10,11 @@
 typedef enum gba_interrupt {
     IRQ_VBLANK,
     IRQ_HBLANK,
-    IRQ_VCOUNT
+    IRQ_VCOUNT,
+    IRQ_TIMER0,
+    IRQ_TIMER1,
+    IRQ_TIMER2,
+    IRQ_TIMER3
 } gba_interrupt_t;
 
 typedef union interrupt_enable {
