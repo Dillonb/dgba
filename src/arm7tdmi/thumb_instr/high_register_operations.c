@@ -22,8 +22,8 @@ void high_register_operations(arm7tdmi_t* state, high_register_operations_t* ins
             int adj_rs = instr->h2 ? instr->rshs + 8 : instr->rshs;
             word rsdata = get_register(state, adj_rs);
             word rddata = get_register(state, adj_rd);
-            word result = rsdata - rddata;
-            set_flags_sub(state, rsdata, rddata, result);
+            word result = rddata - rsdata;
+            set_flags_sub(state, rddata, rsdata, result);
             set_flags_nz(state, result);
             break;
         }
