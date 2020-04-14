@@ -83,6 +83,7 @@ int dma(int n, DMACNTH_t* cnth, DMAINT_t* dmaint, word sad, word dad, word wc, w
                     case 0: dmaint->current_dest_address += sizeof(word); break;
                     case 1: dmaint->current_dest_address -= sizeof(word); break;
                     case 2: break; // No change
+                    case 3: dmaint->current_dest_address += sizeof(word); break; // Reset after transfer on repeat
                     default: logfatal("Unimplemented dest address control type: %d", cnth->dest_addr_control)
                 }
 
