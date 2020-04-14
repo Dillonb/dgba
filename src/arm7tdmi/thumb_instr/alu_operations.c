@@ -52,8 +52,7 @@ void alu_operations(arm7tdmi_t* state, alu_operations_t* instr) {
         case 0x6: { // SBC: Rd = Rd - Rs - (~C)
             word rddata = get_register(state, instr->rd);
             word rsdata = get_register(state, instr->rs);
-            uint64_t tmp = rsdata;
-            tmp += !state->cpsr.C;
+            uint64_t tmp = rsdata - state->cpsr.C + 1;
 
             word result = rddata - tmp;
 
