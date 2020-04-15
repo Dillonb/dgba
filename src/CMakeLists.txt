@@ -23,6 +23,11 @@ add_library(core
         disassemble.c disassemble.h
         mem/ioreg_util.h)
 
+IF(Capstone_FOUND)
+    TARGET_LINK_LIBRARIES(core Capstone::Capstone)
+    TARGET_COMPILE_DEFINITIONS(core PRIVATE -DHAVE_CAPSTONE)
+ENDIF()
+
 add_subdirectory(arm7tdmi)
 add_subdirectory(common)
 
