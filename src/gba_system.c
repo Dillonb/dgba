@@ -2,6 +2,7 @@
 #include "mem/gbarom.h"
 #include "mem/gbabios.h"
 #include "common/log.h"
+#include "audio/audio.h"
 
 int cycles = 0;
 
@@ -9,6 +10,7 @@ arm7tdmi_t* cpu = NULL;
 gba_ppu_t* ppu = NULL;
 gbabus_t* bus = NULL;
 gbamem_t* mem = NULL;
+gba_apu_t* apu = NULL;
 bool should_quit = false;
 
 void init_gbasystem(const char* romfile, const char* bios_file) {
@@ -29,6 +31,7 @@ void init_gbasystem(const char* romfile, const char* bios_file) {
 
     ppu = init_ppu();
     bus = init_gbabus();
+    apu = init_apu();
 }
 
 

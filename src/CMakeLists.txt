@@ -29,6 +29,7 @@ IF(Capstone_FOUND)
 ENDIF()
 
 add_subdirectory(arm7tdmi)
+add_subdirectory(audio)
 add_subdirectory(common)
 
 add_executable (gba gba.c gba_system.c gba_system.h)
