@@ -51,7 +51,7 @@ int disassemble_thumb(word address, half raw_thumb, char* buf, int buflen) {
 
     cs_free(insn, count);
 #else
-    snprintf(buf, buf, buflen, "[Disassembly Unsupported]");
+    snprintf(buf, buflen, "[Disassembly Unsupported]");
 #endif
 
     return 1;
@@ -78,7 +78,7 @@ int disassemble_arm(word address, word raw_arm, char* buf, int buflen) {
 
     cs_free(insn, count);
 #else
-    snprintf(buf, buf, buflen, "[Disassembly Unsupported]");
+    snprintf(buf, buflen, "[Disassembly Unsupported]");
 #endif
     return 1;
 }
