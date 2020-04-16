@@ -82,6 +82,10 @@ INLINE void timer_tick(int cyc) {
                                 break;
                         }
                     }
+
+                    if (n == 0 || n == 1) {
+                        sound_timer_overflow(apu, n);
+                    }
                 } else {
                     bus->TMINT[n].value++;
                 }

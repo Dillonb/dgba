@@ -21,7 +21,7 @@ add_library(core
         graphics/debug.c graphics/debug.h
         mem/dma.c mem/dma.h
         disassemble.c disassemble.h
-        mem/ioreg_util.h)
+        mem/ioreg_util.h mem/ioreg_names.h)
 
 IF(Capstone_FOUND)
     TARGET_LINK_LIBRARIES(core Capstone::Capstone)
@@ -33,7 +33,7 @@ add_subdirectory(audio)
 add_subdirectory(common)
 
 add_executable (gba gba.c gba_system.c gba_system.h)
-target_link_libraries(gba common arm7tdmi core render)
+target_link_libraries(gba common arm7tdmi core audio render)
 
 add_executable (logtester logtester.c gba_system.c gba_system.h)
-target_link_libraries(logtester common arm7tdmi core render)
+target_link_libraries(logtester common arm7tdmi core audio render)

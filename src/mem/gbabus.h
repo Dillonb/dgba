@@ -6,6 +6,7 @@
 #include "gbamem.h"
 #include "../arm7tdmi/arm7tdmi.h"
 #include "../graphics/ppu.h"
+#include "../audio/audio.h"
 
 typedef enum gba_interrupt {
     IRQ_VBLANK,
@@ -14,7 +15,12 @@ typedef enum gba_interrupt {
     IRQ_TIMER0,
     IRQ_TIMER1,
     IRQ_TIMER2,
-    IRQ_TIMER3
+    IRQ_TIMER3,
+    IRQ_DMA0,
+    IRQ_DMA1,
+    IRQ_DMA2,
+    IRQ_DMA3
+
 } gba_interrupt_t;
 
 typedef union interrupt_enable {

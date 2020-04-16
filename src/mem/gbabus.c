@@ -2,6 +2,7 @@
 
 #include "gbabus.h"
 #include "ioreg_util.h"
+#include "ioreg_names.h"
 #include "gbamem.h"
 #include "../common/log.h"
 #include "gbabios.h"
@@ -129,6 +130,38 @@ void request_interrupt(gba_interrupt_t interrupt) {
                     bus_state.IF.timer3 = true;
                 } else {
                     logwarn("Timer3 overflow interrupt blocked by IE")
+                }
+                break;
+            case IRQ_DMA0:
+                if (bus_state.interrupt_enable.dma_0) {
+                    cpu->irq = true;
+                    bus_state.IF.dma0 = true;
+                } else {
+                    logwarn("DMA0 interrupt blocked by IE")
+                }
+                break;
+            case IRQ_DMA1:
+                if (bus_state.interrupt_enable.dma_1) {
+                    cpu->irq = true;
+                    bus_state.IF.dma1 = true;
+                } else {
+                    logwarn("DMA1 interrupt blocked by IE")
+                }
+                break;
+            case IRQ_DMA2:
+                if (bus_state.interrupt_enable.dma_2) {
+                    cpu->irq = true;
+                    bus_state.IF.dma2 = true;
+                } else {
+                    logwarn("DMA2 interrupt blocked by IE")
+                }
+                break;
+            case IRQ_DMA3:
+                if (bus_state.interrupt_enable.dma_3) {
+                    cpu->irq = true;
+                    bus_state.IF.dma3 = true;
+                } else {
+                    logwarn("DMA3 interrupt blocked by IE")
                 }
                 break;
             default:
@@ -402,16 +435,27 @@ word* get_word_ioreg_ptr(word addr) {
 }
 
 void write_word_ioreg_masked(word addr, word value, word mask) {
-    if (!is_ioreg_writable(addr)) {
-        logwarn("Ignoring write to unwriteable word ioreg 0x%08X", addr)
-        return;
-    }
-    word* ioreg = get_word_ioreg_ptr(addr);
-    if (ioreg) {
-        *ioreg &= (~mask);
-        *ioreg |= (value & mask);
-    } else {
-        logwarn("Ignoring write to word ioreg 0x%08X", addr)
+    switch (addr & 0xFFF) {
+        case IO_FIFO_A:
+            unimplemented(mask != 0xFFFFFFFF, "Write to FIFO not all at once")
+            write_fifo(apu, 0, value);
+            break;
+        case IO_FIFO_B:
+            unimplemented(mask != 0xFFFFFFFF, "Write to FIFO not all at once")
+            write_fifo(apu, 1, value);
+            break;
+        default:
+            if (!is_ioreg_writable(addr)) {
+                logwarn("Ignoring write to unwriteable word ioreg 0x%08X", addr)
+                return;
+            }
+            word* ioreg = get_word_ioreg_ptr(addr);
+            if (ioreg) {
+                *ioreg &= (~mask);
+                *ioreg |= (value & mask);
+            } else {
+                logwarn("Ignoring write to word ioreg 0x%08X with mask 0x%08X", addr, mask)
+            }
     }
 }
 

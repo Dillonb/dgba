@@ -11,6 +11,7 @@ extern arm7tdmi_t* cpu;
 extern gba_ppu_t* ppu;
 extern gbabus_t* bus;
 extern gbamem_t* mem;
+extern gba_apu_t* apu;
 extern bool should_quit;
 
 void init_gbasystem(const char* romfile, const char* bios_file);

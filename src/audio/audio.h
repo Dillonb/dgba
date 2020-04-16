@@ -5,6 +5,8 @@
 
 #include "../common/util.h"
 
+#define SOUND_FIFO_SIZE 32
+
 typedef union SOUNDCNT_H {
     struct {
         unsigned gbsound_volume:2;
@@ -28,18 +30,21 @@ typedef union SOUNDCNT_L {
     half raw;
 } SOUNDCNT_L_t;
 
+typedef struct sound_fifo {
+    byte buf[SOUND_FIFO_SIZE];
+    uint64_t read_index;
+    uint64_t write_index;
+} sound_fifo_t;
+
 typedef struct gba_apu {
-    byte sound_a_buf[32];
-    byte sound_a_buf_read_index;
-    byte sound_a_buf_write_index;
-    byte sound_b_buf[32];
-    byte sound_b_buf_read_index;
-    byte sound_b_buf_write_index;
+    sound_fifo_t fifo[2];
 
     SOUNDCNT_H_t SOUNDCNT_H;
     SOUNDCNT_L_t SOUNDCNT_L;
 } gba_apu_t;
 
 gba_apu_t* init_apu();
+void sound_timer_overflow(gba_apu_t* apu, int n);
+void write_fifo(gba_apu_t* apu, int n, word value);
 
 #endif //GBA_AUDIO_H
