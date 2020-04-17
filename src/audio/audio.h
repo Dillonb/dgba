@@ -34,6 +34,7 @@ typedef struct sound_fifo {
     byte buf[SOUND_FIFO_SIZE];
     uint64_t read_index;
     uint64_t write_index;
+    byte sample;
 } sound_fifo_t;
 
 typedef struct gba_apu {
@@ -45,6 +46,6 @@ typedef struct gba_apu {
 
 gba_apu_t* init_apu();
 void sound_timer_overflow(gba_apu_t* apu, int n);
-void write_fifo(gba_apu_t* apu, int n, word value);
+void write_fifo(gba_apu_t* apu, int channel, word value);
 
 #endif //GBA_AUDIO_H

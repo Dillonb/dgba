@@ -121,6 +121,17 @@ void print_timer(int n, TMCNT_H_t* tmcnth, int timer_reload, TMINT_t* tmint) {
                 tmint->value);
 }
 
+void print_dma(int d, DMACNTH_t *cnth, unsigned int wc, DMAINT_t *dmaint, unsigned int sad, unsigned int dad) {
+    DUI_Println("%d: enable: %d, start time: %d irq: %d sadctrl: %d dadctrl: %d",
+                d,
+                cnth->dma_enable,
+                cnth->dma_start_time,
+                cnth->irq_on_end_of_wc,
+                cnth->source_addr_control,
+                cnth->dest_addr_control);
+}
+
+
 void ramdump(word base_address, word size) {
     bool allzeroes = true;
     for (int x = 0; x < size; x += 0x10) {
@@ -211,6 +222,13 @@ void dbg_tick(dbg_tick_t tick_time) {
             for (int t = 0; t < 4; t++) {
                 print_timer(t, &bus->TMCNT_H[t], bus->TMCNT_L[t].timer_reload, &(bus->TMINT[t]));
             }
+
+            DUI_Println("\n--- DMAs ---");
+
+            print_dma(0, &bus->DMA0CNT_H, bus->DMA0CNT_L.wc, &bus->DMA0INT, bus->DMA0SAD.addr, bus->DMA0DAD.addr);
+            print_dma(1, &bus->DMA1CNT_H, bus->DMA1CNT_L.wc, &bus->DMA1INT, bus->DMA1SAD.addr, bus->DMA1DAD.addr);
+            print_dma(2, &bus->DMA2CNT_H, bus->DMA2CNT_L.wc, &bus->DMA2INT, bus->DMA2SAD.addr, bus->DMA2DAD.addr);
+            print_dma(3, &bus->DMA3CNT_H, bus->DMA3CNT_L.wc, &bus->DMA3INT, bus->DMA3SAD.addr, bus->DMA3DAD.addr);
 
             DUI_Println("KEYINPUT: 0x%04X", bus->KEYINPUT.raw);
         }

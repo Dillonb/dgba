@@ -709,13 +709,16 @@ void gba_write_byte(word addr, byte value) {
                 mem->backup[addr & 0x7FFF] = value;
                 break;
             case UNKNOWN:
-                logfatal("Tried to access backup when backup type unknown!")
+                logwarn("Tried to access backup when backup type unknown!")
+                break;
             case EEPROM:
                 logfatal("Backup type EEPROM unimplemented!")
             case FLASH64K:
-                logfatal("Backup type FLASH64K unimplemented!")
+                //logfatal("Backup type FLASH64K unimplemented!")
+                break;
             case FLASH128K:
-                logfatal("Backup type FLASH128K unimplemented!")
+                //logfatal("Backup type FLASH128K unimplemented!")
+                break;
             default:
                 logfatal("Unknown backup type index %d!", backup_type)
         }
@@ -779,6 +782,7 @@ void gba_write_word(word address, word value) {
         byte ioreg_size = get_ioreg_size_for_addr(address);
         if(ioreg_size == sizeof(word)) {
             write_word_ioreg(address, value);
+            return;
         } else if (ioreg_size == 0) {
             logwarn("Unused word size ioregister!")
             // Unused io register

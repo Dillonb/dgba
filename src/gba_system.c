@@ -43,9 +43,9 @@ INLINE void timer_tick(int cyc) {
         bool overflow = false;
 
         if (bus->TMCNT_H[n].start) {
-            unimplemented(bus->TMCNT_H[n].cascade, "Timer cascade")
-            if (previous_overflow && bus->TMCNT_H[n].cascade) {
-                logfatal("Timer cascade - need to inc this timer here, and ONLY here. (don't inc normally)")
+            //unimplemented(bus->TMCNT_H[n].cascade, "Timer cascade")
+            if (bus->TMCNT_H[n].cascade && !previous_overflow) {
+                continue;
             }
 
             if (!bus->TMINT[n].previously_enabled) {
@@ -59,7 +59,11 @@ INLINE void timer_tick(int cyc) {
                 continue; // Don't inc
             }
 
-            bus->TMINT[n].ticks += cyc;
+            if (bus->TMCNT_H[n].cascade) {
+                bus->TMINT[n].ticks += 1;
+            } else {
+                bus->TMINT[n].ticks += cyc;
+            }
 
             while (bus->TMINT[n].ticks >= timer_freq[bus->TMCNT_H[n].frequency]) {
                 bus->TMINT[n].ticks -= timer_freq[bus->TMCNT_H[n].frequency];

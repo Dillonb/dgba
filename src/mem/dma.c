@@ -44,6 +44,7 @@ int dma(int n, DMACNTH_t* cnth, DMAINT_t* dmaint, word sad, word dad, word wc, w
                     if (fifo_size > (SOUND_FIFO_SIZE / 2)) {
                         return 0;
                     }
+                    printf("FIFO size is %d, that means it's ok to sound DMA to it\n", fifo_size);
                 }
             } else {
                 return 0;
@@ -60,10 +61,12 @@ int dma(int n, DMACNTH_t* cnth, DMAINT_t* dmaint, word sad, word dad, word wc, w
             dmaint->current_dest_address = dad;
         }
 
-        dmaint->remaining = wc;
+        dmaint->remaining = is_sound_dma ? 4 : wc;
         if (dmaint->remaining == 0) {
             dmaint->remaining = max_wc;
         }
+
+        dma_cycles++;
 
         logwarn("DMA%d triggered: at %s - 0x%08X => 0x%08X * %d width: %s src: %d, dest: %d",
                 n, dma_triggers[cnth->dma_start_time], sad, dad, dmaint->remaining, cnth->dma_transfer_type ? "32b" : "16b",
@@ -74,7 +77,7 @@ int dma(int n, DMACNTH_t* cnth, DMAINT_t* dmaint, word sad, word dad, word wc, w
             if (cnth->dma_transfer_type == 0) {// 16 bits
                 word source_address = dmaint->current_source_address;
                 half value = gba_read_half(source_address);
-                dma_cycles++; // TODO real mem access time
+                //dma_cycles++; // TODO real mem access time
                 switch (cnth->source_addr_control) {
                     case 0: dmaint->current_source_address += sizeof(half); break;
                     case 1: dmaint->current_source_address -= sizeof(half); break;
@@ -84,7 +87,7 @@ int dma(int n, DMACNTH_t* cnth, DMAINT_t* dmaint, word sad, word dad, word wc, w
 
                 word dest_address = dmaint->current_dest_address;
                 gba_write_half(dest_address, value);
-                dma_cycles++;
+                //dma_cycles++;
                 if (!is_sound_dma) {
                     switch (cnth->dest_addr_control) {
                         case 0: dmaint->current_dest_address += sizeof(half); break;
@@ -98,7 +101,7 @@ int dma(int n, DMACNTH_t* cnth, DMAINT_t* dmaint, word sad, word dad, word wc, w
             } else { // 32 bits
                 word source_address = dmaint->current_source_address;
                 word value = gba_read_word(source_address);
-                dma_cycles++; // TODO real mem access time
+                //dma_cycles++; // TODO real mem access time
                 switch (cnth->source_addr_control) {
                     case 0: dmaint->current_source_address += sizeof(word); break;
                     case 1: dmaint->current_source_address -= sizeof(word); break;
@@ -109,7 +112,7 @@ int dma(int n, DMACNTH_t* cnth, DMAINT_t* dmaint, word sad, word dad, word wc, w
 
                 word dest_address = dmaint->current_dest_address;
                 gba_write_word(dest_address, value);
-                dma_cycles++; // TODO real mem access time
+                //dma_cycles++; // TODO real mem access time
                 if (!is_sound_dma) { // Only inc when not a sound DMA
                     switch (cnth->dest_addr_control) {
                         case 0: dmaint->current_dest_address += sizeof(word); break;
