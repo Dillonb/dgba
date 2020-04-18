@@ -44,7 +44,7 @@ int dma(int n, DMACNTH_t* cnth, DMAINT_t* dmaint, word sad, word dad, word wc, w
                     if (fifo_size > (SOUND_FIFO_SIZE / 2)) {
                         return 0;
                     }
-                    printf("FIFO size is %d, that means it's ok to sound DMA to it\n", fifo_size);
+                    //printf("FIFO size is %d, that means it's ok to sound DMA to it\n", fifo_size);
                 }
             } else {
                 return 0;

@@ -365,7 +365,7 @@ word get_register(arm7tdmi_t* state, word index) {
 
 #define cpsrflag(f, c) (f == 1?c:"-")
 
-int arm_mode_step(arm7tdmi_t* state, arminstr_t* instr) {
+INLINE int arm_mode_step(arm7tdmi_t* state, arminstr_t* instr) {
     logdebug("cond: %d", instr->parsed.cond)
     if (check_cond(state, instr)) {
         arm_instr_type_t type = get_arm_instr_type(instr);
@@ -459,7 +459,7 @@ int arm_mode_step(arm7tdmi_t* state, arminstr_t* instr) {
     return state->this_step_ticks;
 }
 
-int thumb_mode_step(arm7tdmi_t* state, thumbinstr_t* instr) {
+INLINE int thumb_mode_step(arm7tdmi_t* state, thumbinstr_t* instr) {
     thumb_instr_type_t type = get_thumb_instr_type(instr);
 
     switch (type) {
@@ -540,13 +540,10 @@ void handle_irq(arm7tdmi_t* state) {
     state->lr_irq = state->pc - (cpsr.thumb ? 2 : 4) + 4;
     set_pc(state, 0x18); // IRQ handler
 }
-
 int arm7tdmi_step(arm7tdmi_t* state) {
     if (state->irq && !state->cpsr.disable_irq) {
         handle_irq(state);
     }
-
-
 
     dbg_tick(INSTRUCTION);
 
@@ -564,18 +561,18 @@ int arm7tdmi_step(arm7tdmi_t* state) {
          thumbinstr_t instr = next_thumb_instr(state);
          state->instr = instr.raw;
          word adjusted_pc = state->pc - 4;
-         if (log_get_verbosity() >= LOG_VERBOSITY_INFO) {
+         if (gba_log_verbosity >= LOG_VERBOSITY_INFO) {
              disassemble_thumb(adjusted_pc, instr.raw, (char *) &state->disassembled, sizeof(state->disassembled));
-             loginfo("[THM]  [%s] 0x%08X: %s", MODE_NAMES[state->cpsr.mode], adjusted_pc, state->disassembled)
+             loginfo("[THM] [%s] 0x%08X: [    0x%04X] %s", MODE_NAMES[state->cpsr.mode], adjusted_pc, instr.raw, state->disassembled)
          }
          cycles = thumb_mode_step(state, &instr);
      } else {
          arminstr_t instr = next_arm_instr(state);
          state->instr = instr.raw;
          word adjusted_pc = state->pc - 8;
-         if (log_get_verbosity() >= LOG_VERBOSITY_INFO) {
+         if (gba_log_verbosity >= LOG_VERBOSITY_INFO) {
              disassemble_arm(adjusted_pc, instr.raw, (char *) &state->disassembled, sizeof(state->disassembled));
-             loginfo("[ARM] [%s] 0x%08X: %s", MODE_NAMES[state->cpsr.mode], adjusted_pc, state->disassembled)
+             loginfo("[ARM] [%s] 0x%08X: [0x%08X] %s", MODE_NAMES[state->cpsr.mode], adjusted_pc, instr.raw, state->disassembled)
          }
          cycles = arm_mode_step(state, &instr);
      }

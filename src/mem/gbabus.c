@@ -11,7 +11,7 @@
 
 static gbabus_t bus_state;
 
-word open_bus(word addr);
+INLINE word open_bus(word addr);
 
 typedef enum backup_type {
     UNKNOWN,
@@ -172,10 +172,10 @@ void request_interrupt(gba_interrupt_t interrupt) {
     }
 }
 
-void write_half_ioreg_masked(word addr, half value, half mask);
-void write_word_ioreg_masked(word addr, word value, word mask);
+INLINE void write_half_ioreg_masked(word addr, half value, half mask);
+INLINE void write_word_ioreg_masked(word addr, word value, word mask);
 
-void write_byte_ioreg(word addr, byte value) {
+INLINE void write_byte_ioreg(word addr, byte value) {
     if (!is_ioreg_writable(addr)) {
         logwarn("Ignoring write to unwriteable byte ioreg 0x%08X", addr)
         return;
@@ -214,7 +214,7 @@ void write_byte_ioreg(word addr, byte value) {
     }
 }
 
-byte read_byte_ioreg(word addr) {
+INLINE byte read_byte_ioreg(word addr) {
     switch (addr & 0xFFF) {
         case IO_POSTFLG:
             logwarn("Ignoring read from POSTFLG reg. Returning 0")
@@ -224,7 +224,7 @@ byte read_byte_ioreg(word addr) {
     }
 }
 
-half* get_half_ioreg_ptr(word addr, bool write) {
+INLINE half* get_half_ioreg_ptr(word addr, bool write) {
     word regnum = addr & 0xFFF;
     switch (regnum) {
         case IO_DISPCNT: return &ppu->DISPCNT.raw;
@@ -354,7 +354,7 @@ half* get_half_ioreg_ptr(word addr, bool write) {
     }
 }
 
-void write_half_ioreg_masked(word addr, half value, half mask) {
+INLINE void write_half_ioreg_masked(word addr, half value, half mask) {
     half* ioreg = get_half_ioreg_ptr(addr, true);
     if (ioreg) {
         switch (addr & 0xFFF) {
@@ -400,7 +400,7 @@ void write_half_ioreg_masked(word addr, half value, half mask) {
     }
 }
 
-void write_half_ioreg(word addr, half value) {
+INLINE void write_half_ioreg(word addr, half value) {
     if (!is_ioreg_writable(addr)) {
         logwarn("Ignoring write to unwriteable half ioreg 0x%08X", addr)
         return;
@@ -409,7 +409,7 @@ void write_half_ioreg(word addr, half value) {
     write_half_ioreg_masked(addr, value, 0xFFFF);
 }
 
-word* get_word_ioreg_ptr(word addr) {
+INLINE word* get_word_ioreg_ptr(word addr) {
     unimplemented(get_ioreg_size_for_addr(addr) != sizeof(word), "Trying to get the address of a wrong-sized word ioreg")
     switch (addr & 0xFFF) {
         case IO_BG2X:     return &ppu->BG2X.raw;
@@ -434,7 +434,7 @@ word* get_word_ioreg_ptr(word addr) {
     }
 }
 
-void write_word_ioreg_masked(word addr, word value, word mask) {
+INLINE void write_word_ioreg_masked(word addr, word value, word mask) {
     switch (addr & 0xFFF) {
         case IO_FIFO_A:
             unimplemented(mask != 0xFFFFFFFF, "Write to FIFO not all at once")
@@ -459,7 +459,7 @@ void write_word_ioreg_masked(word addr, word value, word mask) {
     }
 }
 
-void write_word_ioreg(word addr, word value) {
+INLINE void write_word_ioreg(word addr, word value) {
     // 0x04XX0800 is the only address that's mirrored.
     if ((addr & 0xFF00FFFFu) == 0x04000800u) {
         addr = 0x04000800;
@@ -472,7 +472,7 @@ void write_word_ioreg(word addr, word value) {
     write_word_ioreg_masked(addr, value, 0xFFFFFFFF);
 }
 
-word read_word_ioreg(word addr) {
+INLINE word read_word_ioreg(word addr) {
     if (!is_ioreg_readable(addr)) {
         logwarn("Returning 0 (UNREADABLE BUT VALID WORD IOREG 0x%08X)", addr)
         return 0;
@@ -486,7 +486,7 @@ word read_word_ioreg(word addr) {
     }
 }
 
-half read_half_ioreg(word addr) {
+INLINE half read_half_ioreg(word addr) {
     if (!is_ioreg_readable(addr)) {
         logwarn("Returning 0 (UNREADABLE BUT VALID HALF IOREG 0x%08X)", addr)
         return 0;
@@ -500,7 +500,7 @@ half read_half_ioreg(word addr) {
     }
 }
 
-bool is_open_bus(word address) {
+INLINE bool is_open_bus(word address) {
     switch (address >> 24) {
         case 0x0:
             return address >= GBA_BIOS_SIZE;
@@ -537,7 +537,7 @@ bool is_open_bus(word address) {
     }
 }
 
-word open_bus(word addr) {
+INLINE word open_bus(word addr) {
     word result;
 
     if (cpu->cpsr.thumb)
@@ -567,7 +567,7 @@ word open_bus(word addr) {
     return result;
 }
 
-byte gba_read_byte(word addr) {
+INLINE byte inline_gba_read_byte(word addr) {
     addr &= ~(sizeof(byte) - 1);
     if (addr < GBA_BIOS_SIZE) { // BIOS
         return gbabios_read_byte(addr);
@@ -646,7 +646,11 @@ byte gba_read_byte(word addr) {
     return open_bus(addr);
 }
 
-half gba_read_half(word address) {
+byte gba_read_byte(word addr) {
+    return inline_gba_read_byte(addr);
+}
+
+INLINE half inline_gba_read_half(word address) {
     address &= ~(sizeof(half) - 1);
     if (is_ioreg(address)) {
         byte ioreg_size = get_ioreg_size_for_addr(address);
@@ -670,6 +674,11 @@ half gba_read_half(word address) {
 
     return (upper << 8u) | lower;
 }
+
+half gba_read_half(word address) {
+    return inline_gba_read_half(address);
+}
+
 
 void gba_write_byte(word addr, byte value) {
     addr &= ~(sizeof(byte) - 1);
@@ -770,8 +779,8 @@ word gba_read_word(word address) {
     if (is_open_bus(address)) {
         return open_bus(address);
     }
-    word lower = gba_read_half(address);
-    word upper = gba_read_half(address + 2);
+    word lower = inline_gba_read_half(address);
+    word upper = inline_gba_read_half(address + 2);
 
     return (upper << 16u) | lower;
 }

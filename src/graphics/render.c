@@ -110,6 +110,12 @@ void gba_handle_event(SDL_Event* event) {
     }
 }
 
+uint32_t fps_interval = 1000; // 1000ms = 1 sec
+uint32_t sdl_lastframe = 0;
+uint32_t sdl_numframes = 0;
+uint32_t sdl_fps = 0;
+char sdl_wintitle[15] = "dgb gba 00 FPS";
+
 void render_screen(color_t (*screen)[GBA_SCREEN_Y][GBA_SCREEN_X]) {
     if (!initialized) {
         initialize();
@@ -125,6 +131,15 @@ void render_screen(color_t (*screen)[GBA_SCREEN_Y][GBA_SCREEN_X]) {
     SDL_RenderCopy(renderer, buffer, NULL, NULL);
     loginfo("Updating renderer")
     SDL_RenderPresent(renderer);
+    sdl_numframes++;
+    uint32_t ticks = SDL_GetTicks();
+    if (sdl_lastframe < ticks - fps_interval) {
+        sdl_lastframe = ticks;
+        sdl_fps = sdl_numframes;
+        sdl_numframes = 0;
+        snprintf(sdl_wintitle, sizeof(sdl_wintitle), "dgb gba %02d FPS", sdl_fps);
+        SDL_SetWindowTitle(window, sdl_wintitle);
+    }
     for (int y = 0; y < GBA_SCREEN_Y; y++) {
         for (int x = 0; x < GBA_SCREEN_X; x++) {
             (*screen)[y][x].r = 0;

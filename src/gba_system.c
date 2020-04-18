@@ -121,8 +121,16 @@ INLINE void _gba_system_step() {
     }
 
     while (cycles > 4) {
+        timer_tick(1);
+        timer_tick(1);
+        timer_tick(1);
+        timer_tick(1);
+        apu_tick(apu);
+        apu_tick(apu);
+        apu_tick(apu);
+        apu_tick(apu);
+
         ppu_step(ppu);
-        timer_tick(4);
         cycles -= 4;
     }
 }
