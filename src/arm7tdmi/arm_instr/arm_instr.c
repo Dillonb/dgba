@@ -1,10 +1,17 @@
 #include "arm_instr.h"
 #include "../../common/util.h"
+#include "data_processing.h"
+#include "../../common/log.h"
+#include "status_transfer.h"
+#include "multiply.h"
+#include "single_data_swap.h"
+#include "branch.h"
+#include "halfword_data_transfer.h"
+#include "single_data_transfer.h"
+#include "block_data_transfer.h"
+#include "arm_software_interrupt.h"
 
-arm_instr_type_t get_arm_instr_type(arminstr_t* instr) {
-    word hash = instr->raw;
-    hash = ((hash >> 16u) & 0xFF0u) | ((hash >> 4u) & 0xFu);
-
+arm_instr_type_t get_arm_instr_type_hash(word hash) {
     if ((hash & 0b111100000000u) == 0b111100000000u) {
         return SOFTWARE_INTERRUPT;
     }
@@ -71,4 +78,82 @@ arm_instr_type_t get_arm_instr_type(arminstr_t* instr) {
         }
     }
     return UNDEFINED;
+}
+
+arm_instr_type_t get_arm_instr_type(arminstr_t* instr) {
+    return get_arm_instr_type_hash(hash_arm_instr(instr->raw));
+}
+
+void unknown_instr_undefined(arm7tdmi_t* state, arminstr_t* instr) {
+    logfatal("Unimplemented instruction type: UNDEFINED")
+}
+
+void unknown_instr_coprocessor_data_transfer(arm7tdmi_t* state, arminstr_t* instr) {
+    logfatal("Unimplemented instruction type: COPROCESSOR_DATA_TRANSFER")
+}
+
+void unknown_instr_coprocessor_data_operation(arm7tdmi_t* state, arminstr_t* instr) {
+    logfatal("Unimplemented instruction type: COPROCESSOR_DATA_OPERATION")
+}
+
+void unknown_instr_coprocessor_register_transfer(arm7tdmi_t* state, arminstr_t* instr) {
+    logfatal("Unimplemented instruction type: COPROCESSOR_REGISTER_TRANSFER")
+}
+
+void fill_arm_lut(void (*(*lut)[4096])(arm7tdmi_t*, arminstr_t*)) {
+    for (word i = 0; i < 4096; i++) {
+        arm_instr_type_t type = get_arm_instr_type_hash(i);
+        switch (type) {
+            case DATA_PROCESSING:
+                (*lut)[i] = &data_processing;
+                break;
+            case STATUS_TRANSFER:
+                (*lut)[i] = &psr_transfer;
+                break;
+            case MULTIPLY:
+                (*lut)[i] = &multiply;
+                break;
+            case MULTIPLY_LONG:
+                (*lut)[i] = &multiply_long;
+                break;
+            case SINGLE_DATA_SWAP:
+                (*lut)[i] = &single_data_swap;
+                break;
+            case BRANCH_EXCHANGE:
+                (*lut)[i] = &branch_exchange;
+                break;
+            case HALFWORD_DT_RO:
+                (*lut)[i] = &halfword_dt_ro;
+                break;
+            case HALFWORD_DT_IO:
+                (*lut)[i] = &halfword_dt_io;
+                break;
+            case SINGLE_DATA_TRANSFER:
+                (*lut)[i] = &single_data_transfer;
+                break;
+            case UNDEFINED:
+                (*lut)[i] = &unknown_instr_undefined;
+                break;
+            case BLOCK_DATA_TRANSFER:
+                (*lut)[i] = &block_data_transfer;
+                break;
+            case BRANCH:
+                (*lut)[i] = &branch;
+                break;
+            case COPROCESSOR_DATA_TRANSFER:
+                (*lut)[i] = &unknown_instr_coprocessor_data_transfer;
+                break;
+            case COPROCESSOR_DATA_OPERATION:
+                (*lut)[i] = &unknown_instr_coprocessor_data_operation;
+                break;
+            case COPROCESSOR_REGISTER_TRANSFER:
+                (*lut)[i] = &unknown_instr_coprocessor_register_transfer;
+                break;
+            case SOFTWARE_INTERRUPT:
+                (*lut)[i] = &arm_software_interrupt;
+                break;
+            default:
+                logfatal("Hit default case in fill_arm_lut switch. This should never happen!")
+        }
+    }
 }

@@ -5,6 +5,6 @@
 #include "../arm7tdmi.h"
 #include "arm_instr.h"
 
-void block_data_transfer(arm7tdmi_t* state, block_data_transfer_t* instr);
+void block_data_transfer(arm7tdmi_t* state, arminstr_t * arminstr);
 
 #endif //GBA_BLOCK_DATA_TRANSFER_H

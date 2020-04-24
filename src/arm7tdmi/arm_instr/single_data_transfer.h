@@ -3,15 +3,7 @@
 
 #include <stdbool.h>
 #include "../arm7tdmi.h"
+#include "arm_instr.h"
 
-void single_data_transfer(arm7tdmi_t* state,
-                          unsigned int offset,
-                          unsigned int rd, // dest if this is LDR, source if this is STR
-                          unsigned int rn,
-                          bool l,
-                          bool w,
-                          bool b,
-                          bool up,
-                          bool pre,
-                          bool immediate_offset_type);
+void single_data_transfer(arm7tdmi_t* state, arminstr_t* arminstr);
 #endif

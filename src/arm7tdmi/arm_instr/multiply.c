@@ -2,7 +2,8 @@
 #include "../../common/log.h"
 #include "../sign_extension.h"
 
-void multiply(arm7tdmi_t* state, multiply_t* instr) {
+void multiply(arm7tdmi_t* state, arminstr_t* arminstr) {
+    multiply_t* instr = &arminstr->parsed.MULTIPLY;
     unimplemented(instr->rm == instr->rd, "rm must not be the same as rd!")
 
     unimplemented(instr->rd == 15, "rd must not be 15!")
@@ -26,7 +27,8 @@ void multiply(arm7tdmi_t* state, multiply_t* instr) {
     set_register(state, instr->rd, wordresult);
 }
 
-void multiply_long(arm7tdmi_t* state, multiply_long_t* instr) {
+void multiply_long(arm7tdmi_t* state, arminstr_t* arminstr) {
+    multiply_long_t* instr = &arminstr->parsed.MULTIPLY_LONG;
     uint64_t rmdata = get_register(state, instr->rm);
     uint64_t rsdata = get_register(state, instr->rs);
     uint64_t result;

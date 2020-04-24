@@ -2,12 +2,12 @@
 #include "../../common/log.h"
 #include "../sign_extension.h"
 
-word rotate_right(word value, word amount) {
+INLINE word rotate_right(word value, word amount) {
     amount &= 31u;
     return (value >> amount) | (value << (-amount & 31u));
 }
 
-void halfword_dt_io(arm7tdmi_t* state, bool p, bool u, bool w, bool l, byte rn, byte rd, word offset, bool s, bool h) {
+INLINE void halfword_dt(arm7tdmi_t* state, bool p, bool u, bool w, bool l, byte rn, byte rd, word offset, bool s, bool h) {
     unimplemented(p == 0 && w == 1, "When p is 0, this bit must also always be 0!")
     if (p == 0) { w = true; } // Writeback always enabled when p == 0
     unimplemented(s == 0 && h == 0, "This is actually a SWP instruction, something went wrong and execution shouldn't be here")
@@ -63,6 +63,13 @@ void halfword_dt_io(arm7tdmi_t* state, bool p, bool u, bool w, bool l, byte rn, 
     }
 }
 
-void halfword_dt_ro(arm7tdmi_t* state, bool p, bool u, bool w, bool l, byte rn, byte rd, bool s, bool h, byte rm) {
-    halfword_dt_io(state, p, u, w, l, rn, rd, get_register(state, rm), s, h);
+void halfword_dt_io(arm7tdmi_t* state, arminstr_t* arminstr) {
+    halfword_dt_io_t instr = arminstr->parsed.HALFWORD_DT_IO;
+    byte offset = instr.offset_low | (instr.offset_high << 4u);
+    halfword_dt(state, instr.p, instr.u, instr.w, instr.l, instr.rn, instr.rd, offset, instr.s, instr.h);
+}
+
+void halfword_dt_ro(arm7tdmi_t* state, arminstr_t* arminstr) {
+    halfword_dt_ro_t instr = arminstr->parsed.HALFWORD_DT_RO;
+    halfword_dt(state, instr.p, instr.u, instr.w, instr.l, instr.rn, instr.rd, get_register(state, instr.rm), instr.s, instr.h);
 }

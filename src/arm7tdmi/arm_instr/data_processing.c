@@ -23,7 +23,8 @@ typedef union nonimmediate_flags {
 } nonimmediate_flags_t;
 
 // http://problemkaputt.de/gbatek.htm#armopcodesdataprocessingalu
-void data_processing(arm7tdmi_t* state, data_processing_t* instr) {
+void data_processing(arm7tdmi_t* state, arminstr_t* arminstr) {
+    data_processing_t* instr = &arminstr->parsed.DATA_PROCESSING;
     bool s = instr->s;
     byte rn = instr->rn;
     byte rd = instr->rd;

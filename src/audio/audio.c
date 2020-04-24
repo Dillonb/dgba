@@ -12,6 +12,7 @@ SDL_AudioSpec request;
 SDL_AudioDeviceID audio_dev;
 uint32_t apu_cycle_counter = 0;
 
+#ifdef ENABLE_AUDIO
 int underruns = 0;
 float apu_last_sample = 0.0f;
 void audio_callback(void* userdata, Uint8* stream, int length) {
@@ -54,9 +55,10 @@ void apu_push_sample(gba_apu_t* apu) {
     }
 }
 
-
+#endif
 gba_apu_t* init_apu() {
     gba_apu_t* apu = malloc(sizeof(gba_apu_t));
+#ifdef ENABLE_AUDIO
     if (SDL_Init(SDL_INIT_AUDIO) < 0) {
         logfatal("SDL couldn't initialize! %s", SDL_GetError())
     }
@@ -77,13 +79,14 @@ gba_apu_t* init_apu() {
     }
 
     SDL_PauseAudioDevice(audio_dev, false);
-
+#endif
     return apu;
 }
 
 //#define REVERSE
 
 void write_fifo(gba_apu_t* apu, int channel, word value) {
+#ifdef ENABLE_AUDIO
     unimplemented(channel > 1, "tried to fill FIFO >1")
     int size = apu->fifo[channel].write_index - apu->fifo[channel].read_index;
     if (size <= 28) {
@@ -103,8 +106,10 @@ void write_fifo(gba_apu_t* apu, int channel, word value) {
     } else {
         printf("Buffer OVERRUN, ignoring write of 0x%08X\n", value);
     }
+#endif
 }
 
+#ifdef ENABLE_AUDIO
 INLINE void dmasound_tick(gba_apu_t* apu, int channel) {
     uint64_t* wi = &apu->fifo[channel].write_index;
     uint64_t* ri = &apu->fifo[channel].read_index;
@@ -118,8 +123,9 @@ INLINE void dmasound_tick(gba_apu_t* apu, int channel) {
         apu->fifo[channel].sample = 0;
     }
 }
-
+#endif
 void sound_timer_overflow(gba_apu_t* apu, int n) {
+#ifdef ENABLE_AUDIO
     unimplemented(n > 1, "DMA sound from timer >1")
 
     if (apu->SOUNDCNT_H.dmasound_a_timer_select == n) {
@@ -129,4 +135,5 @@ void sound_timer_overflow(gba_apu_t* apu, int n) {
     if (apu->SOUNDCNT_H.dmasound_b_timer_select == n) {
         dmasound_tick(apu, 1);
     }
+#endif
 }

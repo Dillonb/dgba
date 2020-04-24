@@ -2,6 +2,7 @@
 #include "../arm7tdmi.h"
 #include "../../common/log.h"
 #include "../shifts.h"
+#include "single_data_transfer.h"
 
 typedef union immediate_as_offset_flags {
     struct {
@@ -15,17 +16,25 @@ typedef union immediate_as_offset_flags {
 } immediate_as_offset_flags_t;
 
 // http://problemkaputt.de/gbatek.htm#armopcodesmemorysingledatatransferldrstrpld
-void single_data_transfer(arm7tdmi_t* state,
-                          unsigned int offset,
-                          unsigned int rd, // dest if this is LDR, source if this is STR
-                          unsigned int rn,
-                          bool l,   // 0 == str, 1 == ldr
-                          bool w,   // different meanings depending on state of P (writeback)
-                          bool b,   // (byte) when 0, transfer word, when 1, transfer byte
-                          bool up,  // When 0, subtract offset from base, when 1, add to base
-                          bool pre, // when 0, offset after transfer, when 1, before transfer.
-                          bool immediate_offset_type) { //  When 0, Immediate as Offset
+void single_data_transfer(arm7tdmi_t* state, arminstr_t* arminstr) {
     //  When 1, Register shifted by Immediate as Offset
+    unsigned int offset = arminstr->parsed.SINGLE_DATA_TRANSFER.offset;
+    // dest if this is LDR, source if this is STR
+    unsigned int rd = arminstr->parsed.SINGLE_DATA_TRANSFER.rd;
+    unsigned int rn = arminstr->parsed.SINGLE_DATA_TRANSFER.rn;
+    // 0 == str, 1 == ldr
+    bool l = arminstr->parsed.SINGLE_DATA_TRANSFER.l;
+    // different meanings depending on state of P (writeback)
+    bool w = arminstr->parsed.SINGLE_DATA_TRANSFER.w;
+    // (byte) when 0, transfer word, when 1, transfer byte
+    bool b = arminstr->parsed.SINGLE_DATA_TRANSFER.b;
+    // When 0, subtract offset from base, when 1, add to base
+    bool up = arminstr->parsed.SINGLE_DATA_TRANSFER.u;
+    // when 0, offset after transfer, when 1, before transfer.
+    bool pre = arminstr->parsed.SINGLE_DATA_TRANSFER.p;
+    //  When 0, Immediate as Offset
+    bool immediate_offset_type = arminstr->parsed.SINGLE_DATA_TRANSFER.i;
+
     logdebug("l: %d w: %d b: %d u: %d p: %d i: %d", l, w, b, up, pre, immediate_offset_type)
     logdebug("rn: %d rd: %d, offset: 0x%03X", rn, rd, offset)
     if (!pre) {

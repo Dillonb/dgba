@@ -35,6 +35,8 @@
 #include "../disassemble.h"
 #include "arm_instr/arm_software_interrupt.h"
 
+void (*arm_lut[4096])(arm7tdmi_t*, arminstr_t*);
+
 const char MODE_NAMES[32][11] = {
 "UNKNOWN",    // 0b00000
 "UNKNOWN",    // 0b00001
@@ -120,6 +122,7 @@ arm7tdmi_t* init_arm7tdmi(byte (*read_byte)(word),
                           void (*write_byte)(word, byte),
                           void (*write_half)(word, half),
                           void (*write_word)(word, word)) {
+    fill_arm_lut(&arm_lut);
     arm7tdmi_t* state = malloc(sizeof(arm7tdmi_t));
 
     state->read_byte  = read_byte;
@@ -164,7 +167,7 @@ arm7tdmi_t* init_arm7tdmi(byte (*read_byte)(word),
 }
 
 // EQ, NE, CS, CC, MI, PL, VS, VC, HI, LS, GE, LT, GT, LE, AL, NV
-bool check_cond(arm7tdmi_t* state, arminstr_t* instr) {
+INLINE bool check_cond(arm7tdmi_t* state, arminstr_t* instr) {
     bool passed = false;
     switch (instr->parsed.cond) {
         case EQ:
@@ -368,89 +371,7 @@ word get_register(arm7tdmi_t* state, word index) {
 INLINE int arm_mode_step(arm7tdmi_t* state, arminstr_t* instr) {
     logdebug("cond: %d", instr->parsed.cond)
     if (check_cond(state, instr)) {
-        arm_instr_type_t type = get_arm_instr_type(instr);
-        switch (type) {
-            case DATA_PROCESSING:
-                data_processing(state, &instr->parsed.DATA_PROCESSING);
-                break;
-            case STATUS_TRANSFER:
-                psr_transfer(state,
-                             instr->parsed.DATA_PROCESSING.immediate,
-                             instr->parsed.DATA_PROCESSING.opcode,
-                             instr->parsed.DATA_PROCESSING.rn,
-                             instr->parsed.DATA_PROCESSING.rd,
-                             instr->parsed.DATA_PROCESSING.operand2);
-                break;
-            case MULTIPLY:
-                multiply(state, &instr->parsed.MULTIPLY);
-                break;
-            case MULTIPLY_LONG:
-                multiply_long(state, &instr->parsed.MULTIPLY_LONG);
-                break;
-            case SINGLE_DATA_SWAP:
-                single_data_swap(state, &instr->parsed.SINGLE_DATA_SWAP);
-                break;
-            case BRANCH_EXCHANGE:
-                branch_exchange(state, &instr->parsed.BRANCH_EXCHANGE);
-                break;
-            case HALFWORD_DT_RO:
-                halfword_dt_ro(state,
-                               instr->parsed.HALFWORD_DT_RO.p,
-                               instr->parsed.HALFWORD_DT_RO.u,
-                               instr->parsed.HALFWORD_DT_RO.w,
-                               instr->parsed.HALFWORD_DT_RO.l,
-                               instr->parsed.HALFWORD_DT_RO.rn,
-                               instr->parsed.HALFWORD_DT_RO.rd,
-                               instr->parsed.HALFWORD_DT_RO.s,
-                               instr->parsed.HALFWORD_DT_RO.h,
-                               instr->parsed.HALFWORD_DT_RO.rm);
-                break;
-            case HALFWORD_DT_IO: {
-                byte offset = instr->parsed.HALFWORD_DT_IO.offset_low | (instr->parsed.HALFWORD_DT_IO.offset_high << 4u);
-                halfword_dt_io(state,
-                               instr->parsed.HALFWORD_DT_IO.p,
-                               instr->parsed.HALFWORD_DT_IO.u,
-                               instr->parsed.HALFWORD_DT_IO.w,
-                               instr->parsed.HALFWORD_DT_IO.l,
-                               instr->parsed.HALFWORD_DT_IO.rn,
-                               instr->parsed.HALFWORD_DT_IO.rd,
-                               offset,
-                               instr->parsed.HALFWORD_DT_IO.s,
-                               instr->parsed.HALFWORD_DT_IO.h);
-                break;
-            }
-            case SINGLE_DATA_TRANSFER:
-                single_data_transfer(state,
-                                     instr->parsed.SINGLE_DATA_TRANSFER.offset,
-                                     instr->parsed.SINGLE_DATA_TRANSFER.rd,
-                                     instr->parsed.SINGLE_DATA_TRANSFER.rn,
-                                     instr->parsed.SINGLE_DATA_TRANSFER.l,
-                                     instr->parsed.SINGLE_DATA_TRANSFER.w,
-                                     instr->parsed.SINGLE_DATA_TRANSFER.b,
-                                     instr->parsed.SINGLE_DATA_TRANSFER.u,
-                                     instr->parsed.SINGLE_DATA_TRANSFER.p,
-                                     instr->parsed.SINGLE_DATA_TRANSFER.i);
-                break;
-            case UNDEFINED:
-                logfatal("Unimplemented instruction type: UNDEFINED")
-            case BLOCK_DATA_TRANSFER:
-                block_data_transfer(state, &instr->parsed.BLOCK_DATA_TRANSFER);
-                break;
-            case BRANCH:
-                branch(state, &instr->parsed.BRANCH);
-                break;
-            case COPROCESSOR_DATA_TRANSFER:
-                logfatal("Unimplemented instruction type: COPROCESSOR_DATA_TRANSFER")
-            case COPROCESSOR_DATA_OPERATION:
-                logfatal("Unimplemented instruction type: COPROCESSOR_DATA_OPERATION")
-            case COPROCESSOR_REGISTER_TRANSFER:
-                logfatal("Unimplemented instruction type: COPROCESSOR_REGISTER_TRANSFER")
-            case SOFTWARE_INTERRUPT:
-                arm_software_interrupt(state, &instr->parsed.SOFTWARE_INTERRUPT);
-                break;
-            default:
-                logfatal("Hit default case in arm_mode_step switch. This should never happen!")
-        }
+        arm_lut[hash_arm_instr(instr->raw)](state, instr);
     }
     else { // Cond told us not to execute this instruction
         logdebug("Skipping instr because cond %d was not met.", instr->parsed.cond)

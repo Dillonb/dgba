@@ -2,6 +2,7 @@
 #define __ARM_INSTR_H__
 
 #include <stdbool.h>
+#include "../arm7tdmi.h"
 
 typedef enum arm_cond_t {
     EQ, NE, CS, CC, MI, PL, VS, VC, HI, LS, GE, LT, GT, LE, AL, NV
@@ -197,5 +198,6 @@ typedef union arminstr {
     } parsed;
 } arminstr_t;
 
-arm_instr_type_t get_arm_instr_type(arminstr_t* instr);
+#define hash_arm_instr(instr) ((((instr) >> 16u) & 0xFF0u) | (((instr) >> 4u) & 0xFu))
+void fill_arm_lut(void (*(*lut)[4096])(arm7tdmi_t*, arminstr_t*));
 #endif

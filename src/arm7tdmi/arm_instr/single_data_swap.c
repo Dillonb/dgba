@@ -2,7 +2,8 @@
 #include "../../common/log.h"
 #include "../shifts.h"
 
-void single_data_swap(arm7tdmi_t* state, single_data_swap_t* instr) {
+void single_data_swap(arm7tdmi_t* state, arminstr_t* arminstr) {
+    single_data_swap_t* instr = &arminstr->parsed.SINGLE_DATA_SWAP;
     unimplemented(instr->rm == 15, "Must not use PC for rm")
     unimplemented(instr->rd == 15, "Must not use PC for rd")
     unimplemented(instr->rn == 15, "Must not use PC for rn")

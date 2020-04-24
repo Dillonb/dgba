@@ -4,7 +4,8 @@
 #include <stdbool.h>
 
 #include "../arm7tdmi.h"
+#include "arm_instr.h"
 
-void psr_transfer(arm7tdmi_t* state, bool immediate, unsigned int dt_opcode, unsigned int dt_rn, unsigned int dt_rd, unsigned int dt_operand2);
+void psr_transfer(arm7tdmi_t* state, arminstr_t* arminstr);
 
 #endif //GBA_STATUS_TRANSFER_H

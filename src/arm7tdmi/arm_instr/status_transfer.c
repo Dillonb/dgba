@@ -29,12 +29,12 @@ typedef union msr_immediate_flags {
 } msr_immediate_flags_t;
 
 // http://problemkaputt.de/gbatek.htm#armopcodespsrtransfermrsmsr
-void psr_transfer(arm7tdmi_t* state,
-                  bool immediate,
-                  unsigned int dt_opcode,
-                  unsigned int dt_rn,
-                  unsigned int dt_rd,
-                  unsigned int dt_operand2) {
+void psr_transfer(arm7tdmi_t* state, arminstr_t* arminstr) {
+    bool immediate = arminstr->parsed.DATA_PROCESSING.immediate;
+    unsigned int dt_opcode = arminstr->parsed.DATA_PROCESSING.opcode;
+    unsigned int dt_rn = arminstr->parsed.DATA_PROCESSING.rn;
+    unsigned int dt_rd = arminstr->parsed.DATA_PROCESSING.rd;
+    unsigned int dt_operand2 = arminstr->parsed.DATA_PROCESSING.operand2;
     union {
         struct {
             bool msr:1; // if 0, mrs, if 1, msr

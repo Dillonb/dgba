@@ -28,6 +28,9 @@ int dma(int n, DMACNTH_t* cnth, DMAINT_t* dmaint, word sad, word dad, word wc, w
                 }
                 else if (n == 1 || n == 2) {
                     int fifo_index = 0;
+#ifndef ENABLE_AUDIO
+                    return 0;
+#endif
                     is_sound_dma = true;
 
                     if ((dad & 0xFFF) == IO_FIFO_A) {

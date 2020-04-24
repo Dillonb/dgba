@@ -3,7 +3,8 @@
 #include "../arm7tdmi.h"
 #include "../../common/log.h"
 
-void branch_exchange(arm7tdmi_t* state, branch_exchange_t* instr) {
+void branch_exchange(arm7tdmi_t* state, arminstr_t * arminstr) {
+    branch_exchange_t* instr = &arminstr->parsed.BRANCH_EXCHANGE;
     switch (instr->opcode) {
         case 0b0001: {// BX
             word newpc = get_register(state, instr->rn);
@@ -24,7 +25,8 @@ void branch_exchange(arm7tdmi_t* state, branch_exchange_t* instr) {
 
 }
 
-void branch(arm7tdmi_t* state, branch_t* instr) {
+void branch(arm7tdmi_t* state, arminstr_t * arminstr) {
+    branch_t* instr = &arminstr->parsed.BRANCH;
     bool negative = (instr->offset & 0x800000u) > 0;
 
     word offset = instr->offset;

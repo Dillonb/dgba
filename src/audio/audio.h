@@ -60,5 +60,9 @@ gba_apu_t* init_apu();
 void sound_timer_overflow(gba_apu_t* apu, int n);
 void write_fifo(gba_apu_t* apu, int channel, word value);
 void apu_push_sample(gba_apu_t* apu);
+#ifdef ENABLE_AUDIO
 #define apu_tick(apu) do { if (++apu_cycle_counter > SAMPLE_EVERY_CYCLES) { apu_cycle_counter = 0; apu_push_sample(apu); } } while(0)
+#else
+#define apu_tick(apu) do {} while(0)
+#endif
 #endif //GBA_AUDIO_H

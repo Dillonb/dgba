@@ -1,8 +1,8 @@
 #include "block_data_transfer.h"
 #include "../../common/log.h"
 
-void block_data_transfer(arm7tdmi_t* state, block_data_transfer_t* instr) {
-
+void block_data_transfer(arm7tdmi_t* state, arminstr_t * arminstr) {
+    block_data_transfer_t* instr = &arminstr->parsed.BLOCK_DATA_TRANSFER;
     word address = get_register(state, instr->rn);
     word base = address;
 
