@@ -669,8 +669,8 @@ INLINE half inline_gba_read_half(word address) {
     if (is_open_bus(address)) {
         return open_bus(address);
     }
-    byte lower = gba_read_byte(address);
-    byte upper = gba_read_byte(address + 1);
+    byte lower = inline_gba_read_byte(address);
+    byte upper = inline_gba_read_byte(address + 1);
 
     return (upper << 8u) | lower;
 }

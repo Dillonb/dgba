@@ -12,8 +12,8 @@
 #include "../disassemble.h"
 #include "arm_instr/arm_software_interrupt.h"
 
-void (*arm_lut[4096])(arm7tdmi_t*, arminstr_t*);
-void (*thm_lut[1024])(arm7tdmi_t*, thumbinstr_t*);
+static arminstr_handler_t arm_lut[4096];
+static thminstr_handler_t thm_lut[1024];
 
 const char MODE_NAMES[32][11] = {
 "UNKNOWN",    // 0b00000
@@ -361,7 +361,6 @@ INLINE int arm_mode_step(arm7tdmi_t* state, arminstr_t* instr) {
 
 INLINE int thumb_mode_step(arm7tdmi_t* state, thumbinstr_t* instr) {
     thm_lut[hash_thm_instr(instr->raw)](state, instr);
-
     return state->this_step_ticks;
 }
 

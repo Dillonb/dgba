@@ -196,5 +196,6 @@ typedef union thumbinstr {
 } thumbinstr_t;
 
 #define hash_thm_instr(instr) ((instr) >> 6)
-void fill_thm_lut(void (*(*lut)[1024])(arm7tdmi_t* state, thumbinstr_t* thminstr));
+typedef void(*thminstr_handler_t)(arm7tdmi_t*, thumbinstr_t*);
+void fill_thm_lut(thminstr_handler_t (*lut)[1024]);
 #endif

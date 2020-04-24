@@ -80,10 +80,6 @@ arm_instr_type_t get_arm_instr_type_hash(word hash) {
     return UNDEFINED;
 }
 
-arm_instr_type_t get_arm_instr_type(arminstr_t* instr) {
-    return get_arm_instr_type_hash(hash_arm_instr(instr->raw));
-}
-
 void unknown_instr_undefined(arm7tdmi_t* state, arminstr_t* instr) {
     logfatal("Unimplemented instruction type: UNDEFINED")
 }
@@ -100,7 +96,7 @@ void unknown_instr_coprocessor_register_transfer(arm7tdmi_t* state, arminstr_t* 
     logfatal("Unimplemented instruction type: COPROCESSOR_REGISTER_TRANSFER")
 }
 
-void fill_arm_lut(void (*(*lut)[4096])(arm7tdmi_t*, arminstr_t*)) {
+void fill_arm_lut(arminstr_handler_t (*lut)[4096]) {
     for (word i = 0; i < 4096; i++) {
         arm_instr_type_t type = get_arm_instr_type_hash(i);
         switch (type) {

@@ -199,5 +199,6 @@ typedef union arminstr {
 } arminstr_t;
 
 #define hash_arm_instr(instr) ((((instr) >> 16u) & 0xFF0u) | (((instr) >> 4u) & 0xFu))
-void fill_arm_lut(void (*(*lut)[4096])(arm7tdmi_t*, arminstr_t*));
+typedef void(*arminstr_handler_t)(arm7tdmi_t*, arminstr_t*);
+void fill_arm_lut(arminstr_handler_t (*lut)[4096]);
 #endif

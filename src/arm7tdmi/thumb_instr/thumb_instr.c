@@ -1,6 +1,5 @@
 #include <stdbool.h>
 #include "thumb_instr.h"
-#include "../../common/util.h"
 #include "move_shifted_register.h"
 #include "add_subtract.h"
 #include "immediate_operations.h"
@@ -71,7 +70,7 @@ void unknown_instruction_thumb_undefined(arm7tdmi_t* state, thumbinstr_t* instr)
     logfatal("Unimplemented THUMB mode instruction type: THUMB_UNDEFINED")
 }
 
-void fill_thm_lut(void (*(*lut)[1024])(arm7tdmi_t* state, thumbinstr_t* instr)) {
+void fill_thm_lut(thminstr_handler_t (*lut)[1024]) {
     for (half i = 0; i < 1024; i++) {
         thumb_instr_type_t type = get_thumb_instr_type_hash(i);
         switch (type) {
