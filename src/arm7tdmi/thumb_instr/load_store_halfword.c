@@ -3,7 +3,8 @@
 #include "../sign_extension.h"
 #include "../shifts.h"
 
-void load_store_halfword(arm7tdmi_t* state, load_store_halfword_t* instr) {
+void load_store_halfword(arm7tdmi_t* state, thumbinstr_t* thminstr) {
+    load_store_halfword_t* instr = &thminstr->LOAD_STORE_HALFWORD;
     word addr = get_register(state, instr->rb) + (instr->offset << 1);
     if (instr->l) {
         word value = state->read_half(addr);
@@ -15,7 +16,8 @@ void load_store_halfword(arm7tdmi_t* state, load_store_halfword_t* instr) {
     }
 }
 
-void load_store_byte_halfword(arm7tdmi_t* state, load_store_byte_halfword_t* instr) {
+void load_store_byte_halfword(arm7tdmi_t* state, thumbinstr_t* thminstr) {
+    load_store_byte_halfword_t* instr = &thminstr->LOAD_STORE_BYTE_HALFWORD;
     word address = get_register(state, instr->rb) + get_register(state, instr->ro);
     if (instr->s == 0 && instr->h == 0) {
         half rddata = get_register(state, instr->rd) & 0xFFFF;

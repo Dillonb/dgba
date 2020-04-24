@@ -4,5 +4,5 @@
 #include "thumb_instr.h"
 #include "../arm7tdmi.h"
 
-void conditional_branch(arm7tdmi_t* state, conditional_branch_t* instr);
+void conditional_branch(arm7tdmi_t* state, thumbinstr_t* instr);
 #endif //GBA_CONDITIONAL_BRANCH_H

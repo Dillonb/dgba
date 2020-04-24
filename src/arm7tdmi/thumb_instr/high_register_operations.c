@@ -1,7 +1,8 @@
 #include "high_register_operations.h"
 #include "../../common/log.h"
 
-void high_register_operations(arm7tdmi_t* state, high_register_operations_t* instr) {
+void high_register_operations(arm7tdmi_t* state, thumbinstr_t* thminstr) {
+    high_register_operations_t* instr = &thminstr->HIGH_REGISTER_OPERATIONS;
     if (instr->h1 == 0 && instr->h2 == 0) {
         unimplemented(instr->opcode == 0b00, "Invalid flag combination!")
         unimplemented(instr->opcode == 0b01, "Invalid flag combination!")

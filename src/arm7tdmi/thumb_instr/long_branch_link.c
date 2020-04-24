@@ -1,7 +1,8 @@
 #include "long_branch_link.h"
 #include "../sign_extension.h"
 
-void long_branch_link(arm7tdmi_t* state, long_branch_link_t* instr) {
+void long_branch_link(arm7tdmi_t* state, thumbinstr_t* thminstr) {
+    long_branch_link_t* instr = &thminstr->LONG_BRANCH_LINK;
     word offset = instr->offset;
 
     if (instr->h) {

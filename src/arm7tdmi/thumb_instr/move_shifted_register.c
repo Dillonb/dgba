@@ -2,7 +2,8 @@
 #include "../../common/log.h"
 #include "../shifts.h"
 
-void move_shifted_register(arm7tdmi_t* state, move_shifted_register_t* instr) {
+void move_shifted_register(arm7tdmi_t* state, thumbinstr_t* thminstr) {
+    move_shifted_register_t* instr = &thminstr->MOVE_SHIFTED_REGISTER;
     switch (instr->opcode) {
         case 0: { // LSL
             word value = get_register(state, instr->rs);

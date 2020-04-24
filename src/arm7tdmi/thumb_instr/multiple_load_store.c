@@ -1,6 +1,7 @@
 #include "multiple_load_store.h"
 
-void multiple_load_store(arm7tdmi_t* state, multiple_load_store_t* instr) {
+void multiple_load_store(arm7tdmi_t* state, thumbinstr_t* thminstr) {
+    multiple_load_store_t* instr = &thminstr->MULTIPLE_LOAD_STORE;
     word address = get_register(state, instr->rb);
     word base = address;
     bool writeback = true;

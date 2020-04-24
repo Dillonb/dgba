@@ -4,38 +4,16 @@
 #include "../common/log.h"
 
 #include "arm_instr/arm_instr.h"
-#include "arm_instr/data_processing.h"
-#include "arm_instr/single_data_transfer.h"
-#include "arm_instr/branch.h"
-#include "arm_instr/block_data_transfer.h"
-#include "arm_instr/status_transfer.h"
 #include "arm_instr/halfword_data_transfer.h"
 
 #include "thumb_instr/thumb_instr.h"
 #include "thumb_instr/immediate_operations.h"
-#include "thumb_instr/high_register_operations.h"
-#include "thumb_instr/load_address.h"
-#include "arm_instr/multiply.h"
-#include "arm_instr/single_data_swap.h"
-#include "thumb_instr/move_shifted_register.h"
-#include "thumb_instr/alu_operations.h"
-#include "thumb_instr/load_store_halfword.h"
-#include "thumb_instr/load_store.h"
-#include "thumb_instr/pc_relative_load.h"
-#include "thumb_instr/sp_relative_load_store.h"
-#include "thumb_instr/add_offset_to_stack_pointer.h"
-#include "thumb_instr/push_pop_registers.h"
-#include "thumb_instr/multiple_load_store.h"
-#include "thumb_instr/conditional_branch.h"
-#include "thumb_instr/thumb_software_interrupt.h"
-#include "thumb_instr/unconditional_branch.h"
-#include "thumb_instr/long_branch_link.h"
-#include "thumb_instr/add_subtract.h"
 #include "../graphics/debug.h"
 #include "../disassemble.h"
 #include "arm_instr/arm_software_interrupt.h"
 
 void (*arm_lut[4096])(arm7tdmi_t*, arminstr_t*);
+void (*thm_lut[1024])(arm7tdmi_t*, thumbinstr_t*);
 
 const char MODE_NAMES[32][11] = {
 "UNKNOWN",    // 0b00000
@@ -123,6 +101,7 @@ arm7tdmi_t* init_arm7tdmi(byte (*read_byte)(word),
                           void (*write_half)(word, half),
                           void (*write_word)(word, word)) {
     fill_arm_lut(&arm_lut);
+    fill_thm_lut(&thm_lut);
     arm7tdmi_t* state = malloc(sizeof(arm7tdmi_t));
 
     state->read_byte  = read_byte;
@@ -229,7 +208,7 @@ void tick(arm7tdmi_t* state, int ticks) {
     state->this_step_ticks += ticks;
 }
 
-arminstr_t next_arm_instr(arm7tdmi_t* state) {
+INLINE arminstr_t next_arm_instr(arm7tdmi_t* state) {
     arminstr_t instr;
     instr.raw = state->pipeline[0];
     state->pipeline[0] = state->pipeline[1];
@@ -239,7 +218,7 @@ arminstr_t next_arm_instr(arm7tdmi_t* state) {
     return instr;
 }
 
-thumbinstr_t next_thumb_instr(arm7tdmi_t* state) {
+INLINE thumbinstr_t next_thumb_instr(arm7tdmi_t* state) {
     thumbinstr_t instr;
     instr.raw = state->pipeline[0];
     state->pipeline[0] = state->pipeline[1];
@@ -381,71 +360,7 @@ INLINE int arm_mode_step(arm7tdmi_t* state, arminstr_t* instr) {
 }
 
 INLINE int thumb_mode_step(arm7tdmi_t* state, thumbinstr_t* instr) {
-    thumb_instr_type_t type = get_thumb_instr_type(instr);
-
-    switch (type) {
-        case MOVE_SHIFTED_REGISTER:
-            move_shifted_register(state, &instr->MOVE_SHIFTED_REGISTER);
-            break;
-        case ADD_SUBTRACT:
-            add_subtract(state, &instr->ADD_SUBTRACT);
-            break;
-        case IMMEDIATE_OPERATIONS:
-            immediate_operations(state, &instr->IMMEDIATE_OPERATIONS);
-            break;
-        case ALU_OPERATIONS:
-            alu_operations(state, &instr->ALU_OPERATIONS);
-            break;
-        case HIGH_REGISTER_OPERATIONS:
-            high_register_operations(state, &instr->HIGH_REGISTER_OPERATIONS);
-            break;
-        case PC_RELATIVE_LOAD:
-            pc_relative_load(state, &instr->PC_RELATIVE_LOAD);
-            break;
-        case LOAD_STORE_RO:
-            load_store_ro(state, &instr->LOAD_STORE_RO);
-            break;
-        case LOAD_STORE_BYTE_HALFWORD:
-            load_store_byte_halfword(state, &instr->LOAD_STORE_BYTE_HALFWORD);
-            break;
-        case LOAD_STORE_IO:
-            load_store_io(state, &instr->LOAD_STORE_IO);
-            break;
-        case LOAD_STORE_HALFWORD:
-            load_store_halfword(state, &instr->LOAD_STORE_HALFWORD);
-            break;
-        case SP_RELATIVE_LOAD_STORE:
-            sp_relative_load_store(state, &instr->SP_RELATIVE_LOAD_STORE);
-            break;
-        case LOAD_ADDRESS:
-            load_address(state, &instr->LOAD_ADDRESS);
-            break;
-        case ADD_OFFSET_TO_STACK_POINTER:
-            add_offset_to_stack_pointer(state, &instr->ADD_OFFSET_TO_STACK_POINTER);
-            break;
-        case PUSH_POP_REGISTERS:
-            push_pop_registers(state, &instr->PUSH_POP_REGISTERS);
-            break;
-        case MULTIPLE_LOAD_STORE:
-            multiple_load_store(state, &instr->MULTIPLE_LOAD_STORE);
-            break;
-        case CONDITIONAL_BRANCH:
-            conditional_branch(state, &instr->CONDITIONAL_BRANCH);
-            break;
-        case THUMB_SOFTWARE_INTERRUPT:
-            thumb_software_interrupt(state, &instr->THUMB_SOFTWARE_INTERRUPT);
-            break;
-        case UNCONDITIONAL_BRANCH:
-            unconditional_branch(state, &instr->UNCONDITIONAL_BRANCH);
-            break;
-        case LONG_BRANCH_LINK:
-            long_branch_link(state, &instr->LONG_BRANCH_LINK);
-            break;
-        case THUMB_UNDEFINED:
-            logfatal("Unimplemented THUMB mode instruction type: THUMB_UNDEFINED")
-        default:
-            logfatal("Hit default case in arm_mode_step switch. This should never happen!")
-    }
+    thm_lut[hash_thm_instr(instr->raw)](state, instr);
 
     return state->this_step_ticks;
 }

@@ -4,6 +4,6 @@
 #include "thumb_instr.h"
 #include "../arm7tdmi.h"
 
-void pc_relative_load(arm7tdmi_t* state, pc_relative_load_t* instr);
+void pc_relative_load(arm7tdmi_t* state, thumbinstr_t* instr);
 
 #endif //GBA_PC_RELATIVE_LOAD_H

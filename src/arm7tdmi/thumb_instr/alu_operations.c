@@ -2,7 +2,8 @@
 #include "../../common/log.h"
 #include "../shifts.h"
 
-void alu_operations(arm7tdmi_t* state, alu_operations_t* instr) {
+void alu_operations(arm7tdmi_t* state, thumbinstr_t* thminstr) {
+    alu_operations_t* instr = &thminstr->ALU_OPERATIONS;
     switch (instr->opcode) {
         case 0x0: { // AND: Rd = Rd AND Rs
             word newvalue = get_register(state, instr->rd) & get_register(state, instr->rs);

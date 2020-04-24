@@ -2,7 +2,8 @@
 #include "../../common/log.h"
 #include "../sign_extension.h"
 
-void conditional_branch(arm7tdmi_t* state, conditional_branch_t* instr) {
+void conditional_branch(arm7tdmi_t* state, thumbinstr_t* thminstr) {
+    conditional_branch_t* instr = &thminstr->CONDITIONAL_BRANCH;
     bool passed;
     switch (instr->cond) {
         case EQ: passed = state->cpsr.Z == 1; break;

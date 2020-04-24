@@ -2,7 +2,8 @@
 #include "sp_relative_load_store.h"
 #include "../shifts.h"
 
-void sp_relative_load_store(arm7tdmi_t* state, sp_relative_load_store_t* instr) {
+void sp_relative_load_store(arm7tdmi_t* state, thumbinstr_t* thminstr) {
+    sp_relative_load_store_t* instr = &thminstr->SP_RELATIVE_LOAD_STORE;
     word offset = instr->word8 << 2;
     word address = get_register(state, REG_SP) + offset;
     if (instr->l) {

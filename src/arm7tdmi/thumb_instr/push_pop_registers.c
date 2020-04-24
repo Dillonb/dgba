@@ -1,7 +1,7 @@
 #include "push_pop_registers.h"
-#include "../../common/util.h"
 
-void push_pop_registers(arm7tdmi_t* state, push_pop_registers_t* instr) {
+void push_pop_registers(arm7tdmi_t* state, thumbinstr_t* thminstr) {
+    push_pop_registers_t* instr = &thminstr->PUSH_POP_REGISTERS;
     half rlist = instr->rlist;
     if (instr->r) {
         if (instr->l) {

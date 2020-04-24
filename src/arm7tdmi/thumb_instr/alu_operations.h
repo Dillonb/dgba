@@ -4,5 +4,5 @@
 #include "thumb_instr.h"
 #include "../arm7tdmi.h"
 
-void alu_operations(arm7tdmi_t* state, alu_operations_t* instr);
+void alu_operations(arm7tdmi_t* state, thumbinstr_t* instr);
 #endif //GBA_ALU_OPERATIONS_H

@@ -1,6 +1,7 @@
 #include "load_address.h"
 
-void load_address(arm7tdmi_t* state, load_address_t* instr) {
+void load_address(arm7tdmi_t* state, thumbinstr_t* thminstr) {
+    load_address_t* instr = &thminstr->LOAD_ADDRESS;
     half offset = instr->word8 << 2;
 
     if (instr->sp) {
