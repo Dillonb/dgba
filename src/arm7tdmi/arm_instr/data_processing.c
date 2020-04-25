@@ -197,7 +197,7 @@ void data_processing(arm7tdmi_t* state, arminstr_t* arminstr) {
             set_flags_sub(state, rndata, operand2, newvalue);
             break;
         }
-        case 0xB: { // Void = Rn+Op2
+        case 0xB: { // CMN: Void = Rn+Op2
             unimplemented(!s, "BUG DETECTED: s flag must be set for opcodes 0x8-0xB")
             newvalue = rndata + operand2;
             set_flags_nz(state, newvalue);

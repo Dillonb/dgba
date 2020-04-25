@@ -16,7 +16,7 @@ void dma_start_trigger(dma_start_time_t trigger) {
     dma_trigger = trigger;
 }
 
-int dma(int n, DMACNTH_t* cnth, DMAINT_t* dmaint, word sad, word dad, word wc, word max_wc) {
+INLINE int dma(int n, DMACNTH_t* cnth, DMAINT_t* dmaint, word sad, word dad, word wc, word max_wc) {
     int dma_cycles = 0;
     bool is_sound_dma = false;
     if (cnth->dma_enable) {
@@ -155,4 +155,25 @@ int dma(int n, DMACNTH_t* cnth, DMAINT_t* dmaint, word sad, word dad, word wc, w
 
 void dma_done_hook() {
     dma_trigger = Immediately;
+}
+
+int gba_dma() {
+    // Run one cycle of the highest priority DMA.
+    int dma_cycles = dma(0, &bus->DMA0CNT_H, &bus->DMA0INT, bus->DMA0SAD.addr, bus->DMA0DAD.addr, bus->DMA0CNT_L.wc, 0x4000);
+
+    if (dma_cycles == 0) {
+        dma_cycles = dma(1, &bus->DMA1CNT_H, &bus->DMA1INT, bus->DMA1SAD.addr, bus->DMA1DAD.addr, bus->DMA1CNT_L.wc, 0x4000);
+    }
+
+    if (dma_cycles == 0) {
+        dma_cycles = dma(2, &bus->DMA2CNT_H, &bus->DMA2INT, bus->DMA2SAD.addr, bus->DMA2DAD.addr, bus->DMA2CNT_L.wc, 0x4000);
+    }
+
+    if (dma_cycles == 0) {
+        dma_cycles = dma(3, &bus->DMA3CNT_H, &bus->DMA3INT, bus->DMA3SAD.addr, bus->DMA3DAD.addr, bus->DMA3CNT_L.wc, 0x10000);
+    }
+
+    dma_done_hook();
+
+    return dma_cycles;
 }

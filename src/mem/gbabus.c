@@ -567,82 +567,133 @@ INLINE word open_bus(word addr) {
     return result;
 }
 
+#define REGION_BIOS       0x00
+#define REGION_EWRAM      0x02
+#define REGION_IWRAM      0x03
+#define REGION_IOREG      0x04
+#define REGION_PRAM       0x05
+#define REGION_VRAM       0x06
+#define REGION_OAM        0x07
+#define REGION_GAMEPAK0_L 0x08
+#define REGION_GAMEPAK0_H 0x09
+#define REGION_GAMEPAK1_L 0x0A
+#define REGION_GAMEPAK1_H 0x0B
+#define REGION_GAMEPAK2_L 0x0C
+#define REGION_GAMEPAK2_H 0x0D
+#define REGION_SRAM       0x0E
+#define REGION_SRAM_MIRR  0x0F
+
 INLINE byte inline_gba_read_byte(word addr) {
     addr &= ~(sizeof(byte) - 1);
-    if (addr < GBA_BIOS_SIZE) { // BIOS
-        return gbabios_read_byte(addr);
-    } else if (addr < 0x01FFFFFF) {
-        return open_bus(addr);
-    } else if (addr < 0x03000000) { // EWRAM
-        word index = (addr - 0x02000000) % 0x40000;
-        return mem->ewram[index];
-    } else if (addr < 0x04000000) { // IWRAM
-        word index = (addr - 0x03000000) % 0x8000;
-        return mem->iwram[index];
-    } else if (addr < 0x04000400) {
-        byte size = get_ioreg_size_for_addr(addr);
-        if (size == 0) {
-            logwarn("Returning open bus (UNUSED BYTE IOREG 0x%08X)", addr)
-            return open_bus(addr);
-        } else if (size == sizeof(half)) {
-            int ofs = addr % 2;
-            half* ioreg = get_half_ioreg_ptr(addr - ofs, false);
-            if (ioreg) {
-                return (*ioreg >> ofs) & 0xFF;
+    switch (addr >> 24) {
+        case REGION_BIOS: {
+            if (addr < GBA_BIOS_SIZE) { // BIOS
+                return gbabios_read_byte(addr);
             } else {
-                logwarn("Ignoring read from half ioreg 0x%08X", addr - ofs)
-                return 0;
+                return open_bus(addr);
             }
         }
-        else if (size > sizeof(byte)) {
-            logfatal("Reading from too-large ioreg (%d) as byte at 0x%08X", size, addr)
+        case REGION_EWRAM: {
+            word index = (addr - 0x02000000) % 0x40000;
+            return mem->ewram[index];
         }
-        if (!is_ioreg_readable(addr)) {
-            logwarn("Returning 0 (UNREADABLE BUT VALID BYTE IOREG 0x%08X)", addr)
-            return 0;
+        case REGION_IWRAM: {
+            word index = (addr - 0x03000000) % 0x8000;
+            return mem->iwram[index];
         }
-        return read_byte_ioreg(addr);
-    } else if (addr < 0x05000000) {
-        logwarn("Tried to read from 0x%08X", addr)
-        return open_bus(addr);
-    } else if (addr < 0x06000000) { // Palette RAM
-        word index = (addr - 0x5000000) % 0x400;
-        return ppu->pram[index];
-    } else if (addr < 0x07000000) {
-        word index = addr - 0x06000000;
-        index %= VRAM_SIZE;
-        return ppu->vram[index];
-    } else if (addr < 0x08000000) {
-        word index = addr - 0x07000000;
-        index %= OAM_SIZE;
-        return ppu->oam[index];
-    } else if (addr < 0x08000000 + mem->rom_size) {
-        return mem->rom[addr - 0x08000000];
-    } else if (addr < 0x10000000) {
-        // Backup space
-        switch (backup_type) {
-            case SRAM:
-                return mem->backup[addr & 0x7FFF];
-            case UNKNOWN:
-                logwarn("Tried to access backup when backup type unknown!")
-                return 0;
-            case EEPROM:
-                logfatal("Backup type EEPROM unimplemented!")
-            case FLASH64K:
-                logfatal("Backup type FLASH64K unimplemented!")
-            case FLASH128K: {
-                if (addr == 0x0E000000) {
-                    return 0x62; // Stubbing flash
-                } else if (addr == 0x0E000001) {
-                    return 0x13; // Stubbing flash
+        case REGION_IOREG: {
+            if (addr < 0x04000400) {
+                byte size = get_ioreg_size_for_addr(addr);
+                if (size == 0) {
+                    logwarn("Returning open bus (UNUSED BYTE IOREG 0x%08X)", addr)
+                    return open_bus(addr);
+                } else if (size == sizeof(half)) {
+                    int ofs = addr % 2;
+                    half* ioreg = get_half_ioreg_ptr(addr - ofs, false);
+                    if (ioreg) {
+                        return (*ioreg >> ofs) & 0xFF;
+                    } else {
+                        logwarn("Ignoring read from half ioreg 0x%08X", addr - ofs)
+                        return 0;
+                    }
                 }
-                logfatal("Backup type FLASH128K unimplemented!")
+                else if (size > sizeof(byte)) {
+                    logfatal("Reading from too-large ioreg (%d) as byte at 0x%08X", size, addr)
+                }
+                if (!is_ioreg_readable(addr)) {
+                    logwarn("Returning 0 (UNREADABLE BUT VALID BYTE IOREG 0x%08X)", addr)
+                    return 0;
+                }
+                return read_byte_ioreg(addr);
+            } else {
+                logwarn("Tried to read from 0x%08X", addr)
+                return open_bus(addr);
             }
-            default:
-                logfatal("Unknown backup type index %d!", backup_type)
         }
-    }
+        case REGION_PRAM: {
+            word index = (addr - 0x5000000) % 0x400;
+            return ppu->pram[index];
+        }
+        case REGION_VRAM: {
+            word index = addr - 0x06000000;
+            index %= VRAM_SIZE;
+            return ppu->vram[index];
+        }
+        case REGION_OAM: {
+            word index = addr - 0x07000000;
+            index %= OAM_SIZE;
+            return ppu->oam[index];
+        }
+        case REGION_GAMEPAK0_L:
+        case REGION_GAMEPAK0_H:
+        case REGION_GAMEPAK1_L:
+        case REGION_GAMEPAK1_H:
+        case REGION_GAMEPAK2_L: {
+            word index = addr & 0x1FFFFFF;
+            if (index < mem->rom_size) {
+                return mem->rom[index];
+            } else {
+                return open_bus(addr);
+            }
 
+        }
+
+        case REGION_GAMEPAK2_H:
+            if (backup_type == EEPROM) {
+                if (mem->rom_size <= 0x1000000 || addr >= 0xDFFFF00) {
+                    return 1;
+                }
+            }
+            word index = addr & 0x1FFFFFF;
+            if (index < mem->rom_size) {
+                return mem->rom[index];
+            } else {
+                return open_bus(addr);
+            }
+
+        case REGION_SRAM:
+            switch (backup_type) {
+                case SRAM:
+                    return mem->backup[addr & 0x7FFF];
+                case FLASH64K:
+                case FLASH128K:
+                    if (addr == 0x0E000000) {
+                        return 0x62; // Stubbing flash
+                    } else if (addr == 0x0E000001) {
+                        return 0x13; // Stubbing flash
+                    }
+                    //logfatal("Backup type FLASH128K unimplemented!")
+                    return 0;
+                default: break;
+            }
+            return 0;
+
+        case REGION_SRAM_MIRR:
+            if (backup_type == SRAM) {
+                return mem->backup[addr & 0x7FFF];
+            }
+            return 0;
+    }
     return open_bus(addr);
 }
 
@@ -805,25 +856,4 @@ void gba_write_word(word address, word value) {
 
     gba_write_half(address, lower);
     gba_write_half(address + 2, upper);
-}
-
-int gba_dma() {
-    // Run one cycle of the highest priority DMA.
-    int dma_cycles = dma(0, &bus_state.DMA0CNT_H, &bus_state.DMA0INT, bus_state.DMA0SAD.addr, bus_state.DMA0DAD.addr, bus_state.DMA0CNT_L.wc, 0x4000);
-
-    if (dma_cycles == 0) {
-        dma_cycles = dma(1, &bus_state.DMA1CNT_H, &bus_state.DMA1INT, bus_state.DMA1SAD.addr, bus_state.DMA1DAD.addr, bus_state.DMA1CNT_L.wc, 0x4000);
-    }
-
-    if (dma_cycles == 0) {
-        dma_cycles = dma(2, &bus_state.DMA2CNT_H, &bus_state.DMA2INT, bus_state.DMA2SAD.addr, bus_state.DMA2DAD.addr, bus_state.DMA2CNT_L.wc, 0x4000);
-    }
-
-    if (dma_cycles == 0) {
-        dma_cycles = dma(3, &bus_state.DMA3CNT_H, &bus_state.DMA3INT, bus_state.DMA3SAD.addr, bus_state.DMA3DAD.addr, bus_state.DMA3CNT_L.wc, 0x10000);
-    }
-
-    dma_done_hook();
-
-    return dma_cycles;
 }
