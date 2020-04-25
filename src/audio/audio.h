@@ -1,5 +1,6 @@
 #ifndef GBA_AUDIO_H
 #define GBA_AUDIO_H
+#define ENABLE_AUDIO
 
 #include <stdbool.h>
 
@@ -7,8 +8,8 @@
 
 extern uint32_t apu_cycle_counter;
 #define SOUND_FIFO_SIZE 32
-#define AUDIO_SAMPLE_RATE 48100
-#define AUDIO_BIGBUFFER_SIZE (AUDIO_SAMPLE_RATE * 2)
+#define AUDIO_SAMPLE_RATE 48000
+#define AUDIO_BIGBUFFER_SIZE (4096)
 #define CPU_FREQUENCY (16*1024*1024)
 #define SAMPLE_EVERY_CYCLES (CPU_FREQUENCY/AUDIO_SAMPLE_RATE)
 
