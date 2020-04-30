@@ -15,6 +15,9 @@ void high_register_operations(arm7tdmi_t* state, thumbinstr_t* thminstr) {
             word rsdata = get_register(state, adj_rs);
             word rddata = get_register(state, adj_rd);
             word result = rsdata + rddata;
+            if (adj_rd == REG_PC) {
+                result |= 1; // Set thumb mode bit
+            }
             set_register(state, adj_rd, result);
             break;
         }
@@ -32,7 +35,7 @@ void high_register_operations(arm7tdmi_t* state, thumbinstr_t* thminstr) {
             int adj_rd = instr->h1 ? instr->rdhd + 8 : instr->rdhd;
             int adj_rs = instr->h2 ? instr->rshs + 8 : instr->rshs;
             word source_data = get_register(state, adj_rs);
-            if (adj_rd == 15) {
+            if (adj_rd == REG_PC) {
                 source_data |= 1; // Set thumb mode bit
             }
             set_register(state, adj_rd, source_data);
