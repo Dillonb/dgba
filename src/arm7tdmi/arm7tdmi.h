@@ -4,6 +4,8 @@
 #include <stdbool.h>
 
 #include "../common/util.h"
+#include "../common/log.h"
+
 #define MODE_USER 0b10000
 #define MODE_FIQ 0b10001
 #define MODE_SUPERVISOR 0b10011
@@ -109,12 +111,124 @@ arm7tdmi_t* init_arm7tdmi(byte (*read_byte)(word),
 
 int arm7tdmi_step(arm7tdmi_t* state);
 
-word get_register(arm7tdmi_t* state, word index);
-void set_register(arm7tdmi_t* state, word index, word newvalue);
-
-word get_sp(arm7tdmi_t* state);
-
 void set_pc(arm7tdmi_t* state, word new_pc);
+
+INLINE word get_sp(arm7tdmi_t* state) {
+    switch (state->cpsr.mode) {
+        case MODE_FIQ:
+            return state->sp_fiq;
+        case MODE_SUPERVISOR:
+            return state->sp_svc;
+        case MODE_ABORT:
+            return state->sp_abt;
+        case MODE_IRQ:
+            return state->sp_irq;
+        case MODE_UNDEFINED:
+            return state->sp_und;
+        default:
+            return state->sp;
+    }
+}
+
+INLINE word get_lr(arm7tdmi_t* state) {
+    switch (state->cpsr.mode) {
+        case MODE_FIQ:
+            return state->lr_fiq;
+        case MODE_SUPERVISOR:
+            return state->lr_svc;
+        case MODE_ABORT:
+            return state->lr_abt;
+        case MODE_IRQ:
+            return state->lr_irq;
+        case MODE_UNDEFINED:
+            return state->lr_und;
+        default:
+            return state->lr;
+    }
+}
+
+INLINE word get_register(arm7tdmi_t* state, word index) {
+    word value = 0;
+    if (state->cpsr.mode == MODE_FIQ && index >= 8 && index <= 12) {
+        value = state->highreg_fiq[index - 8];
+    } else if (index < 13) {
+        value = state->r[index];
+    } else if (index == 13) {
+        value = get_sp(state);
+    } else if (index == 14) {
+        value = get_lr(state);
+    } else if (index == 15) {
+        value = state->pc;
+    } else {
+        logfatal("Attempted to read unknown register: r%d", index)
+    }
+
+    return value;
+}
+
+INLINE void set_sp(arm7tdmi_t* state, word newvalue) {
+    switch (state->cpsr.mode) {
+        case MODE_FIQ:
+            state->sp_fiq = newvalue;
+            break;
+        case MODE_SUPERVISOR:
+            state->sp_svc = newvalue;
+            break;
+        case MODE_ABORT:
+            state->sp_abt = newvalue;
+            break;
+        case MODE_IRQ:
+            state->sp_irq = newvalue;
+            break;
+        case MODE_UNDEFINED:
+            state->sp_und = newvalue;
+            break;
+        default:
+            state->sp = newvalue;
+            break;
+    }
+}
+
+INLINE void set_lr(arm7tdmi_t* state, word newvalue) {
+    switch (state->cpsr.mode) {
+        case MODE_FIQ:
+            state->lr_fiq = newvalue;
+            break;
+        case MODE_SUPERVISOR:
+            state->lr_svc = newvalue;
+            break;
+        case MODE_ABORT:
+            state->lr_abt = newvalue;
+            break;
+        case MODE_IRQ:
+            state->lr_irq = newvalue;
+            break;
+        case MODE_UNDEFINED:
+            state->lr_und = newvalue;
+            break;
+        default:
+            state->lr = newvalue;
+            break;
+    }
+}
+
+INLINE void set_register(arm7tdmi_t* state, word index, word newvalue) {
+    logdebug("Set r%d to 0x%08X", index, newvalue)
+
+    if (state->cpsr.mode == MODE_FIQ && index >= 8 && index <= 12) {
+        state->highreg_fiq[index - 8] = newvalue;
+    } else if (index < 13) {
+        state->r[index] = newvalue;
+    } else if (index == 13) {
+        set_sp(state, newvalue);
+    } else if (index == 14) {
+        set_lr(state, newvalue);
+    } else if (index == 15) {
+        set_pc(state, newvalue);
+    } else {
+        logfatal("Attempted to write unknown register: r%d", index)
+    }
+}
 
 // PSR, processor status register
 status_register_t* get_psr(arm7tdmi_t* state);

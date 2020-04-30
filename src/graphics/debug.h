@@ -10,7 +10,10 @@ typedef enum dbg_tick {
     SCANLINE,
     FRAME
 } dbg_tick_t;
+extern dbg_tick_t tick_on;
+extern bool dbg_window_visible;
 void debug_handle_event(SDL_Event* event);
-void dbg_tick(dbg_tick_t tick_time);
+void actual_dbg_tick();
+#define dbg_tick(tick_time) if (dbg_window_visible && tick_time == tick_on) { actual_dbg_tick(); }
 void set_dbg_window_visibility(bool visible);
 #endif //GBA_DEBUG_H
