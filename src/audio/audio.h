@@ -5,7 +5,6 @@
 #include <stdbool.h>
 
 #include "../common/util.h"
-#define ENABLE_AUDIO
 
 extern uint32_t apu_cycle_counter;
 #define SOUND_FIFO_SIZE 32

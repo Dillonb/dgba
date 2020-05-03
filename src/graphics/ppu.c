@@ -36,7 +36,6 @@ gba_ppu_t* init_ppu() {
     ppu->BG3HOFS.raw = 0;
     ppu->BG3VOFS.raw = 0;
 
-    ppu->x = 0;
     ppu->y = 0;
 
     for (int i = 0; i < VRAM_SIZE; i++) {
@@ -52,10 +51,6 @@ gba_ppu_t* init_ppu() {
     }
 
     return ppu;
-}
-
-INLINE bool is_hblank(gba_ppu_t* ppu) {
-    return ppu->x > GBA_SCREEN_X;
 }
 
 INLINE bool is_vblank(gba_ppu_t* ppu) {
@@ -666,50 +661,45 @@ INLINE void render_line(gba_ppu_t* ppu) {
     }
 }
 
-void ppu_step(gba_ppu_t* ppu) {
-    // Update coords and set V/HBLANK flags
-    ppu->x++;
-    if (!ppu->DISPSTAT.hblank && is_hblank(ppu)) {
-        if (!is_vblank(ppu)) {
-            dma_start_trigger(HBlank);
-        }
-        if (ppu->DISPSTAT.hblank_irq_enable) {
-            request_interrupt(IRQ_HBLANK);
-        }
-        ppu->DISPSTAT.hblank = true;
-        if (ppu->y < GBA_SCREEN_Y && !ppu->DISPCNT.forced_blank) { // i.e. not VBlank
-            render_line(ppu);
-        }
+void ppu_hblank(gba_ppu_t* ppu) {
+    if (!is_vblank(ppu)) {
+        dma_start_trigger(HBlank);
     }
-    if (ppu->x >= GBA_SCREEN_X + GBA_SCREEN_HBLANK) {
-        ppu->x = 0;
-        dbg_tick(SCANLINE);
-        ppu->DISPSTAT.hblank = false;
-        ppu->y++;
-
-        if (ppu->y > GBA_SCREEN_Y + GBA_SCREEN_VBLANK) {
-            ppu->y = 0;
-            dbg_tick(FRAME);
-            ppu->DISPSTAT.vblank = false;
-        }
-
-        if (!ppu->DISPSTAT.vblank && is_vblank(ppu)) {
-            dma_start_trigger(VBlank);
-            if (ppu->DISPSTAT.vblank_irq_enable) {
-                request_interrupt(IRQ_VBLANK);
-            }
-            ppu->DISPSTAT.vblank = true;
-            render_screen(&ppu->screen);
-        }
-
-        if (ppu->y == ppu->DISPSTAT.vcount_setting) {
-            ppu->DISPSTAT.vcount = true;
-            if (ppu->DISPSTAT.vcount_irq_enable) {
-                request_interrupt(IRQ_VCOUNT);
-            }
-        } else {
-            ppu->DISPSTAT.vcount = false;
-        }
-
+    if (ppu->DISPSTAT.hblank_irq_enable) {
+        request_interrupt(IRQ_HBLANK);
     }
+    ppu->DISPSTAT.hblank = true;
+    if (ppu->y < GBA_SCREEN_Y && !ppu->DISPCNT.forced_blank) { // i.e. not VBlank
+        render_line(ppu);
+    }
+}
+
+void ppu_vblank(gba_ppu_t* ppu) {
+    dma_start_trigger(VBlank);
+    if (ppu->DISPSTAT.vblank_irq_enable) {
+        request_interrupt(IRQ_VBLANK);
+    }
+    ppu->DISPSTAT.vblank = true;
+    render_screen(&ppu->screen);
+}
+
+void ppu_end_hblank(gba_ppu_t* ppu) {
+    dbg_tick(SCANLINE);
+    ppu->DISPSTAT.hblank = false;
+    ppu->y++;
+
+    if (ppu->y == ppu->DISPSTAT.vcount_setting) {
+        ppu->DISPSTAT.vcount = true;
+        if (ppu->DISPSTAT.vcount_irq_enable) {
+            request_interrupt(IRQ_VCOUNT);
+        }
+    } else {
+        ppu->DISPSTAT.vcount = false;
+    }
+}
+
+void ppu_end_vblank(gba_ppu_t* ppu) {
+    ppu->y = 0;
+    dbg_tick(FRAME);
+    ppu->DISPSTAT.vblank = false;
 }

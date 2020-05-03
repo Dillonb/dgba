@@ -13,6 +13,11 @@ gbamem_t* mem = NULL;
 gba_apu_t* apu = NULL;
 bool should_quit = false;
 
+#define VISIBLE_CYCLES 960
+#define HBLANK_CYCLES 272
+#define VISIBLE_LINES 160
+#define VBLANK_LINES 68
+
 void init_gbasystem(const char* romfile, const char* bios_file) {
     mem = init_mem();
 
@@ -104,22 +109,36 @@ INLINE void timer_tick(int cyc) {
 
 bool cpu_stepped = false;
 
-
-INLINE void _gba_system_step() {
+INLINE int inline_gba_cpu_step() {
     cpu_stepped = false;
     int dma_cycles = gba_dma();
     cpu->irq = (bus->interrupt_enable.raw & bus->IF.raw) != 0;
     if (dma_cycles > 0) {
-        cycles += dma_cycles;
+        return dma_cycles;
     } else {
         if (cpu->halt && !cpu->irq) {
-            cycles += 1;
+            return 1;
         } else {
             cpu_stepped = true;
-            cycles += arm7tdmi_step(cpu);
+            return arm7tdmi_step(cpu);
         }
     }
+}
 
+INLINE int run_system(int for_cycles) {
+    while (for_cycles > 0) {
+        int ran = inline_gba_cpu_step();
+        for (int i = 0; i < ran; i++) {
+            timer_tick(1);
+            apu_tick(apu);
+        }
+        for_cycles -= ran;
+    }
+    return for_cycles;
+}
+
+INLINE void inline_gba_system_step() {
+    cycles += inline_gba_cpu_step();
     while (cycles > 4) {
         timer_tick(1);
         timer_tick(1);
@@ -130,18 +149,31 @@ INLINE void _gba_system_step() {
         apu_tick(apu);
         apu_tick(apu);
 
-        ppu_step(ppu);
         cycles -= 4;
     }
 }
 
 // Non-inlined version of the above
 void gba_system_step() {
-    _gba_system_step();
+    inline_gba_system_step();
 }
 
 void gba_system_loop() {
+    int extra = 0;
     while (!should_quit) {
-        _gba_system_step();
+        for (int line = 0; line < VISIBLE_LINES; line++) {
+            extra = run_system(VISIBLE_CYCLES + extra);
+            ppu_hblank(ppu);
+            extra = run_system(HBLANK_CYCLES + extra);
+            ppu_end_hblank(ppu);
+        }
+        ppu_vblank(ppu);
+        for (int line = 0; line < VBLANK_LINES; line++) {
+            extra = run_system(VISIBLE_CYCLES + extra);
+            ppu_hblank(ppu);
+            extra = run_system(HBLANK_CYCLES + extra);
+            ppu_end_hblank(ppu);
+        }
+        ppu_end_vblank(ppu);
     }
 }

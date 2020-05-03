@@ -223,7 +223,6 @@ typedef union addr_28b {
 
 typedef struct gba_ppu {
     // State
-    half x;
     half y;
     color_t screen[GBA_SCREEN_Y][GBA_SCREEN_X];
 
@@ -320,6 +319,9 @@ extern int sprite_widths[3][4];
 
 
 gba_ppu_t* init_ppu();
-void ppu_step(gba_ppu_t* ppu);
+void ppu_hblank(gba_ppu_t* ppu);
+void ppu_vblank(gba_ppu_t* ppu);
+void ppu_end_hblank(gba_ppu_t* ppu);
+void ppu_end_vblank(gba_ppu_t* ppu);
 
 #endif //GBA_PPU_H
