@@ -5,42 +5,12 @@ void block_data_transfer(arm7tdmi_t* state, arminstr_t * arminstr) {
     block_data_transfer_t* instr = &arminstr->parsed.BLOCK_DATA_TRANSFER;
     word address = get_register(state, instr->rn);
     word base = address;
-    word new_base;
+    word new_base = base;
 
     int num_registers = popcount(instr->rlist);
 
     bool p = instr->p;
     bool w = instr->w;
-
-    if (!instr->u) {
-        // When the u flag is 0, we grow down from the base register.
-        // The CPU, however, still saves from the lowest numbered register first.
-        // This is important when we're writing to memory-mapped io registers.
-        // We simulate this behavior by setting the base to where it should _end_,
-        // and growing upwards.
-
-        // Also, since we'll be doing everything in reverse, do the writeback operation now,
-        // and flip the p flag.
-        p = !p;
-        address -= 4 * num_registers;
-        new_base = address;
-        if (w) {
-            set_register(state, instr->rn, address);
-        }
-    } else {
-        new_base = address + 4 * num_registers;
-    }
-
-    int before_inc;
-    int after_inc;
-    if (p) {
-        before_inc = 4;
-        after_inc = 0;
-    } else {
-        before_inc = 0;
-        after_inc = 4;
-    }
-
 
     byte original_mode = state->cpsr.mode;
     if (instr->s) {
@@ -52,28 +22,56 @@ void block_data_transfer(arm7tdmi_t* state, arminstr_t * arminstr) {
         if (instr->l) {
             set_pc(state, state->read_word(address));
         } else {
-            word weird_address;
             if (instr->u) {
-                if (instr->p) {
-                    weird_address = address + 0x4;
+                if (p) {
+                    // 11 => STMIB
+                    state->write_word(base + 4, get_register(state, REG_PC) + 4);
                 } else {
-                    weird_address = address;
+                    // 10 => STMIA
+                    state->write_word(base, get_register(state, REG_PC) + 4);
                 }
             } else {
-                if (instr->p) {
-                    weird_address = address - 0x40;
+                if (p) {
+                    // 01 => STMDB
+                    state->write_word(base - 0x40, get_register(state, REG_PC) + 4);
                 } else {
-                    weird_address = address - 0x3C;
+                    // 00 => STMDA
+                    state->write_word(base - 0x3C, get_register(state, REG_PC) + 4);
                 }
             }
-            state->write_word(weird_address, get_register(state, REG_PC) + 4);
         }
-        if (instr->u) {
-            address += 0x40;
-        } else {
-            address -= 0x40;
-        }
+        address = instr->u ? address + 0x40 : address - 0x40;
     } else {
+        if (!instr->u) {
+            // When the u flag is 0, we grow down from the base register.
+            // The CPU, however, still saves from the lowest numbered register first.
+            // This is important when we're writing to memory-mapped io registers.
+            // We simulate this behavior by setting the base to where it should _end_,
+            // and growing upwards.
+
+            // Also, since we'll be doing everything in reverse, do the writeback operation now,
+            // and flip the p flag.
+            p = !p;
+            address -= 4 * num_registers;
+            new_base = address;
+            if (w) {
+                set_register(state, instr->rn, address);
+                w = false;
+            }
+        } else {
+            new_base = address + 4 * num_registers;
+        }
+
+        int before_inc;
+        int after_inc;
+        if (p) {
+            before_inc = 4;
+            after_inc = 0;
+        } else {
+            before_inc = 0;
+            after_inc = 4;
+        }
+
         if (instr->l) {
             for (unsigned int rt = 0; rt <= REG_PC; rt++) {
                 if ((instr->rlist >> rt & 1) == 1) {
@@ -88,6 +86,7 @@ void block_data_transfer(arm7tdmi_t* state, arminstr_t * arminstr) {
                 }
             }
         } else {
+            bool first = true;
             for (unsigned int rt = 0; rt <= REG_PC; rt++) {
                 if ((instr->rlist >> rt & 1) == 1) {
                     logdebug("Will transfer r%d\n", rt);
@@ -95,7 +94,7 @@ void block_data_transfer(arm7tdmi_t* state, arminstr_t * arminstr) {
                     logdebug("Transferring r%d to 0x%08X", rt, address)
                     word value;
                     if (rt == instr->rn) {
-                        if (rt == 0) {
+                        if (first) {
                             // Base first in rlist: write back old base.
                             value = base;
                         } else {
@@ -109,15 +108,15 @@ void block_data_transfer(arm7tdmi_t* state, arminstr_t * arminstr) {
                         }
                     }
                     state->write_word(address, value);
+                    first = false;
                     address += after_inc;
                 }
             }
         }
     }
 
-    // If we're growing up, that means we just hit the highest address, and should writeback if that flag is also set.
-    // If we're growing down, we wrote back at the beginning.
-    if (instr->u && w) {
+    // If we're growing down, we wrote back at the beginning, and this w will be false.
+    if (w) {
         set_register(state, instr->rn, address);
     }
 

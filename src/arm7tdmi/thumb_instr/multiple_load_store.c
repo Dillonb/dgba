@@ -24,16 +24,22 @@ void multiple_load_store(arm7tdmi_t* state, thumbinstr_t* thminstr) {
             }
         }
     } else {
-        for (int i = 0; i <= 8; i++) {
+        bool first = true;
+        for (int i = 0; i < 8; i++) {
             if ((instr->rlist >> i) & 1) {
                 word value;
                 if (i == instr->rb) {
-                    value = base;
+                    if (first) {
+                        value = base;
+                    } else {
+                        value = base + 4 * popcount(instr->rlist);
+                    }
                 } else {
                     value = get_register(state, i);
                 }
 
                 state->write_word(address, value);
+                first = false;
                 address += 4;
             }
         }

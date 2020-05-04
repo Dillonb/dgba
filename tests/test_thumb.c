@@ -3,7 +3,7 @@
 
 #define TEST_FAILED_ADDRESS 0x0800092E
 #define WATCH_REG 7
-#define NUM_LOG_LINES 745
+#define NUM_LOG_LINES 740
 #define LOG_FILE "thumb.log"
 
 int main(int argc, char** argv) {

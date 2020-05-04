@@ -129,7 +129,12 @@ int test_loop(const char* rom_filename, int num_log_lines, const char* log_filen
 
         if (adjusted_pc == test_failed_address && watch_reg > 0) {
             word failed_test = cpu->r[watch_reg];
-            logfatal("test_arm: FAILED TEST: %d", failed_test)
+            if (failed_test > 0) {
+                logfatal("FAILED TEST: %d", failed_test)
+            } else {
+                loginfo("Passed all tests!")
+                return 0;
+            }
         }
     }
 }
