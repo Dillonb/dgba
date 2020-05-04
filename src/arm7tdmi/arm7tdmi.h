@@ -238,10 +238,28 @@ void set_psr(arm7tdmi_t* state, word value);
 status_register_t* get_spsr(arm7tdmi_t* state);
 void set_spsr(arm7tdmi_t* state, word value);
 
-void set_flags_nz(arm7tdmi_t* state, word newvalue);
-void set_flags_add(arm7tdmi_t* state, uint64_t op1, uint64_t op2);
-void set_flags_sub(arm7tdmi_t* state, word op1, word op2, word result);
-void set_flags_sbc(arm7tdmi_t* state, word op1, word op2, uint64_t tmp, word result);
+
+INLINE void set_flags_nz(arm7tdmi_t* state, word newvalue) {
+    status_register_t* psr = get_psr(state);
+    psr->Z = newvalue == 0;
+    psr->N = newvalue >> 31u;
+}
+
+INLINE void set_flags_add(arm7tdmi_t* state, uint64_t op1, uint64_t op2) {
+    uint32_t result = op1 + op2;
+    state->cpsr.C = op1 + op2 > 0xFFFFFFFF;
+    state->cpsr.V = ((op1 ^ result) & (~op1 ^ op2)) >> 31u;
+}
+
+INLINE void set_flags_sub(arm7tdmi_t* state, word op1, word op2, word result) {
+    state->cpsr.C = op2 <= op1;
+    state->cpsr.V = ((op1 ^ op2) & (~op2 ^ result)) >> 31u;
+}
+
+INLINE void set_flags_sbc(arm7tdmi_t* state, word op1, word op2, uint64_t tmp, word result) {
+    state->cpsr.C = tmp <= op1;
+    state->cpsr.V = ((op1 ^ op2) & (~op2 ^ result)) >> 31u;
+}
 
 void skip_bios(arm7tdmi_t* state);
 

@@ -51,6 +51,7 @@ void apu_push_sample(gba_apu_t* apu) {
 #endif
 gba_apu_t* init_apu() {
     gba_apu_t* apu = malloc(sizeof(gba_apu_t));
+    memset(apu, 0, sizeof(gba_apu_t));
 #ifdef ENABLE_AUDIO
     if (SDL_Init(SDL_INIT_AUDIO) < 0) {
         logfatal("SDL couldn't initialize! %s", SDL_GetError())
