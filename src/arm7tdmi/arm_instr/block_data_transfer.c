@@ -5,6 +5,7 @@ void block_data_transfer(arm7tdmi_t* state, arminstr_t * arminstr) {
     block_data_transfer_t* instr = &arminstr->parsed.BLOCK_DATA_TRANSFER;
     word address = get_register(state, instr->rn);
     word base = address;
+    word new_base;
 
     int num_registers = popcount(instr->rlist);
 
@@ -22,9 +23,12 @@ void block_data_transfer(arm7tdmi_t* state, arminstr_t * arminstr) {
         // and flip the p flag.
         p = !p;
         address -= 4 * num_registers;
+        new_base = address;
         if (w) {
             set_register(state, instr->rn, address);
         }
+    } else {
+        new_base = address + 4 * num_registers;
     }
 
     int before_inc;
@@ -62,7 +66,7 @@ void block_data_transfer(arm7tdmi_t* state, arminstr_t * arminstr) {
                     weird_address = address - 0x3C;
                 }
             }
-            state->write_word(weird_address, get_register(state, 15) + 4);
+            state->write_word(weird_address, get_register(state, REG_PC) + 4);
         }
         if (instr->u) {
             address += 0x40;
@@ -71,7 +75,7 @@ void block_data_transfer(arm7tdmi_t* state, arminstr_t * arminstr) {
         }
     } else {
         if (instr->l) {
-            for (unsigned int rt = 0; rt <= 15; rt++) {
+            for (unsigned int rt = 0; rt <= REG_PC; rt++) {
                 if ((instr->rlist >> rt & 1) == 1) {
                     if (instr->rlist & (1 << instr->rn)) {
                         w = false; // Don't writeback to rn when we're also transferring to rn
@@ -84,17 +88,23 @@ void block_data_transfer(arm7tdmi_t* state, arminstr_t * arminstr) {
                 }
             }
         } else {
-            for (unsigned int rt = 0; rt <= 15; rt++) {
+            for (unsigned int rt = 0; rt <= REG_PC; rt++) {
                 if ((instr->rlist >> rt & 1) == 1) {
                     logdebug("Will transfer r%d\n", rt);
                     address += before_inc;
                     logdebug("Transferring r%d to 0x%08X", rt, address)
                     word value;
                     if (rt == instr->rn) {
-                        value = base;
+                        if (rt == 0) {
+                            // Base first in rlist: write back old base.
+                            value = base;
+                        } else {
+                            // Base NOT first in rlist: write back NEW base (address that gets written back)
+                            value = new_base;
+                        }
                     } else {
                         value = get_register(state, rt);
-                        if (rt == 15) {
+                        if (rt == REG_PC) {
                             value += 4;
                         }
                     }
