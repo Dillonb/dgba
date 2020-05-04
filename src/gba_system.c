@@ -128,8 +128,8 @@ INLINE int inline_gba_cpu_step() {
 INLINE int run_system(int for_cycles) {
     while (for_cycles > 0) {
         int ran = inline_gba_cpu_step();
+        timer_tick(ran);
         for (int i = 0; i < ran; i++) {
-            timer_tick(1);
             apu_tick(apu);
         }
         for_cycles -= ran;
