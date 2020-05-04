@@ -1,18 +1,20 @@
 //
+// cflags version 1.1.0
+//
 // MIT License
-// 
-// Copyright (c) 2019 Stephen Lane-Walsh
-// 
+//
+// Copyright (c) 2020 Stephen Lane-Walsh
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -29,6 +31,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+
+#define CFLAGS_ERROR_OOM "cflags: out of memory"
 
 enum cflags_type
 {
@@ -56,11 +60,13 @@ struct cflags_flag
 
     struct cflags_flag * next;
 
-    union {
-        const char **   string_value;
-        bool *          bool_value;
-        int *           int_value;
-        float *         float_value;
+    union
+    {
+        const char ** string_value;
+        bool *        bool_value;
+        int *         int_value;
+        float *       float_value;
+
         void (*string_callback)(const char *);
         void (*bool_callback)(bool);
         void (*int_callback)(int);
@@ -84,7 +90,12 @@ typedef struct cflags cflags_t;
 
 static cflags_t * cflags_init()
 {
-    cflags_t * flags = malloc(sizeof(cflags_t));
+    cflags_t * flags = (cflags_t *)malloc(sizeof(cflags_t));
+    if (!flags) {
+        fprintf(stderr, CFLAGS_ERROR_OOM);
+        return NULL;
+    }
+
     flags->program = NULL;
     flags->argc = 0;
     flags->argv = NULL;
@@ -94,34 +105,35 @@ static cflags_t * cflags_init()
 
 cflags_flag_t * _cflags_add_flag(cflags_t * flags)
 {
-    cflags_flag_t * new_flag = NULL;
+    cflags_flag_t ** next_flag = &flags->first_flag;
 
-    if (flags->first_flag) {
-        cflags_flag_t * flag = flags->first_flag;
-        while (flag->next) {
-            flag = flag->next;
-        }
-        flag->next = malloc(sizeof(cflags_flag_t));
-        new_flag = flag->next;
-    }
-    else {
-        flags->first_flag = malloc(sizeof(cflags_flag_t));
-        new_flag = flags->first_flag;
+    while (*next_flag) {
+        next_flag = &(*next_flag)->next;
     }
 
-    new_flag->short_name = '\0';
-    new_flag->long_name = NULL;
-    new_flag->type = CFLAGS_TYPE_UNDEFINED;
-    new_flag->count = 0;
-    new_flag->description = NULL;
-    new_flag->next = NULL;
+    *next_flag = (cflags_flag_t *)malloc(sizeof(cflags_flag_t));
+    if (!*next_flag) {
+        fprintf(stderr, CFLAGS_ERROR_OOM);
+        return NULL;
+    }
 
-    return new_flag;
+    (*next_flag)->short_name = '\0';
+    (*next_flag)->long_name = NULL;
+    (*next_flag)->type = CFLAGS_TYPE_UNDEFINED;
+    (*next_flag)->count = 0;
+    (*next_flag)->description = NULL;
+    (*next_flag)->next = NULL;
+
+    return *next_flag;
 }
 
 static cflags_flag_t * cflags_add_string(cflags_t * flags, char short_name, const char * long_name, const char ** value, const char * description)
 {
     cflags_flag_t * flag = _cflags_add_flag(flags);
+    if (!flag) {
+        return NULL;
+    }
+
     flag->short_name = short_name;
     flag->long_name = long_name;
     flag->type = CFLAGS_TYPE_STRING;
@@ -133,6 +145,10 @@ static cflags_flag_t * cflags_add_string(cflags_t * flags, char short_name, cons
 static cflags_flag_t * cflags_add_bool(cflags_t * flags, char short_name, const char * long_name, bool * value, const char * description)
 {
     cflags_flag_t * flag = _cflags_add_flag(flags);
+    if (!flag) {
+        return NULL;
+    }
+
     flag->short_name = short_name;
     flag->long_name = long_name;
     flag->type = CFLAGS_TYPE_BOOL;
@@ -144,6 +160,10 @@ static cflags_flag_t * cflags_add_bool(cflags_t * flags, char short_name, const 
 static cflags_flag_t * cflags_add_int(cflags_t * flags, char short_name, const char * long_name, int * value, const char * description)
 {
     cflags_flag_t * flag = _cflags_add_flag(flags);
+    if (!flag) {
+        return NULL;
+    }
+
     flag->short_name = short_name;
     flag->long_name = long_name;
     flag->type = CFLAGS_TYPE_INT;
@@ -155,6 +175,10 @@ static cflags_flag_t * cflags_add_int(cflags_t * flags, char short_name, const c
 static cflags_flag_t * cflags_add_float(cflags_t * flags, char short_name, const char * long_name, float * value, const char * description)
 {
     cflags_flag_t * flag = _cflags_add_flag(flags);
+    if (!flag) {
+        return NULL;
+    }
+
     flag->short_name = short_name;
     flag->long_name = long_name;
     flag->type = CFLAGS_TYPE_FLOAT;
@@ -166,6 +190,10 @@ static cflags_flag_t * cflags_add_float(cflags_t * flags, char short_name, const
 static cflags_flag_t * cflags_add_string_callback(cflags_t * flags, char short_name, const char * long_name, void (*func)(const char *), const char * description)
 {
     cflags_flag_t * flag = _cflags_add_flag(flags);
+    if (!flag) {
+        return NULL;
+    }
+
     flag->short_name = short_name;
     flag->long_name = long_name;
     flag->type = CFLAGS_TYPE_STRING_CALLBACK;
@@ -177,6 +205,10 @@ static cflags_flag_t * cflags_add_string_callback(cflags_t * flags, char short_n
 static cflags_flag_t * cflags_add_bool_callback(cflags_t * flags, char short_name, const char * long_name, void (*func)(bool), const char * description)
 {
     cflags_flag_t * flag = _cflags_add_flag(flags);
+    if (!flag) {
+        return NULL;
+    }
+
     flag->short_name = short_name;
     flag->long_name = long_name;
     flag->type = CFLAGS_TYPE_BOOL_CALLBACK;
@@ -188,6 +220,10 @@ static cflags_flag_t * cflags_add_bool_callback(cflags_t * flags, char short_nam
 static cflags_flag_t * cflags_add_int_callback(cflags_t * flags, char short_name, const char * long_name, void (*func)(int), const char * description)
 {
     cflags_flag_t * flag = _cflags_add_flag(flags);
+    if (!flag) {
+        return NULL;
+    }
+
     flag->short_name = short_name;
     flag->long_name = long_name;
     flag->type = CFLAGS_TYPE_INT_CALLBACK;
@@ -199,6 +235,10 @@ static cflags_flag_t * cflags_add_int_callback(cflags_t * flags, char short_name
 static cflags_flag_t * cflags_add_float_callback(cflags_t * flags, char short_name, const char * long_name, void (*func)(float), const char * description)
 {
     cflags_flag_t * flag = _cflags_add_flag(flags);
+    if (!flag) {
+        return NULL;
+    }
+
     flag->short_name = short_name;
     flag->long_name = long_name;
     flag->type = CFLAGS_TYPE_FLOAT_CALLBACK;
@@ -209,12 +249,12 @@ static cflags_flag_t * cflags_add_float_callback(cflags_t * flags, char short_na
 
 static bool _cflags_parse_bool(const char * str)
 {
-    return !(strcmp(str, "false") == 0 || 
+    return !(strcmp(str, "false") == 0 ||
             strcmp(str, "FALSE") == 0 ||
             strcmp(str, "0") == 0);
 }
 
-static void _cflags_process_flag(cflags_flag_t * flag, const char * value) 
+static void _cflags_process_flag(cflags_flag_t * flag, const char * value)
 {
     ++flag->count;
 
@@ -297,7 +337,7 @@ static void cflags_parse(cflags_t * flags, int argc, char ** argv)
             ++pch;
             if (*pch == '-') {
                 ++pch;
-                
+
                 // Long
                 char * key = pch;
                 char * value = NULL;
@@ -305,7 +345,7 @@ static void cflags_parse(cflags_t * flags, int argc, char ** argv)
                 char * divider = strchr(pch, '=');
                 if (divider) {
                     *divider = '\0';
-                    value = divider + 1;    
+                    value = divider + 1;
                 }
 
                 cflags_flag_t * flag = flags->first_flag;
@@ -365,7 +405,12 @@ static void cflags_parse(cflags_t * flags, int argc, char ** argv)
         }
         else {
             ++flags->argc;
-            flags->argv = realloc(flags->argv, flags->argc * sizeof(char *));
+            char ** tmp = (char **)realloc(flags->argv, flags->argc * sizeof(char *));
+            if (!tmp) {
+                fprintf(stderr, CFLAGS_ERROR_OOM);
+                return;
+            }
+            flags->argv = tmp;
             flags->argv[flags->argc - 1] = pch;
         }
     }
@@ -374,6 +419,7 @@ static void cflags_parse(cflags_t * flags, int argc, char ** argv)
 static void cflags_free(cflags_t * flags)
 {
     free(flags->argv);
+    flags->argv = NULL;
 
     cflags_flag_t * tmp = NULL;
     cflags_flag_t * flag = flags->first_flag;
@@ -384,13 +430,14 @@ static void cflags_free(cflags_t * flags)
     }
 
     free(flags);
+    flags = NULL;
 }
 
 static void cflags_print_usage(cflags_t * flags, const char * args, const char * above, const char * below)
 {
     printf("%s %s\n", flags->program, args);
     printf("%s\n\n", above);
-    
+
     cflags_flag_t * flag = flags->first_flag;
     while (flag) {
         // print flag
