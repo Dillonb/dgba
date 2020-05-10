@@ -21,6 +21,23 @@ typedef enum backup_type {
     FLASH128K
 } backup_type_t;
 
+#define REGION_BIOS       0x00
+#define REGION_EWRAM      0x02
+#define REGION_IWRAM      0x03
+#define REGION_IOREG      0x04
+#define REGION_PRAM       0x05
+#define REGION_VRAM       0x06
+#define REGION_OAM        0x07
+#define REGION_GAMEPAK0_L 0x08
+#define REGION_GAMEPAK0_H 0x09
+#define REGION_GAMEPAK1_L 0x0A
+#define REGION_GAMEPAK1_H 0x0B
+#define REGION_GAMEPAK2_L 0x0C
+#define REGION_GAMEPAK2_H 0x0D
+#define REGION_SRAM       0x0E
+#define REGION_SRAM_MIRR  0x0F
+
+
 backup_type_t backup_type = UNKNOWN;
 
 gbabus_t* init_gbabus() {
@@ -412,10 +429,10 @@ INLINE void write_half_ioreg(word addr, half value) {
 INLINE word* get_word_ioreg_ptr(word addr) {
     unimplemented(get_ioreg_size_for_addr(addr) != sizeof(word), "Trying to get the address of a wrong-sized word ioreg")
     switch (addr & 0xFFF) {
-        case IO_BG2X:     return &ppu->BG2X.raw;
-        case IO_BG2Y:     return &ppu->BG2Y.raw;
-        case IO_BG3X:     return &ppu->BG3X.raw;
-        case IO_BG3Y:     return &ppu->BG3Y.raw;
+        case IO_BG2X:     return &ppu->BG2X.initial.raw;
+        case IO_BG2Y:     return &ppu->BG2Y.initial.raw;
+        case IO_BG3X:     return &ppu->BG3X.initial.raw;
+        case IO_BG3Y:     return &ppu->BG3Y.initial.raw;
         case IO_DMA0SAD:  return &bus_state.DMA0SAD.raw;
         case IO_DMA0DAD:  return &bus_state.DMA0DAD.raw;
         case IO_DMA1SAD:  return &bus_state.DMA1SAD.raw;
@@ -435,7 +452,8 @@ INLINE word* get_word_ioreg_ptr(word addr) {
 }
 
 INLINE void write_word_ioreg_masked(word addr, word value, word mask) {
-    switch (addr & 0xFFF) {
+    word maskedaddr = addr & 0xFFF;
+    switch (maskedaddr) {
         case IO_FIFO_A:
             unimplemented(mask != 0xFFFFFFFF, "Write to FIFO not all at once")
             write_fifo(apu, 0, value);
@@ -444,6 +462,41 @@ INLINE void write_word_ioreg_masked(word addr, word value, word mask) {
             unimplemented(mask != 0xFFFFFFFF, "Write to FIFO not all at once")
             write_fifo(apu, 1, value);
             break;
+        case IO_BG2X:
+        case IO_BG2Y:
+        case IO_BG3X:
+        case IO_BG3Y: {
+            word* current = NULL;
+            word* initial = NULL;
+            switch (maskedaddr) {
+                case IO_BG2X:
+                    current = &ppu->BG2X.current.raw;
+                    initial = &ppu->BG2X.initial.raw;
+                    break;
+                case IO_BG2Y:
+                    current = &ppu->BG2Y.current.raw;
+                    initial = &ppu->BG2Y.initial.raw;
+                    break;
+                case IO_BG3X:
+                    current = &ppu->BG3X.current.raw;
+                    initial = &ppu->BG3X.initial.raw;
+                    break;
+                case IO_BG3Y:
+                    current = &ppu->BG3Y.current.raw;
+                    initial = &ppu->BG3Y.initial.raw;
+                    break;
+                default:
+                    logfatal("Fatal error- should not have ended up here.")
+            }
+            // Only update "current" if is VBlank
+            if (!is_vblank(ppu)) {
+                *current &= (~mask);
+                *current |= (value & mask);
+            }
+            *initial &= (~mask);
+            *initial |= (value & mask);
+            break;
+        }
         default:
             if (!is_ioreg_writable(addr)) {
                 logwarn("Ignoring write to unwriteable word ioreg 0x%08X", addr)
@@ -566,22 +619,6 @@ INLINE word open_bus(word addr) {
     logwarn("RETURNING FROM OPEN BUS AT ADDRESS 0x%08X: 0x%08X", addr, result)
     return result;
 }
-
-#define REGION_BIOS       0x00
-#define REGION_EWRAM      0x02
-#define REGION_IWRAM      0x03
-#define REGION_IOREG      0x04
-#define REGION_PRAM       0x05
-#define REGION_VRAM       0x06
-#define REGION_OAM        0x07
-#define REGION_GAMEPAK0_L 0x08
-#define REGION_GAMEPAK0_H 0x09
-#define REGION_GAMEPAK1_L 0x0A
-#define REGION_GAMEPAK1_H 0x0B
-#define REGION_GAMEPAK2_L 0x0C
-#define REGION_GAMEPAK2_H 0x0D
-#define REGION_SRAM       0x0E
-#define REGION_SRAM_MIRR  0x0F
 
 INLINE byte inline_gba_read_byte(word addr) {
     addr &= ~(sizeof(byte) - 1);

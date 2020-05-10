@@ -154,14 +154,16 @@ void ramdump(word base_address, word size) {
     }
 }
 
-void print_bgparam(int bg, bg_referencepoint_t x, bg_referencepoint_t y, bg_rotation_scaling_t pa, bg_rotation_scaling_t pb, bg_rotation_scaling_t pc, bg_rotation_scaling_t pd) {
-    DUI_Println("BG%d - X: %s%d.%d Y: %s%d.%d PA: %s%d.%d PB: %s%d.%d PC: %s%d.%d PD: %s%d.%d", bg,
-                x.sign ? "-" : "+", x.integer, x.fractional,
-                y.sign ? "-" : "+", y.integer, y.fractional,
-                pa.sign ? "-" : "+", pa.integer, pa.fractional,
-                pb.sign ? "-" : "+", pb.integer, pb.fractional,
-                pc.sign ? "-" : "+", pc.integer, pc.fractional,
-                pd.sign ? "-" : "+", pd.integer, pd.fractional);
+void print_bgparam(int bg, bg_referencepoint_container_t x, bg_referencepoint_container_t y, bg_rotation_scaling_t pa, bg_rotation_scaling_t pb, bg_rotation_scaling_t pc, bg_rotation_scaling_t pd) {
+    DUI_Println("BG%d - Initial X: %f Y: %f Current: X: %f Y: %f | PA: %f PB: %f PC: %f PD: %f", bg,
+            REF_TO_DOUBLE(x.initial),
+            REF_TO_DOUBLE(y.initial),
+            REF_TO_DOUBLE(x.current),
+            REF_TO_DOUBLE(y.current),
+            ROTSCALE_TO_DOUBLE(&pa),
+            ROTSCALE_TO_DOUBLE(&pb),
+            ROTSCALE_TO_DOUBLE(&pc),
+            ROTSCALE_TO_DOUBLE(&pd));
 }
 
 void actual_dbg_tick() {

@@ -1,3 +1,4 @@
+#include <assert.h>
 #include "ppu.h"
 #include "../common/log.h"
 #include "../mem/gbabus.h"
@@ -17,44 +18,22 @@ typedef struct obj_affine {
 } obj_affine_t;
 
 gba_ppu_t* init_ppu() {
+    assert(sizeof(float) == sizeof(word));
+
     gba_ppu_t* ppu = malloc(sizeof(gba_ppu_t));
+    memset(ppu, 0, sizeof(gba_ppu_t));
 
-    ppu->DISPCNT.raw = 0;
-    ppu->DISPSTAT.raw = 0;
+    ppu->BG2PA.raw = 0x0100;
+    ppu->BG2PB.raw = 0x0000;
+    ppu->BG2PC.raw = 0x0000;
+    ppu->BG2PA.raw = 0x0100;
 
-    ppu->BG0CNT.raw = 0;
-    ppu->BG1CNT.raw = 0;
-    ppu->BG2CNT.raw = 0;
-    ppu->BG3CNT.raw = 0;
-
-    ppu->BG0HOFS.raw = 0;
-    ppu->BG0VOFS.raw = 0;
-    ppu->BG1HOFS.raw = 0;
-    ppu->BG1VOFS.raw = 0;
-    ppu->BG2HOFS.raw = 0;
-    ppu->BG2VOFS.raw = 0;
-    ppu->BG3HOFS.raw = 0;
-    ppu->BG3VOFS.raw = 0;
-
-    ppu->y = 0;
-
-    for (int i = 0; i < VRAM_SIZE; i++) {
-        ppu->vram[i] = 0;
-    }
-
-    for (int i = 0; i < PRAM_SIZE; i++) {
-        ppu->pram[i] = 0;
-    }
-
-    for (int i = 0; i < OAM_SIZE; i++) {
-        ppu->oam[i] = 0;
-    }
+    ppu->BG3PA.raw = 0x0100;
+    ppu->BG3PB.raw = 0x0000;
+    ppu->BG3PC.raw = 0x0000;
+    ppu->BG3PA.raw = 0x0100;
 
     return ppu;
-}
-
-INLINE bool is_vblank(gba_ppu_t* ppu) {
-    return ppu->y > GBA_SCREEN_Y && ppu->y != 227;
 }
 
 INLINE bool is_win(int x, int y, int x1, int x2, int y1, int y2) {
@@ -432,12 +411,9 @@ INLINE void render_bg_regular(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X],
     }
 }
 
-#define REF_TO_DOUBLE(x) ((x->sign ? -1 : 1) * x->integer)
-#define ROTSCALE_TO_DOUBLE(x) ((x->sign ? -1 : 1) * x->integer)
-
 void render_bg_affine(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X], BGCNT_t* bgcnt,
                       bool win0in, bool win1in, bool winout, bool objout,
-                      bg_referencepoint_t* x, bg_referencepoint_t* y,
+                      bg_referencepoint_container_t* x, bg_referencepoint_container_t* y,
                       bg_rotation_scaling_t* pa, bg_rotation_scaling_t* pb, bg_rotation_scaling_t* pc, bg_rotation_scaling_t* pd) {
     // Tileset (like pattern tables in the NES)
     word character_base_addr = 0x06000000 + bgcnt->character_base_block * CHARBLOCK_SIZE;
@@ -468,29 +444,25 @@ void render_bg_affine(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X], BGCNT_t
     }
 
     for (int screen_x = 0; screen_x < GBA_SCREEN_X; screen_x++) {
-        double adjusted_y;
-        double adjusted_x;
+        word adjusted_x = (word)(x->current.sraw + pa->sraw * screen_x) >> 8;
+        word adjusted_y = (word)(y->current.sraw + pc->sraw * screen_x) >> 8;
 
-        double ref_x = REF_TO_DOUBLE(x);
-        double ref_y = REF_TO_DOUBLE(y);
+        if (bgcnt->wraparound) {
+            adjusted_x %= bg_width;
+            adjusted_y %= bg_height;
 
-        double d_pa = ROTSCALE_TO_DOUBLE(pa);
-        double d_pb = ROTSCALE_TO_DOUBLE(pb);
-        double d_pc = ROTSCALE_TO_DOUBLE(pc);
-        double d_pd = ROTSCALE_TO_DOUBLE(pd);
+            if (adjusted_x < 0) {
+                adjusted_x += bg_width;
+            }
+            if (adjusted_y < 0) {
+                adjusted_y += bg_height;
+            }
+        }
 
-        adjusted_x = (screen_x - ref_x) * d_pa + (ppu->y - ref_y) * d_pb;
-        adjusted_x += ref_x;
-        adjusted_y = (screen_x - ref_x) * d_pc + (ppu->y - ref_y) * d_pd;
-        adjusted_y += ref_y;
-
-        int render_x = (int)adjusted_x;
-        int render_y = (int)adjusted_y;
-
-        if (render_y < bg_height && render_x < bg_width && should_render_bg_pixel(ppu, screen_x, ppu->y, win0in, win1in, winout, objout)) {
-            int se_number = (render_x / 8) + (render_y / 8) * (bg_width / 8);
+        if (adjusted_y < bg_height && adjusted_x < bg_width && should_render_bg_pixel(ppu, screen_x, ppu->y, win0in, win1in, winout, objout)) {
+            int se_number = (adjusted_x / 8) + (adjusted_y / 8) * (bg_width / 8);
             byte tid = gba_read_byte(screen_base_addr + se_number);
-            render_tile(tid, 0, line, screen_x, true, character_base_addr, render_x % 8, render_y % 8);
+            render_tile(tid, 0, line, screen_x, true, character_base_addr, adjusted_x % 8, adjusted_y % 8);
         } else {
             (*line)[screen_x].r = 0;
             (*line)[screen_x].g = 0;
@@ -685,6 +657,12 @@ void ppu_vblank(gba_ppu_t* ppu) {
 
 void ppu_end_hblank(gba_ppu_t* ppu) {
     dbg_tick(SCANLINE);
+
+    ppu->BG2X.current.sraw += ppu->BG2PB.sraw;
+    ppu->BG3X.current.sraw += ppu->BG3PB.sraw;
+    ppu->BG2Y.current.sraw += ppu->BG2PD.sraw;
+    ppu->BG3Y.current.sraw += ppu->BG3PD.sraw;
+
     ppu->DISPSTAT.hblank = false;
     ppu->y++;
 
@@ -699,6 +677,11 @@ void ppu_end_hblank(gba_ppu_t* ppu) {
 }
 
 void ppu_end_vblank(gba_ppu_t* ppu) {
+    ppu->BG2X.current.raw = ppu->BG2X.initial.raw;
+    ppu->BG3X.current.raw = ppu->BG3X.initial.raw;
+    ppu->BG2Y.current.raw = ppu->BG2Y.initial.raw;
+    ppu->BG3Y.current.raw = ppu->BG3Y.initial.raw;
+
     ppu->y = 0;
     dbg_tick(FRAME);
     ppu->DISPSTAT.vblank = false;

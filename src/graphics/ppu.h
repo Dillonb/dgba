@@ -43,7 +43,7 @@ typedef union BGCNT {
         bool mosaic:1;
         unsigned is_256color:1;
         unsigned screen_base_block:5;
-        unsigned:1;
+        bool wraparound:1;
         unsigned screen_size:2;
     };
     half raw;
@@ -64,6 +64,7 @@ typedef union bg_rotation_scaling {
         bool sign:1;
     };
     half raw;
+    int16_t sraw;
 } bg_rotation_scaling_t;
 
 typedef union bg_referencepoint {
@@ -74,7 +75,21 @@ typedef union bg_referencepoint {
         unsigned:4;
     };
     word raw;
+    int32_t sraw;
 } bg_referencepoint_t;
+
+typedef struct bg_referencepoint_container {
+    bg_referencepoint_t initial;
+    bg_referencepoint_t current;
+} bg_referencepoint_container_t;
+
+INLINE double REF_TO_DOUBLE(bg_referencepoint_t ref) {
+    return ((ref.sign ? -1 : 1) * ref.integer);
+}
+
+INLINE double ROTSCALE_TO_DOUBLE(bg_rotation_scaling_t* rs) {
+    return ((rs->sign ? -1 : 1) * rs->integer);
+}
 
 typedef struct color {
     byte a;
@@ -270,10 +285,10 @@ typedef struct gba_ppu {
     BLDALPHA_t BLDALPHA;
     BLDY_t BLDY;
 
-    bg_referencepoint_t BG2X;
-    bg_referencepoint_t BG2Y;
-    bg_referencepoint_t BG3X;
-    bg_referencepoint_t BG3Y;
+    bg_referencepoint_container_t BG2X;
+    bg_referencepoint_container_t BG2Y;
+    bg_referencepoint_container_t BG3X;
+    bg_referencepoint_container_t BG3Y;
 
     DISPSTAT_t DISPSTAT;
 } gba_ppu_t;
@@ -323,5 +338,9 @@ void ppu_hblank(gba_ppu_t* ppu);
 void ppu_vblank(gba_ppu_t* ppu);
 void ppu_end_hblank(gba_ppu_t* ppu);
 void ppu_end_vblank(gba_ppu_t* ppu);
+
+INLINE bool is_vblank(gba_ppu_t* ppu) {
+    return ppu->y > GBA_SCREEN_Y && ppu->y != 227;
+}
 
 #endif //GBA_PPU_H
