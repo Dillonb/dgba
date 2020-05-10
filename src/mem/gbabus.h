@@ -176,6 +176,14 @@ typedef union IF {
     half raw;
 } IF_t;
 
+typedef enum backup_type {
+    UNKNOWN,
+    SRAM,
+    EEPROM,
+    FLASH64K,
+    FLASH128K
+} backup_type_t;
+
 typedef struct gbabus {
     interrupt_master_enable_t interrupt_master_enable;
     interrupt_enable_t interrupt_enable;
@@ -218,6 +226,8 @@ typedef struct gbabus {
     TMINT_t TMINT[4];
 
     WAITCNT_t WAITCNT;
+
+    backup_type_t backup_type;
 } gbabus_t;
 
 KEYINPUT_t* get_keyinput();

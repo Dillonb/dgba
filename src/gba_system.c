@@ -1,7 +1,9 @@
+#include <limits.h>
+#include <string.h>
+
 #include "mem/gbabus.h"
 #include "mem/gbarom.h"
 #include "mem/gbabios.h"
-#include "common/log.h"
 #include "audio/audio.h"
 
 int cycles = 0;
@@ -18,10 +20,25 @@ bool should_quit = false;
 #define VISIBLE_LINES 160
 #define VBLANK_LINES 68
 
+const char* get_backup_path(const char* romfile) {
+    char buf[PATH_MAX];
+    char* backup_path = realpath(romfile, buf);
+    int backup_path_buf_size = strlen(backup_path) + 8; // .backup + null terminator
+
+    if (backup_path_buf_size >= PATH_MAX) {
+        logfatal("Backup path too long! How deeply are you nesting your directories?")
+    }
+
+    char* backuppath = malloc(backup_path_buf_size);
+    snprintf(backuppath, backup_path_buf_size, "%s.backup", buf);
+    return backuppath;
+}
+
 void init_gbasystem(const char* romfile, const char* bios_file) {
     mem = init_mem();
 
     load_gbarom(romfile);
+    mem->backup_path = get_backup_path(romfile);
     if (bios_file) {
         load_alternate_bios(bios_file);
     }

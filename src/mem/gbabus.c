@@ -8,18 +8,11 @@
 #include "gbabios.h"
 #include "dma.h"
 #include "../gba_system.h"
+#include "backup/flash.h"
 
 static gbabus_t bus_state;
 
 INLINE word open_bus(word addr);
-
-typedef enum backup_type {
-    UNKNOWN,
-    SRAM,
-    EEPROM,
-    FLASH64K,
-    FLASH128K
-} backup_type_t;
 
 #define REGION_BIOS       0x00
 #define REGION_EWRAM      0x02
@@ -37,9 +30,6 @@ typedef enum backup_type {
 #define REGION_SRAM       0x0E
 #define REGION_SRAM_MIRR  0x0F
 
-
-backup_type_t backup_type = UNKNOWN;
-
 gbabus_t* init_gbabus() {
     bus_state.interrupt_master_enable.raw = 0;
     bus_state.interrupt_enable.raw = 0;
@@ -55,30 +45,30 @@ gbabus_t* init_gbabus() {
     // Start at 0xE4 since everything before that is part of the header
     for (int addr = 0xE4; addr < (mem->rom_size - 4); addr += 4) {
         if (memcmp("SRAM", &mem->rom[addr], 4) == 0) {
-            backup_type = SRAM;
+            bus_state.backup_type = SRAM;
             logwarn("Determined backup type: SRAM")
             mem->backup = malloc(SRAM_SIZE);
             memset(mem->backup, 0, SRAM_SIZE);
             break;
         }
         if (memcmp("EEPROM", &mem->rom[addr], 6) == 0) {
-            backup_type = EEPROM;
+            bus_state.backup_type = EEPROM;
             //logfatal("Determined backup type: EEPROM")
             break;
         }
         if (memcmp("FLASH_", &mem->rom[addr], 6) == 0) {
-            backup_type = FLASH64K;
+            bus_state.backup_type = FLASH64K;
             logfatal("Determined backup type: FLASH64K")
             break;
         }
         if (memcmp("FLASH512_", &mem->rom[addr], 9) == 0) {
-            backup_type = FLASH64K;
-            logfatal("Determined backup type: FLASH64K")
+            bus_state.backup_type = FLASH64K;
+            init_flash64k(mem);
             break;
         }
         if (memcmp("FLASH1M_", &mem->rom[addr], 8) == 0) {
-            backup_type = FLASH128K;
-            logfatal("Determined backup type: FLASH128K")
+            bus_state.backup_type = FLASH128K;
+            init_flash128k(mem);
             break;
         }
     }
@@ -576,12 +566,12 @@ INLINE bool is_open_bus(word address) {
             unimplemented(backup_type == EEPROM, "This region is different when the backup type is EEPROM")
             return (address & 0x1FFFFFF) >= mem->rom_size;
         case 0xE:
-            if (backup_type == FLASH64K || backup_type == FLASH128K) {
+            if (bus->backup_type == FLASH64K || bus->backup_type == FLASH128K) {
                 return (address & 0x1FFFFFF) >= mem->rom_size;
-            } else if (backup_type == EEPROM || backup_type == SRAM) {
+            } else if (bus->backup_type == EEPROM || bus->backup_type == SRAM) {
                 return false;
             } else {
-                logfatal("Unknown backup type %d", backup_type)
+                logfatal("Unknown backup type %d", bus->backup_type)
             }
         case 0xF:
             return false; // Always
@@ -696,7 +686,7 @@ INLINE byte inline_gba_read_byte(word addr) {
         }
 
         case REGION_GAMEPAK2_H:
-            if (backup_type == EEPROM) {
+            if (bus->backup_type == EEPROM) {
                 if (mem->rom_size <= 0x1000000 || addr >= 0xDFFFF00) {
                     return 1;
                 }
@@ -709,24 +699,19 @@ INLINE byte inline_gba_read_byte(word addr) {
             }
 
         case REGION_SRAM:
-            switch (backup_type) {
+            switch (bus->backup_type) {
                 case SRAM:
                     return mem->backup[addr & 0x7FFF];
                 case FLASH64K:
+                    return read_byte_flash64k(mem, addr);
                 case FLASH128K:
-                    if (addr == 0x0E000000) {
-                        return 0x62; // Stubbing flash
-                    } else if (addr == 0x0E000001) {
-                        return 0x13; // Stubbing flash
-                    }
-                    //logfatal("Backup type FLASH128K unimplemented!")
-                    return 0;
+                    return read_byte_flash128k(mem, addr);
                 default: break;
             }
             return 0;
 
         case REGION_SRAM_MIRR:
-            if (backup_type == SRAM) {
+            if (bus->backup_type == SRAM) {
                 return mem->backup[addr & 0x7FFF];
             }
             return 0;
@@ -801,7 +786,7 @@ void gba_write_byte(word addr, byte value) {
         logwarn("Ignoring write to valid cartridge address 0x%08X!", addr)
     } else if ((addr >> 24) >= 0xE && addr < 0x10000000) {
         // Backup space
-        switch (backup_type) {
+        switch (bus->backup_type) {
             case SRAM:
                 mem->backup[addr & 0x7FFF] = value;
                 break;
@@ -811,13 +796,13 @@ void gba_write_byte(word addr, byte value) {
             case EEPROM:
                 logfatal("Backup type EEPROM unimplemented!")
             case FLASH64K:
-                //logfatal("Backup type FLASH64K unimplemented!")
+                write_byte_flash64k(mem, addr, value);
                 break;
             case FLASH128K:
-                //logfatal("Backup type FLASH128K unimplemented!")
+                write_byte_flash128k(mem, addr, value);
                 break;
             default:
-                logfatal("Unknown backup type index %d!", backup_type)
+                logfatal("Unknown backup type index %d!", bus->backup_type)
         }
     }
 }

@@ -18,6 +18,7 @@ typedef struct gbamem {
     byte ewram[EWRAM_SIZE];
     byte iwram[IWRAM_SIZE];
     byte* backup;
+    const char *backup_path;
 } gbamem_t;
 
 gbamem_t* init_mem();

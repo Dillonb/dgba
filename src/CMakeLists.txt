@@ -21,7 +21,8 @@ add_library(core
         graphics/debug.c graphics/debug.h
         mem/dma.c mem/dma.h
         disassemble.c disassemble.h
-        mem/ioreg_util.h mem/ioreg_names.h)
+        mem/ioreg_util.h mem/ioreg_names.h
+        mem/backup/flash.c mem/backup/flash.h)
 
 IF(Capstone_FOUND)
     TARGET_LINK_LIBRARIES(core Capstone::Capstone)
