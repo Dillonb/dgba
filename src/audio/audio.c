@@ -21,8 +21,6 @@ void audio_callback(void* userdata, Uint8* stream, int length) {
     for (int i = 0; i < length / sizeof(float); i++) {
         if (apu->bigbuffer.read_index < apu->bigbuffer.write_index) {
             apu_last_sample = apu->bigbuffer.buf[(apu->bigbuffer.read_index++) % AUDIO_BIGBUFFER_SIZE];
-        } else if (++underruns % 100 == 0){
-            printf("UNDERRUN %d!\n", underruns);
         }
         *out++ = apu_last_sample;
     }
