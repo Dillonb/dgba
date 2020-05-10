@@ -63,12 +63,12 @@ gbabus_t* init_gbabus() {
         }
         if (memcmp("FLASH512_", &mem->rom[addr], 9) == 0) {
             bus_state.backup_type = FLASH64K;
-            init_flash64k(mem);
+            init_flash(mem, FLASH64K);
             break;
         }
         if (memcmp("FLASH1M_", &mem->rom[addr], 8) == 0) {
             bus_state.backup_type = FLASH128K;
-            init_flash128k(mem);
+            init_flash(mem, FLASH128K);
             break;
         }
     }
@@ -703,9 +703,8 @@ INLINE byte inline_gba_read_byte(word addr) {
                 case SRAM:
                     return mem->backup[addr & 0x7FFF];
                 case FLASH64K:
-                    return read_byte_flash64k(mem, addr);
                 case FLASH128K:
-                    return read_byte_flash128k(mem, addr);
+                    return read_byte_flash(mem, addr, bus->backup_type);
                 default: break;
             }
             return 0;
@@ -796,10 +795,8 @@ void gba_write_byte(word addr, byte value) {
             case EEPROM:
                 logfatal("Backup type EEPROM unimplemented!")
             case FLASH64K:
-                write_byte_flash64k(mem, addr, value);
-                break;
             case FLASH128K:
-                write_byte_flash128k(mem, addr, value);
+                write_byte_flash(mem, addr, value, bus->backup_type);
                 break;
             default:
                 logfatal("Unknown backup type index %d!", bus->backup_type)
