@@ -240,6 +240,9 @@ typedef struct gba_ppu {
     // State
     half y;
     color_t screen[GBA_SCREEN_Y][GBA_SCREEN_X];
+    gba_color_t bgbuf[4][GBA_SCREEN_X];
+    gba_color_t objbuf[GBA_SCREEN_X];
+    byte obj_priorities[GBA_SCREEN_X];
 
     // Memory
     byte pram[PRAM_SIZE];

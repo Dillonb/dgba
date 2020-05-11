@@ -6,9 +6,6 @@
 #include "debug.h"
 #include "../mem/dma.h"
 
-gba_color_t bgbuf[4][GBA_SCREEN_X];
-gba_color_t objbuf[GBA_SCREEN_X];
-byte obj_priorities[GBA_SCREEN_X];
 
 typedef struct obj_affine {
     int16_t pa;
@@ -125,11 +122,11 @@ void render_obj(gba_ppu_t* ppu) {
     obj_attr1_t attr1;
     obj_attr2_t attr2;
     for (int x = 0; x < GBA_SCREEN_X; x++) {
-        obj_priorities[x] = 0;
-        objbuf[x].transparent = true;
-        objbuf[x].r = 0;
-        objbuf[x].g = 0;
-        objbuf[x].b = 0;
+        ppu->obj_priorities[x] = 0;
+        ppu->objbuf[x].transparent = true;
+        ppu->objbuf[x].r = 0;
+        ppu->objbuf[x].g = 0;
+        ppu->objbuf[x].b = 0;
     }
 
     for (int sprite = 0; sprite < 128; sprite++) {
@@ -250,7 +247,7 @@ void render_obj(gba_ppu_t* ppu) {
                     int screen_x = sprite_x + adjusted_x;
                     // Only draw if we've never drawn anything there before. Lower indices have higher priority
                     // and that's the order we're drawing them here.
-                    if (screen_x >= screen_min_x && screen_x < screen_max_x  && (objbuf[screen_x].transparent || attr2.priority < obj_priorities[screen_x])) {
+                    if (screen_x >= screen_min_x && screen_x < screen_max_x  && (ppu->objbuf[screen_x].transparent || attr2.priority < ppu->obj_priorities[screen_x])) {
                         // Tiles are twice as wide in 256 color mode
                         int x_tid_offset = (adjusted_sprite_x / 8) << attr0.is_256color;
                         int tid_offset_by_x = tid + x_tid_offset;
@@ -276,9 +273,9 @@ void render_obj(gba_ppu_t* ppu) {
                             } else {
                                 palette_address += (0x20 * attr2.pb + 2 * tile);
                             }
-                            obj_priorities[screen_x] = attr2.priority;
-                            objbuf[screen_x].raw = gba_read_half(palette_address);
-                            objbuf[screen_x].transparent = false;
+                            ppu->obj_priorities[screen_x] = attr2.priority;
+                            ppu->objbuf[screen_x].raw = gba_read_half(palette_address);
+                            ppu->objbuf[screen_x].transparent = false;
                         }
                     }
                 }
@@ -509,15 +506,15 @@ INLINE void merge_bgs(gba_ppu_t* ppu) {
         for (int i = 3; i >= 0; i--) { // Draw them in reverse priority order, so the highest priority BG is drawn last.
             // If the OBJ pixel here has the same priority as the BG, draw it instead.
             // "Sprites cover backgrounds of the same priority"
-            if (obj_priorities[x] == i && !objbuf[x].transparent) {
+            if (ppu->obj_priorities[x] == i && !ppu->objbuf[x].transparent) {
                 ppu->screen[ppu->y][x].a = 0xFF;
-                ppu->screen[ppu->y][x].r = FIVEBIT_TO_EIGHTBIT_COLOR(objbuf[x].r);
-                ppu->screen[ppu->y][x].g = FIVEBIT_TO_EIGHTBIT_COLOR(objbuf[x].g);
-                ppu->screen[ppu->y][x].b = FIVEBIT_TO_EIGHTBIT_COLOR(objbuf[x].b);
+                ppu->screen[ppu->y][x].r = FIVEBIT_TO_EIGHTBIT_COLOR(ppu->objbuf[x].r);
+                ppu->screen[ppu->y][x].g = FIVEBIT_TO_EIGHTBIT_COLOR(ppu->objbuf[x].g);
+                ppu->screen[ppu->y][x].b = FIVEBIT_TO_EIGHTBIT_COLOR(ppu->objbuf[x].b);
                 non_transparent_drawn = true;
             } else {
                 int bg = background_priorities[i];
-                gba_color_t pixel = bgbuf[bg][x];
+                gba_color_t pixel = ppu->bgbuf[bg][x];
                 bool should_draw = bg_enabled[bg];
                 if (pixel.transparent) {
                     // If the pixel is transparent, only draw it if we haven't drawn a non-transparent
@@ -542,22 +539,22 @@ INLINE void merge_bgs(gba_ppu_t* ppu) {
 INLINE void render_line_mode0(gba_ppu_t* ppu) {
     render_obj(ppu);
     if (ppu->DISPCNT.screen_display_bg0) {
-        render_bg_regular(ppu, &bgbuf[0], &ppu->BG0CNT, ppu->BG0HOFS.offset, ppu->BG0VOFS.offset,
+        render_bg_regular(ppu, &ppu->bgbuf[0], &ppu->BG0CNT, ppu->BG0HOFS.offset, ppu->BG0VOFS.offset,
                           ppu->WININ.win0_bg0_enable, ppu->WININ.win1_bg0_enable, ppu->WINOUT.outside_bg0_enable, ppu->WINOUT.obj_bg0_enable);
     }
 
     if (ppu->DISPCNT.screen_display_bg1) {
-        render_bg_regular(ppu, &bgbuf[1], &ppu->BG1CNT, ppu->BG1HOFS.offset, ppu->BG1VOFS.offset,
+        render_bg_regular(ppu, &ppu->bgbuf[1], &ppu->BG1CNT, ppu->BG1HOFS.offset, ppu->BG1VOFS.offset,
                           ppu->WININ.win0_bg1_enable, ppu->WININ.win1_bg1_enable, ppu->WINOUT.outside_bg1_enable, ppu->WINOUT.obj_bg1_enable);
     }
 
     if (ppu->DISPCNT.screen_display_bg2) {
-        render_bg_regular(ppu, &bgbuf[2], &ppu->BG2CNT, ppu->BG2HOFS.offset, ppu->BG2VOFS.offset,
+        render_bg_regular(ppu, &ppu->bgbuf[2], &ppu->BG2CNT, ppu->BG2HOFS.offset, ppu->BG2VOFS.offset,
                           ppu->WININ.win0_bg2_enable, ppu->WININ.win1_bg2_enable, ppu->WINOUT.outside_bg2_enable, ppu->WINOUT.obj_bg2_enable);
     }
 
     if (ppu->DISPCNT.screen_display_bg3) {
-        render_bg_regular(ppu, &bgbuf[3], &ppu->BG3CNT, ppu->BG3HOFS.offset, ppu->BG3VOFS.offset,
+        render_bg_regular(ppu, &ppu->bgbuf[3], &ppu->BG3CNT, ppu->BG3HOFS.offset, ppu->BG3VOFS.offset,
                           ppu->WININ.win0_bg3_enable, ppu->WININ.win1_bg3_enable, ppu->WINOUT.outside_bg3_enable, ppu->WINOUT.obj_bg3_enable);
     }
 
@@ -570,17 +567,17 @@ INLINE void render_line_mode1(gba_ppu_t* ppu) {
     render_obj(ppu);
 
     if (ppu->DISPCNT.screen_display_bg0) {
-        render_bg_regular(ppu, &bgbuf[0], &ppu->BG0CNT, ppu->BG0HOFS.offset, ppu->BG0VOFS.offset,
+        render_bg_regular(ppu, &ppu->bgbuf[0], &ppu->BG0CNT, ppu->BG0HOFS.offset, ppu->BG0VOFS.offset,
                           ppu->WININ.win0_bg0_enable, ppu->WININ.win1_bg0_enable, ppu->WINOUT.outside_bg0_enable, ppu->WINOUT.obj_bg0_enable);
     }
 
     if (ppu->DISPCNT.screen_display_bg1) {
-        render_bg_regular(ppu, &bgbuf[1], &ppu->BG1CNT, ppu->BG1HOFS.offset, ppu->BG1VOFS.offset,
+        render_bg_regular(ppu, &ppu->bgbuf[1], &ppu->BG1CNT, ppu->BG1HOFS.offset, ppu->BG1VOFS.offset,
                           ppu->WININ.win0_bg1_enable, ppu->WININ.win1_bg1_enable, ppu->WINOUT.outside_bg1_enable, ppu->WINOUT.obj_bg1_enable);
     }
 
     if (ppu->DISPCNT.screen_display_bg2) {
-        render_bg_affine(ppu, &bgbuf[2], &ppu->BG2CNT,
+        render_bg_affine(ppu, &ppu->bgbuf[2], &ppu->BG2CNT,
                          ppu->WININ.win0_bg2_enable, ppu->WININ.win1_bg2_enable, ppu->WINOUT.outside_bg2_enable, ppu->WINOUT.obj_bg2_enable,
                          &ppu->BG2X, &ppu->BG2Y, &ppu->BG2PA, &ppu->BG2PB, &ppu->BG2PC, &ppu->BG2PD);
     }
@@ -594,13 +591,13 @@ INLINE void render_line_mode2(gba_ppu_t* ppu) {
     render_obj(ppu);
 
     if (ppu->DISPCNT.screen_display_bg2) {
-        render_bg_affine(ppu, &bgbuf[2], &ppu->BG2CNT,
+        render_bg_affine(ppu, &ppu->bgbuf[2], &ppu->BG2CNT,
                          ppu->WININ.win0_bg2_enable, ppu->WININ.win1_bg2_enable, ppu->WINOUT.outside_bg2_enable, ppu->WINOUT.obj_bg2_enable,
                          &ppu->BG2X, &ppu->BG2Y, &ppu->BG2PA, &ppu->BG2PB, &ppu->BG2PC, &ppu->BG2PD);
     }
 
     if (ppu->DISPCNT.screen_display_bg3) {
-        render_bg_affine(ppu, &bgbuf[3], &ppu->BG3CNT,
+        render_bg_affine(ppu, &ppu->bgbuf[3], &ppu->BG3CNT,
                          ppu->WININ.win0_bg3_enable, ppu->WININ.win1_bg3_enable, ppu->WINOUT.outside_bg3_enable, ppu->WINOUT.obj_bg3_enable,
                          &ppu->BG3X, &ppu->BG3Y, &ppu->BG3PA, &ppu->BG3PB, &ppu->BG3PC, &ppu->BG3PD);
     }
