@@ -1,6 +1,5 @@
 #include <stdbool.h>
 #include "../arm7tdmi.h"
-#include "../../common/log.h"
 #include "../shifts.h"
 #include "single_data_transfer.h"
 

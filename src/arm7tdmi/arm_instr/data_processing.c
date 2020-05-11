@@ -1,7 +1,5 @@
 #include <stdbool.h>
 #include "data_processing.h"
-#include "../arm7tdmi.h"
-#include "../../common/log.h"
 #include "../shifts.h"
 
 typedef union nonimmediate_flags {

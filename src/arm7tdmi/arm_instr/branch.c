@@ -1,7 +1,5 @@
 #include <stdbool.h>
 #include "branch.h"
-#include "../arm7tdmi.h"
-#include "../../common/log.h"
 
 void branch_exchange(arm7tdmi_t* state, arminstr_t * arminstr) {
     branch_exchange_t* instr = &arminstr->parsed.BRANCH_EXCHANGE;

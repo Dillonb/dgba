@@ -1,10 +1,6 @@
 #include <SDL.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include "audio.h"
 #include "../common/log.h"
-#include "../mem/gbabus.h"
-
 
 
 SDL_AudioSpec audio_spec;

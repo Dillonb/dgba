@@ -1,5 +1,4 @@
 #include "conditional_branch.h"
-#include "../../common/log.h"
 #include "../sign_extension.h"
 
 void conditional_branch(arm7tdmi_t* state, thumbinstr_t* thminstr) {

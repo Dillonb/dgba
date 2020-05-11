@@ -3,13 +3,10 @@
 #include "arm7tdmi.h"
 
 #include "arm_instr/arm_instr.h"
-#include "arm_instr/halfword_data_transfer.h"
 
 #include "thumb_instr/thumb_instr.h"
-#include "thumb_instr/immediate_operations.h"
 #include "../graphics/debug.h"
 #include "../disassemble.h"
-#include "arm_instr/arm_software_interrupt.h"
 
 static arminstr_handler_t arm_lut[4096];
 static thminstr_handler_t thm_lut[1024];

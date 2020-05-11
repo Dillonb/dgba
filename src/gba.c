@@ -1,12 +1,8 @@
 #include <cflags.h>
 
 #include "mem/gbarom.h"
-#include "common/log.h"
-#include "mem/gbabus.h"
-#include "arm7tdmi/arm7tdmi.h"
 #include "gba_system.h"
 #include "graphics/debug.h"
-#include "mem/gbabios.h"
 
 void usage(cflags_t* flags) {
     cflags_print_usage(flags,

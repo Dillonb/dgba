@@ -1,5 +1,4 @@
 #include "add_subtract.h"
-#include "../../common/log.h"
 
 void add_subtract(arm7tdmi_t* state, thumbinstr_t* thminstr) {
     add_subtract_t* instr = &thminstr->ADD_SUBTRACT;

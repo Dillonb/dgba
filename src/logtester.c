@@ -1,10 +1,7 @@
 #include <cflags.h>
 #include "common/util.h"
 #include "arm7tdmi/arm7tdmi.h"
-#include "common/log.h"
 #include "mem/gbamem.h"
-#include "mem/gbarom.h"
-#include "mem/gbabus.h"
 #include "gba_system.h"
 
 typedef struct cpu_log {

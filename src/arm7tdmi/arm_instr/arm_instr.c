@@ -1,7 +1,5 @@
 #include "arm_instr.h"
-#include "../../common/util.h"
 #include "data_processing.h"
-#include "../../common/log.h"
 #include "status_transfer.h"
 #include "multiply.h"
 #include "single_data_swap.h"

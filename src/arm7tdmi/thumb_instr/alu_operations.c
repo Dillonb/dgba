@@ -1,5 +1,4 @@
 #include "alu_operations.h"
-#include "../../common/log.h"
 #include "../shifts.h"
 
 void alu_operations(arm7tdmi_t* state, thumbinstr_t* thminstr) {

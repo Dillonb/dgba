@@ -3,10 +3,7 @@
 #include "gbabus.h"
 #include "ioreg_util.h"
 #include "ioreg_names.h"
-#include "gbamem.h"
-#include "../common/log.h"
 #include "gbabios.h"
-#include "dma.h"
 #include "../gba_system.h"
 #include "backup/flash.h"
 

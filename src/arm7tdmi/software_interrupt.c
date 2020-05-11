@@ -1,6 +1,4 @@
 #include "software_interrupt.h"
-#include "../common/log.h"
-#include <stdio.h>
 
 
 static const char* SWI_NAMES[] = {

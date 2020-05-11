@@ -4,7 +4,6 @@
 #include "mem/gbabus.h"
 #include "mem/gbarom.h"
 #include "mem/gbabios.h"
-#include "audio/audio.h"
 
 int cycles = 0;
 

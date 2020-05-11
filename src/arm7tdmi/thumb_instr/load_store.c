@@ -1,5 +1,4 @@
 #include "load_store.h"
-#include "../../common/log.h"
 #include "../shifts.h"
 
 void load_store_ro(arm7tdmi_t* state, thumbinstr_t* thminstr) {

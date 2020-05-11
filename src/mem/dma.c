@@ -1,5 +1,4 @@
 #include "dma.h"
-#include "../common/log.h"
 #include "../gba_system.h"
 #include "ioreg_names.h"
 

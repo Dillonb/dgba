@@ -1,5 +1,4 @@
 #include "arm_software_interrupt.h"
-#include "../../common/log.h"
 #include "../software_interrupt.h"
 
 void arm_software_interrupt(arm7tdmi_t* state, arminstr_t * arminstr) {

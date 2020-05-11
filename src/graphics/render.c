@@ -5,7 +5,6 @@
 #include "../mem/gbabus.h"
 #include "debug.h"
 #include "../gba_system.h"
-#include <stdbool.h>
 
 #define SCREEN_SCALE 4
 
