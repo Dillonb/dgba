@@ -84,8 +84,6 @@ void write_fifo(gba_apu_t* apu, int channel, word value) {
             byte sample = (value >> (b * 8)) & 0xFF;
             apu->fifo[channel].buf[(apu->fifo[channel].write_index++) % SOUND_FIFO_SIZE] = sample;
         }
-    } else {
-        printf("Buffer OVERRUN, ignoring write of 0x%08X\n", value);
     }
 #endif
 }

@@ -186,6 +186,7 @@ typedef enum backup_type {
 
 typedef struct gbabus {
     interrupt_master_enable_t interrupt_master_enable;
+    interrupt_master_enable_t ime_temp;
     interrupt_enable_t interrupt_enable;
     IF_t IF;
     KEYINPUT_t KEYINPUT;

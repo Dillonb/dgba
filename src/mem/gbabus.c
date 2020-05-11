@@ -48,12 +48,13 @@ gbabus_t* init_gbabus() {
             bus_state.backup_type = SRAM;
             logwarn("Determined backup type: SRAM")
             mem->backup = malloc(SRAM_SIZE);
+            mem->backup_size = SRAM_SIZE;
             memset(mem->backup, 0, SRAM_SIZE);
             break;
         }
         if (memcmp("EEPROM", &mem->rom[addr], 6) == 0) {
             bus_state.backup_type = EEPROM;
-            //logfatal("Determined backup type: EEPROM")
+            logfatal("Determined backup type: EEPROM")
             break;
         }
         if (memcmp("FLASH_", &mem->rom[addr], 6) == 0) {
@@ -796,7 +797,7 @@ void gba_write_byte(word addr, byte value) {
                 logfatal("Backup type EEPROM unimplemented!")
             case FLASH64K:
             case FLASH128K:
-                write_byte_flash(mem, addr, value, bus->backup_type);
+                write_byte_flash(mem, bus, addr, value);
                 break;
             default:
                 logfatal("Unknown backup type index %d!", bus->backup_type)
