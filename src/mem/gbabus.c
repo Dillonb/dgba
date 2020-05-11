@@ -564,7 +564,7 @@ INLINE bool is_open_bus(word address) {
         case 0xC:
             return (address & 0x1FFFFFF) >= mem->rom_size;
         case 0xD:
-            unimplemented(backup_type == EEPROM, "This region is different when the backup type is EEPROM")
+            unimplemented(bus->backup_type == EEPROM, "This region is different when the backup type is EEPROM")
             return (address & 0x1FFFFFF) >= mem->rom_size;
         case 0xE:
             if (bus->backup_type == FLASH64K || bus->backup_type == FLASH128K) {
