@@ -79,6 +79,16 @@ void update_key(SDL_Keycode sdlk, bool state) {
         case SDLK_e:
             KEYINPUT->r = !state;
             break;
+        case SDLK_u:
+            if (state == true) {
+                save_state(mem->savestate_path);
+            }
+            break;
+        case SDLK_i:
+            if (state == true) {
+                load_state(mem->savestate_path);
+            }
+            break;
         default:
             break;
     }

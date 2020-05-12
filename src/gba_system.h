@@ -17,4 +17,7 @@ extern bool should_quit;
 void init_gbasystem(const char* romfile, const char* bios_file);
 void gba_system_step();
 void gba_system_loop();
+
+void save_state(const char* path);
+void load_state(const char* path);
 #endif //GBA_GBA_SYSTEM_H

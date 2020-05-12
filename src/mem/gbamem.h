@@ -33,7 +33,8 @@ typedef struct gbamem {
     byte iwram[IWRAM_SIZE];
     size_t backup_size;
     byte* backup;
-    const char *backup_path;
+    const char* backup_path;
+    const char* savestate_path;
 
     // Flash state
     flash_state_t flash_state;

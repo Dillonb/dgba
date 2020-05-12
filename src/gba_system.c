@@ -21,8 +21,8 @@ bool should_quit = false;
 
 const char* get_backup_path(const char* romfile) {
     char buf[PATH_MAX];
-    char* backup_path = realpath(romfile, buf);
-    int backup_path_buf_size = strlen(backup_path) + 8; // .backup + null terminator
+    char* rom_path = realpath(romfile, buf);
+    int backup_path_buf_size = strlen(rom_path) + 8; // .backup + null terminator
 
     if (backup_path_buf_size >= PATH_MAX) {
         logfatal("Backup path too long! How deeply are you nesting your directories?")
@@ -33,11 +33,26 @@ const char* get_backup_path(const char* romfile) {
     return backuppath;
 }
 
+const char* get_savestate_path(const char* romfile) {
+    char buf[PATH_MAX];
+    char* rom_path = realpath(romfile, buf);
+    int savestate_path_buf_size = strlen(rom_path) + 6; // .save + null terminator
+
+    if (savestate_path_buf_size >= PATH_MAX) {
+        logfatal("Savestate path too long! How deeply are you nesting your directories?")
+    }
+
+    char* savestate_path = malloc(savestate_path_buf_size);
+    snprintf(savestate_path, savestate_path_buf_size, "%s.save", buf);
+    return savestate_path;
+}
+
 void init_gbasystem(const char* romfile, const char* bios_file) {
     mem = init_mem();
 
     load_gbarom(romfile);
     mem->backup_path = get_backup_path(romfile);
+    mem->savestate_path = get_savestate_path(romfile);
     if (bios_file) {
         load_alternate_bios(bios_file);
     }
@@ -192,4 +207,76 @@ void gba_system_loop() {
         }
         ppu_end_vblank(ppu);
     }
+}
+
+typedef struct savestate_header {
+    char magic[3]; // Must be "DGB"
+    size_t cpu_size;
+    size_t ppu_size;
+    size_t bus_size;
+    size_t mem_size;
+    size_t backup_size;
+    size_t apu_size;
+} savestate_header_t;
+
+void save_state(const char* path) {
+    savestate_header_t header;
+    header.magic[0] = 'D';
+    header.magic[1] = 'G';
+    header.magic[2] = 'B';
+    header.cpu_size = sizeof(arm7tdmi_t);
+    header.ppu_size = sizeof(gba_ppu_t);
+    header.bus_size = sizeof(gbabus_t);
+    header.mem_size = sizeof(gbamem_t);
+    header.backup_size = mem->backup_size;
+    header.apu_size = sizeof(gba_apu_t);
+
+    FILE* fp = fopen(path, "wb");
+
+    fwrite(&header, sizeof(savestate_header_t), 1, fp);
+    fwrite(cpu, header.cpu_size, 1, fp);
+    fwrite(ppu, header.ppu_size, 1, fp);
+    fwrite(bus, header.bus_size, 1, fp);
+    fwrite(mem, header.mem_size, 1, fp);
+    fwrite(mem->backup, header.backup_size, 1, fp);
+    fwrite(apu, header.apu_size, 1, fp);
+    fclose(fp);
+}
+
+// TODO: make sure we don't read more bytes than we have space for
+void load_state(const char* path) {
+    FILE* fp = fopen(path, "rb");
+    savestate_header_t header;
+    fread(&header, sizeof(savestate_header_t), 1, fp);
+
+    // Restore CPU. Need to restore function pointers.
+    fread(cpu, header.cpu_size, 1, fp);
+    cpu->read_byte = &gba_read_byte;
+    cpu->read_half = &gba_read_half;
+    cpu->read_word = &gba_read_word;
+
+    cpu->write_byte = &gba_write_byte;
+    cpu->write_half = &gba_write_half;
+    cpu->write_word = &gba_write_word;
+
+    // Restore PPU. No pointers need to be restored.
+    fread(ppu, header.ppu_size, 1, fp);
+
+    // Restore bus. No pointers need to be restored.
+    fread(bus, header.bus_size, 1, fp);
+
+    // Restore mem. Need to restore ROM and backup space + paths.
+    byte* rom = mem->rom;
+    const char* backup_path = mem->backup_path;
+    const char* savestate_path = mem->savestate_path;
+    byte* backup = mem->backup;
+    fread(mem, header.mem_size, 1, fp);
+    mem->rom = rom;
+    mem->backup_path = backup_path;
+    mem->savestate_path = savestate_path;
+    mem->backup = backup;
+    fread(mem->backup, header.backup_size, 1, fp);
+
+    // Restore APU. No pointers need to be restored.
+    fread(apu, header.apu_size, 1, fp);
 }

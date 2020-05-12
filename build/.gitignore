@@ -16,3 +16,5 @@ normmatt_bios.bin
 logtester
 callgrind.out.*
 *.zip
+*.backup
+*.save

@@ -73,14 +73,6 @@ typedef struct arm7tdmi {
 
     word pc;
 
-    // Copies of registers for supervisor mode
-    word r13_svc;
-    word r14_svc;
-
-    // Copies of registers for abort mode
-    word r13_abt;
-    word r14_abt;
-
     status_register_t cpsr;
     status_register_t spsr;
     status_register_t spsr_fiq;
