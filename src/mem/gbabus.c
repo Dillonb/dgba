@@ -71,6 +71,14 @@ gbabus_t* init_gbabus() {
         }
     }
 
+    if (bus_state->backup_type != UNKNOWN) {
+        FILE *fp = fopen(mem->backup_path, "rb");
+        if (fp != NULL) {
+            fread(mem->backup, mem->backup_size, 1, fp);
+            fclose(fp);
+        }
+    }
+
     return bus_state;
 }
 

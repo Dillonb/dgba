@@ -207,6 +207,14 @@ void gba_system_loop() {
         }
         ppu_end_vblank(ppu);
     }
+
+    if (bus->backup_type != UNKNOWN && mem->backup != NULL) {
+        FILE *fp = fopen(mem->backup_path, "wb");
+        if (fp != NULL) {
+            fwrite(mem->backup, mem->backup_size, 1, fp);
+            fclose(fp);
+        }
+    }
 }
 
 typedef struct savestate_header {
