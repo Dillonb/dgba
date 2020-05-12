@@ -17,7 +17,10 @@
 #define FLASHC_BANKSWITCH 0xAA55B0
 #define FLASHC_ERASE 0xAA5580
 #define FLASHC_ERASE_ENTIRE_CHIP 0xAA5510
-#define FLASHC_ERASE_WRITE_SECTOR 0xAA55A0
+// Either erase and write 128 byte sector
+// or write single data byte
+// depending on which flash memory controller is used.
+#define FLASHC_WRITE_DATA 0xAA55A0
 
 
 void init_flash(gbamem_t* mem, backup_type_t type) {
@@ -37,6 +40,8 @@ void init_flash(gbamem_t* mem, backup_type_t type) {
     }
 }
 
+bool atmel = false; // TODO: figure this out for real
+
 void complete_flash_command(gbamem_t* mem, gbabus_t* bus) {
     switch (mem->flash_command) {
         case FLASHC_CHIP_ID:
@@ -55,9 +60,14 @@ void complete_flash_command(gbamem_t* mem, gbabus_t* bus) {
             printf("FLASHC_ERASE\n");
             mem->flash_state = FLASH_ERASE;
             break;
-        case FLASHC_ERASE_WRITE_SECTOR:
-            printf("FLASHC_ERASE_WRITE_SECTOR\n");
-            mem->flash_state = FLASH_ERASE_WRITE_SECTOR;
+        case FLASHC_WRITE_DATA:
+            if (atmel) {
+                printf("FLASH_ERASE_WRITE_SECTOR\n");
+                mem->flash_state = FLASH_ERASE_WRITE_SECTOR;
+            } else {
+                printf("FLASH_WRITE_SINGLE_BYTE\n");
+                mem->flash_state = FLASH_WRITE_SINGLE_BYTE;
+            }
             break;
         case FLASHC_ERASE_ENTIRE_CHIP:
             logfatal("FLASHC_ERASE_ENTIRE_CHIP should be handled by the state machine below, as it is a subcommand.")
@@ -67,7 +77,7 @@ void complete_flash_command(gbamem_t* mem, gbabus_t* bus) {
 }
 
 void write_byte_flash(gbamem_t* mem, gbabus_t* bus, word address, byte value) {
-    printf("[0x%08X] = 0x%02X\n", address, value);
+    printf("%d [0x%08X] = 0x%02X\n", mem->flash_state, address, value);
     switch (mem->flash_state) {
         case FLASH_READY:
         case FLASH_CHIP_ID:
@@ -117,10 +127,12 @@ void write_byte_flash(gbamem_t* mem, gbabus_t* bus, word address, byte value) {
             mem->flash_command |= value;
 
             if (address == 0xE005555 && mem->flash_command == FLASHC_ERASE_ENTIRE_CHIP) {
+                printf("FLASHC_ERASE_ENTIRE_CHIP\n");
                 memset(mem->backup, 0xFF, mem->backup_size);
                 bus->ime_temp.raw = bus->interrupt_master_enable.raw;
                 bus->interrupt_master_enable.enable = false;
             } else {
+                printf("FLASHC_ERASE_BLOCK\n");
                 word start = address & 0x000F000;
                 // TODO: Replace with memset?
                 for (word block = 0x000; block < 0x1000; block++) {
@@ -132,6 +144,7 @@ void write_byte_flash(gbamem_t* mem, gbabus_t* bus, word address, byte value) {
             }
             // The games are told to wait until a given value == 0xFF
             // Since we're erasing by overwriting with 0xFFs, we can just go back into FLASH_READY mode
+            printf("FLASH_READY\n");
             mem->flash_state = FLASH_READY;
             break;
         case FLASH_ERASE_WRITE_SECTOR: {
@@ -151,9 +164,15 @@ void write_byte_flash(gbamem_t* mem, gbabus_t* bus, word address, byte value) {
             }
             break;
         }
-        case FLASH_WRITE_SINGLE_BYTE:
-            logfatal("Unimplemented: WRITE_SINGLE_BYTE: [0x%08X] = 0x%02X", address, value)
+        case FLASH_WRITE_SINGLE_BYTE: {
+            word index = address & 0xFFFF;
+            if (bus->backup_type == FLASH128K && mem->flash_bank == 1) {
+                index += 0xFFFF;
+            }
+            mem->backup[index] = value;
+            mem->flash_state = FLASH_READY;
             break;
+        }
         case FLASH_BANKSWITCH:
             if (address == 0xE000000) {
                 unimplemented(value > 1, "Tried to switch flash bank to nonexistent bank (>1)")
