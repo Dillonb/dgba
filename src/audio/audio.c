@@ -6,19 +6,16 @@
 SDL_AudioSpec audio_spec;
 SDL_AudioSpec request;
 SDL_AudioDeviceID audio_dev;
-uint32_t apu_cycle_counter = 0;
 
 #ifdef ENABLE_AUDIO
-int underruns = 0;
-float apu_last_sample = 0.0f;
 void audio_callback(void* userdata, Uint8* stream, int length) {
     gba_apu_t* apu = (gba_apu_t*)userdata;
     float* out = (float*)stream;
     for (int i = 0; i < length / sizeof(float); i++) {
         if (apu->bigbuffer.read_index < apu->bigbuffer.write_index) {
-            apu_last_sample = apu->bigbuffer.buf[(apu->bigbuffer.read_index++) % AUDIO_BIGBUFFER_SIZE];
+            apu->apu_last_sample = apu->bigbuffer.buf[(apu->bigbuffer.read_index++) % AUDIO_BIGBUFFER_SIZE];
         }
-        *out++ = apu_last_sample;
+        *out++ = apu->apu_last_sample;
     }
 }
 
