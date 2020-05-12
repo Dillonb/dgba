@@ -1,5 +1,4 @@
 #include "immediate_operations.h"
-#include "../../common/log.h"
 
 void immediate_operations(arm7tdmi_t* state, thumbinstr_t* thminstr) {
     immediate_operations_t* instr = &thminstr->IMMEDIATE_OPERATIONS;

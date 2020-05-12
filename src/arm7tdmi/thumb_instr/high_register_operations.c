@@ -1,5 +1,4 @@
 #include "high_register_operations.h"
-#include "../../common/log.h"
 
 void high_register_operations(arm7tdmi_t* state, thumbinstr_t* thminstr) {
     high_register_operations_t* instr = &thminstr->HIGH_REGISTER_OPERATIONS;

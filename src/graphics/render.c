@@ -5,7 +5,6 @@
 #include "../mem/gbabus.h"
 #include "debug.h"
 #include "../gba_system.h"
-#include <stdbool.h>
 
 #define SCREEN_SCALE 4
 
@@ -79,6 +78,16 @@ void update_key(SDL_Keycode sdlk, bool state) {
             break;
         case SDLK_e:
             KEYINPUT->r = !state;
+            break;
+        case SDLK_u:
+            if (state == true) {
+                save_state(mem->savestate_path);
+            }
+            break;
+        case SDLK_i:
+            if (state == true) {
+                load_state(mem->savestate_path);
+            }
             break;
         default:
             break;

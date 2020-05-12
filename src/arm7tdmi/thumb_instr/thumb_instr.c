@@ -17,7 +17,6 @@
 #include "thumb_software_interrupt.h"
 #include "unconditional_branch.h"
 #include "long_branch_link.h"
-#include "../../common/log.h"
 
 thumb_instr_type_t get_thumb_instr_type_hash(half hash) {
     if ((hash & 0b1111100000u) == 0b0001100000u) {

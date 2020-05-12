@@ -1,5 +1,4 @@
 #include "multiply.h"
-#include "../../common/log.h"
 #include "../sign_extension.h"
 
 void multiply(arm7tdmi_t* state, arminstr_t* arminstr) {

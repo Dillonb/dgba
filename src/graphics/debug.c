@@ -4,7 +4,6 @@
 #include <DUI/DUI.h>
 
 #include "debug.h"
-#include "../common/log.h"
 #include "render.h"
 #include "../gba_system.h"
 

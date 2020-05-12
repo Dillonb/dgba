@@ -1,5 +1,4 @@
 #include "load_store_halfword.h"
-#include "../../common/log.h"
 #include "../sign_extension.h"
 #include "../shifts.h"
 

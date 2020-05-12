@@ -1,28 +1,21 @@
 #include <SDL.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include "audio.h"
 #include "../common/log.h"
-#include "../mem/gbabus.h"
-
 
 
 SDL_AudioSpec audio_spec;
 SDL_AudioSpec request;
 SDL_AudioDeviceID audio_dev;
-uint32_t apu_cycle_counter = 0;
 
 #ifdef ENABLE_AUDIO
-int underruns = 0;
-float apu_last_sample = 0.0f;
 void audio_callback(void* userdata, Uint8* stream, int length) {
     gba_apu_t* apu = (gba_apu_t*)userdata;
     float* out = (float*)stream;
     for (int i = 0; i < length / sizeof(float); i++) {
         if (apu->bigbuffer.read_index < apu->bigbuffer.write_index) {
-            apu_last_sample = apu->bigbuffer.buf[(apu->bigbuffer.read_index++) % AUDIO_BIGBUFFER_SIZE];
+            apu->apu_last_sample = apu->bigbuffer.buf[(apu->bigbuffer.read_index++) % AUDIO_BIGBUFFER_SIZE];
         }
-        *out++ = apu_last_sample;
+        *out++ = apu->apu_last_sample;
     }
 }
 
@@ -84,8 +77,6 @@ void write_fifo(gba_apu_t* apu, int channel, word value) {
             byte sample = (value >> (b * 8)) & 0xFF;
             apu->fifo[channel].buf[(apu->fifo[channel].write_index++) % SOUND_FIFO_SIZE] = sample;
         }
-    } else {
-        printf("Buffer OVERRUN, ignoring write of 0x%08X\n", value);
     }
 #endif
 }

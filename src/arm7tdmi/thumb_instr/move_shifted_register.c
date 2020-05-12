@@ -1,5 +1,4 @@
 #include "move_shifted_register.h"
-#include "../../common/log.h"
 #include "../shifts.h"
 
 void move_shifted_register(arm7tdmi_t* state, thumbinstr_t* thminstr) {

@@ -1,5 +1,4 @@
 #include "halfword_data_transfer.h"
-#include "../../common/log.h"
 #include "../sign_extension.h"
 
 INLINE word rotate_right(word value, word amount) {

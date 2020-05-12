@@ -1,5 +1,4 @@
 #include "add_offset_to_stack_pointer.h"
-#include "../../common/log.h"
 
 void add_offset_to_stack_pointer(arm7tdmi_t* state, thumbinstr_t* thminstr) {
     add_offset_to_stack_pointer_t* instr = &thminstr->ADD_OFFSET_TO_STACK_POINTER;

@@ -1,5 +1,4 @@
 #include "single_data_swap.h"
-#include "../../common/log.h"
 #include "../shifts.h"
 
 void single_data_swap(arm7tdmi_t* state, arminstr_t* arminstr) {

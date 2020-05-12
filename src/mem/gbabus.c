@@ -3,14 +3,10 @@
 #include "gbabus.h"
 #include "ioreg_util.h"
 #include "ioreg_names.h"
-#include "gbamem.h"
-#include "../common/log.h"
 #include "gbabios.h"
-#include "dma.h"
 #include "../gba_system.h"
 #include "backup/flash.h"
 
-static gbabus_t bus_state;
 
 INLINE word open_bus(word addr);
 
@@ -31,142 +27,152 @@ INLINE word open_bus(word addr);
 #define REGION_SRAM_MIRR  0x0F
 
 gbabus_t* init_gbabus() {
-    bus_state.interrupt_master_enable.raw = 0;
-    bus_state.interrupt_enable.raw = 0;
-    bus_state.KEYINPUT.raw = 0xFFFF;
-    bus_state.SOUNDBIAS.raw = 0x0200;
+    gbabus_t* bus_state = malloc(sizeof(gbabus_t));
+    bus_state->interrupt_master_enable.raw = 0;
+    bus_state->interrupt_enable.raw = 0;
+    bus_state->KEYINPUT.raw = 0xFFFF;
+    bus_state->SOUNDBIAS.raw = 0x0200;
 
-    bus_state.DMA0INT.previously_enabled = false;
-    bus_state.DMA1INT.previously_enabled = false;
-    bus_state.DMA2INT.previously_enabled = false;
-    bus_state.DMA3INT.previously_enabled = false;
+    bus_state->DMA0INT.previously_enabled = false;
+    bus_state->DMA1INT.previously_enabled = false;
+    bus_state->DMA2INT.previously_enabled = false;
+    bus_state->DMA3INT.previously_enabled = false;
 
     // Loop through every single word aligned address in the ROM and try to find what backup type it is (you read that right)
     // Start at 0xE4 since everything before that is part of the header
     for (int addr = 0xE4; addr < (mem->rom_size - 4); addr += 4) {
         if (memcmp("SRAM", &mem->rom[addr], 4) == 0) {
-            bus_state.backup_type = SRAM;
+            bus_state->backup_type = SRAM;
             logwarn("Determined backup type: SRAM")
             mem->backup = malloc(SRAM_SIZE);
+            mem->backup_size = SRAM_SIZE;
             memset(mem->backup, 0, SRAM_SIZE);
             break;
         }
         if (memcmp("EEPROM", &mem->rom[addr], 6) == 0) {
-            bus_state.backup_type = EEPROM;
-            //logfatal("Determined backup type: EEPROM")
+            bus_state->backup_type = EEPROM;
+            logfatal("Determined backup type: EEPROM")
             break;
         }
         if (memcmp("FLASH_", &mem->rom[addr], 6) == 0) {
-            bus_state.backup_type = FLASH64K;
+            bus_state->backup_type = FLASH64K;
             logfatal("Determined backup type: FLASH64K")
             break;
         }
         if (memcmp("FLASH512_", &mem->rom[addr], 9) == 0) {
-            bus_state.backup_type = FLASH64K;
+            bus_state->backup_type = FLASH64K;
             init_flash(mem, FLASH64K);
             break;
         }
         if (memcmp("FLASH1M_", &mem->rom[addr], 8) == 0) {
-            bus_state.backup_type = FLASH128K;
+            bus_state->backup_type = FLASH128K;
             init_flash(mem, FLASH128K);
             break;
         }
     }
 
-    return &bus_state;
+    if (bus_state->backup_type != UNKNOWN) {
+        FILE *fp = fopen(mem->backup_path, "rb");
+        if (fp != NULL) {
+            fread(mem->backup, mem->backup_size, 1, fp);
+            fclose(fp);
+        }
+    }
+
+    return bus_state;
 }
 
 KEYINPUT_t* get_keyinput() {
-    return &bus_state.KEYINPUT;
+    return &bus->KEYINPUT;
 }
 
 void request_interrupt(gba_interrupt_t interrupt) {
-    if (bus_state.interrupt_master_enable.enable) {
+    if (bus->interrupt_master_enable.enable) {
         switch (interrupt) {
             case IRQ_VBLANK:
-                if (bus_state.interrupt_enable.lcd_vblank) {
+                if (bus->interrupt_enable.lcd_vblank) {
                     cpu->irq = true;
-                    bus_state.IF.vblank = true;
+                    bus->IF.vblank = true;
                 } else {
                     logwarn("VBlank interrupt blocked by IE")
                 }
                 break;
             case IRQ_HBLANK:
-                if (bus_state.interrupt_enable.lcd_hblank) {
+                if (bus->interrupt_enable.lcd_hblank) {
                     cpu->irq = true;
-                    bus_state.IF.hblank = true;
+                    bus->IF.hblank = true;
                 } else {
                     logwarn("HBlank interrupt blocked by IE")
                 }
                 break;
             case IRQ_VCOUNT:
-                if (bus_state.interrupt_enable.lcd_vcounter_match) {
+                if (bus->interrupt_enable.lcd_vcounter_match) {
                     cpu->irq = true;
-                    bus_state.IF.vcount = true;
+                    bus->IF.vcount = true;
                 } else {
                     logwarn("VCount interrupt blocked by IE")
                 }
                 break;
             case IRQ_TIMER0:
-                if (bus_state.interrupt_enable.timer0_overflow) {
+                if (bus->interrupt_enable.timer0_overflow) {
                     cpu->irq = true;
-                    bus_state.IF.timer0 = true;
+                    bus->IF.timer0 = true;
                 } else {
                     logwarn("Timer0 overflow interrupt blocked by IE")
                 }
                 break;
             case IRQ_TIMER1:
-                if (bus_state.interrupt_enable.timer1_overflow) {
+                if (bus->interrupt_enable.timer1_overflow) {
                     cpu->irq = true;
-                    bus_state.IF.timer1 = true;
+                    bus->IF.timer1 = true;
                 } else {
                     logwarn("Timer1 overflow interrupt blocked by IE")
                 }
                 break;
             case IRQ_TIMER2:
-                if (bus_state.interrupt_enable.timer2_overflow) {
+                if (bus->interrupt_enable.timer2_overflow) {
                     cpu->irq = true;
-                    bus_state.IF.timer2 = true;
+                    bus->IF.timer2 = true;
                 } else {
                     logwarn("Timer2 overflow interrupt blocked by IE")
                 }
                 break;
             case IRQ_TIMER3:
-                if (bus_state.interrupt_enable.timer3_overflow) {
+                if (bus->interrupt_enable.timer3_overflow) {
                     cpu->irq = true;
-                    bus_state.IF.timer3 = true;
+                    bus->IF.timer3 = true;
                 } else {
                     logwarn("Timer3 overflow interrupt blocked by IE")
                 }
                 break;
             case IRQ_DMA0:
-                if (bus_state.interrupt_enable.dma_0) {
+                if (bus->interrupt_enable.dma_0) {
                     cpu->irq = true;
-                    bus_state.IF.dma0 = true;
+                    bus->IF.dma0 = true;
                 } else {
                     logwarn("DMA0 interrupt blocked by IE")
                 }
                 break;
             case IRQ_DMA1:
-                if (bus_state.interrupt_enable.dma_1) {
+                if (bus->interrupt_enable.dma_1) {
                     cpu->irq = true;
-                    bus_state.IF.dma1 = true;
+                    bus->IF.dma1 = true;
                 } else {
                     logwarn("DMA1 interrupt blocked by IE")
                 }
                 break;
             case IRQ_DMA2:
-                if (bus_state.interrupt_enable.dma_2) {
+                if (bus->interrupt_enable.dma_2) {
                     cpu->irq = true;
-                    bus_state.IF.dma2 = true;
+                    bus->IF.dma2 = true;
                 } else {
                     logwarn("DMA2 interrupt blocked by IE")
                 }
                 break;
             case IRQ_DMA3:
-                if (bus_state.interrupt_enable.dma_3) {
+                if (bus->interrupt_enable.dma_3) {
                     cpu->irq = true;
-                    bus_state.IF.dma3 = true;
+                    bus->IF.dma3 = true;
                 } else {
                     logwarn("DMA3 interrupt blocked by IE")
                 }
@@ -266,56 +272,56 @@ INLINE half* get_half_ioreg_ptr(word addr, bool write) {
         case IO_BLDCNT: return &ppu->BLDCNT.raw;
         case IO_BLDALPHA: return &ppu->BLDALPHA.raw;
         case IO_BLDY: return &ppu->BLDY.raw;
-        case IO_IE: return &bus_state.interrupt_enable.raw;
-        case IO_DMA0CNT_L: return &bus_state.DMA0CNT_L.raw;
-        case IO_DMA0CNT_H: return &bus_state.DMA0CNT_H.raw;
-        case IO_DMA1CNT_L: return &bus_state.DMA1CNT_L.raw;
-        case IO_DMA1CNT_H: return &bus_state.DMA1CNT_H.raw;
-        case IO_DMA2CNT_L: return &bus_state.DMA2CNT_L.raw;
-        case IO_DMA2CNT_H: return &bus_state.DMA2CNT_H.raw;
-        case IO_DMA3CNT_L: return &bus_state.DMA3CNT_L.raw;
-        case IO_DMA3CNT_H: return &bus_state.DMA3CNT_H.raw;
-        case IO_KEYINPUT: return &bus_state.KEYINPUT.raw;
-        case IO_RCNT: return &bus_state.RCNT.raw;
-        case IO_JOYCNT: return &bus_state.JOYCNT.raw;
-        case IO_IME: return &bus_state.interrupt_master_enable.raw;
-        case IO_SOUNDBIAS: return &bus_state.SOUNDBIAS.raw;
+        case IO_IE: return &bus->interrupt_enable.raw;
+        case IO_DMA0CNT_L: return &bus->DMA0CNT_L.raw;
+        case IO_DMA0CNT_H: return &bus->DMA0CNT_H.raw;
+        case IO_DMA1CNT_L: return &bus->DMA1CNT_L.raw;
+        case IO_DMA1CNT_H: return &bus->DMA1CNT_H.raw;
+        case IO_DMA2CNT_L: return &bus->DMA2CNT_L.raw;
+        case IO_DMA2CNT_H: return &bus->DMA2CNT_H.raw;
+        case IO_DMA3CNT_L: return &bus->DMA3CNT_L.raw;
+        case IO_DMA3CNT_H: return &bus->DMA3CNT_H.raw;
+        case IO_KEYINPUT: return &bus->KEYINPUT.raw;
+        case IO_RCNT: return &bus->RCNT.raw;
+        case IO_JOYCNT: return &bus->JOYCNT.raw;
+        case IO_IME: return &bus->interrupt_master_enable.raw;
+        case IO_SOUNDBIAS: return &bus->SOUNDBIAS.raw;
         case IO_TM0CNT_L: {
             if (write) {
-                return &bus_state.TMCNT_L[0].raw;
+                return &bus->TMCNT_L[0].raw;
             } else {
-                return &bus_state.TMINT[0].value;
+                return &bus->TMINT[0].value;
             }
         }
-        case IO_TM0CNT_H: return &bus_state.TMCNT_H[0].raw;
+        case IO_TM0CNT_H: return &bus->TMCNT_H[0].raw;
         case IO_TM1CNT_L: {
             if (write) {
-                return &bus_state.TMCNT_L[1].raw;
+                return &bus->TMCNT_L[1].raw;
             } else {
-                return &bus_state.TMINT[1].value;
+                return &bus->TMINT[1].value;
             }
         }
-        case IO_TM1CNT_H: return &bus_state.TMCNT_H[1].raw;
+        case IO_TM1CNT_H: return &bus->TMCNT_H[1].raw;
         case IO_TM2CNT_L: {
             if (write) {
-                return &bus_state.TMCNT_L[2].raw;
+                return &bus->TMCNT_L[2].raw;
             } else {
-                return &bus_state.TMINT[2].value;
+                return &bus->TMINT[2].value;
             }
         }
-        case IO_TM2CNT_H: return &bus_state.TMCNT_H[2].raw;
+        case IO_TM2CNT_H: return &bus->TMCNT_H[2].raw;
         case IO_TM3CNT_L: {
             if (write) {
-                return &bus_state.TMCNT_L[3].raw;
+                return &bus->TMCNT_L[3].raw;
             } else {
-                return &bus_state.TMINT[3].value;
+                return &bus->TMINT[3].value;
             }
         }
-        case IO_TM3CNT_H: return &bus_state.TMCNT_H[3].raw;
-        case IO_KEYCNT: return &bus_state.KEYCNT.raw;
-        case IO_IF: return &bus_state.IF.raw;
+        case IO_TM3CNT_H: return &bus->TMCNT_H[3].raw;
+        case IO_KEYCNT: return &bus->KEYCNT.raw;
+        case IO_IF: return &bus->IF.raw;
         case IO_WAITCNT:
-            return &bus_state.WAITCNT.raw;
+            return &bus->WAITCNT.raw;
         case IO_UNDOCUMENTED_GREEN_SWAP:
             logwarn("Ignoring access to Green Swap register")
             return NULL;
@@ -372,7 +378,7 @@ INLINE void write_half_ioreg_masked(word addr, half value, half mask) {
                 mask = 0b1;
                 break;
             case IO_IF: {
-                bus_state.IF.raw &= ~value;
+                bus->IF.raw &= ~value;
                 return;
             }
             default:
@@ -382,23 +388,23 @@ INLINE void write_half_ioreg_masked(word addr, half value, half mask) {
         *ioreg |= (value & mask);
         switch (addr & 0xFFF) {
             case IO_DMA0CNT_H:
-                if (!bus_state.DMA0CNT_H.dma_enable) {
-                    bus_state.DMA0INT.previously_enabled = false;
+                if (!bus->DMA0CNT_H.dma_enable) {
+                    bus->DMA0INT.previously_enabled = false;
                 }
                 break;
             case IO_DMA1CNT_H:
-                if (!bus_state.DMA1CNT_H.dma_enable) {
-                    bus_state.DMA1INT.previously_enabled = false;
+                if (!bus->DMA1CNT_H.dma_enable) {
+                    bus->DMA1INT.previously_enabled = false;
                 }
                 break;
             case IO_DMA2CNT_H:
-                if (!bus_state.DMA2CNT_H.dma_enable) {
-                    bus_state.DMA2INT.previously_enabled = false;
+                if (!bus->DMA2CNT_H.dma_enable) {
+                    bus->DMA2INT.previously_enabled = false;
                 }
                 break;
             case IO_DMA3CNT_H:
-                if (!bus_state.DMA3CNT_H.dma_enable) {
-                    bus_state.DMA3INT.previously_enabled = false;
+                if (!bus->DMA3CNT_H.dma_enable) {
+                    bus->DMA3INT.previously_enabled = false;
                 }
                 break;
         }
@@ -423,14 +429,14 @@ INLINE word* get_word_ioreg_ptr(word addr) {
         case IO_BG2Y:     return &ppu->BG2Y.initial.raw;
         case IO_BG3X:     return &ppu->BG3X.initial.raw;
         case IO_BG3Y:     return &ppu->BG3Y.initial.raw;
-        case IO_DMA0SAD:  return &bus_state.DMA0SAD.raw;
-        case IO_DMA0DAD:  return &bus_state.DMA0DAD.raw;
-        case IO_DMA1SAD:  return &bus_state.DMA1SAD.raw;
-        case IO_DMA1DAD:  return &bus_state.DMA1DAD.raw;
-        case IO_DMA2SAD:  return &bus_state.DMA2SAD.raw;
-        case IO_DMA2DAD:  return &bus_state.DMA2DAD.raw;
-        case IO_DMA3SAD:  return &bus_state.DMA3SAD.raw;
-        case IO_DMA3DAD:  return &bus_state.DMA3DAD.raw;
+        case IO_DMA0SAD:  return &bus->DMA0SAD.raw;
+        case IO_DMA0DAD:  return &bus->DMA0DAD.raw;
+        case IO_DMA1SAD:  return &bus->DMA1SAD.raw;
+        case IO_DMA1DAD:  return &bus->DMA1DAD.raw;
+        case IO_DMA2SAD:  return &bus->DMA2SAD.raw;
+        case IO_DMA2DAD:  return &bus->DMA2DAD.raw;
+        case IO_DMA3SAD:  return &bus->DMA3SAD.raw;
+        case IO_DMA3DAD:  return &bus->DMA3DAD.raw;
         case IO_FIFO_A:
         case IO_FIFO_B:
         case IO_JOY_RECV:
@@ -796,7 +802,7 @@ void gba_write_byte(word addr, byte value) {
                 logfatal("Backup type EEPROM unimplemented!")
             case FLASH64K:
             case FLASH128K:
-                write_byte_flash(mem, addr, value, bus->backup_type);
+                write_byte_flash(mem, bus, addr, value);
                 break;
             default:
                 logfatal("Unknown backup type index %d!", bus->backup_type)
