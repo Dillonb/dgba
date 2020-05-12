@@ -250,7 +250,7 @@ void render_obj(gba_ppu_t* ppu) {
                     int screen_x = sprite_x + adjusted_x;
                     // Only draw if we've never drawn anything there before. Lower indices have higher priority
                     // and that's the order we're drawing them here.
-                    if (screen_x >= screen_min_x && screen_x < screen_max_x  && (objbuf[screen_x].transparent || attr2.priority < obj_priorities[screen_x])) {
+                    if (screen_x < GBA_SCREEN_X && screen_x >= 0 && screen_x >= screen_min_x && screen_x < screen_max_x && (objbuf[screen_x].transparent || attr2.priority < obj_priorities[screen_x])) {
                         // Tiles are twice as wide in 256 color mode
                         int x_tid_offset = (adjusted_sprite_x / 8) << attr0.is_256color;
                         int tid_offset_by_x = tid + x_tid_offset;
