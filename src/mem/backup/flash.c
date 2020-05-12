@@ -45,27 +45,39 @@ bool atmel = false; // TODO: figure this out for real
 void complete_flash_command(gbamem_t* mem, gbabus_t* bus) {
     switch (mem->flash_command) {
         case FLASHC_CHIP_ID:
+#ifdef FLASH_VERBOSE_LOG
             printf("FLASHC_CHIP_ID\n");
+#endif
             mem->flash_state = FLASH_CHIP_ID;
             break;
         case FLASHC_EXIT_CHIP_ID:
+#ifdef FLASH_VERBOSE_LOG
             printf("FLASHC_EXIT_CHIP_ID\n");
+#endif
             mem->flash_state = FLASH_READY;
             break;
         case FLASHC_BANKSWITCH:
+#ifdef FLASH_VERBOSE_LOG
             printf("FLASHC_BANKSWITCH\n");
+#endif
             mem->flash_state = FLASH_BANKSWITCH;
             break;
         case FLASHC_ERASE:
+#ifdef FLASH_VERBOSE_LOG
             printf("FLASHC_ERASE\n");
+#endif
             mem->flash_state = FLASH_ERASE;
             break;
         case FLASHC_WRITE_DATA:
             if (atmel) {
+#ifdef FLASH_VERBOSE_LOG
                 printf("FLASH_ERASE_WRITE_SECTOR\n");
+#endif
                 mem->flash_state = FLASH_ERASE_WRITE_SECTOR;
             } else {
+#ifdef FLASH_VERBOSE_LOG
                 printf("FLASH_WRITE_SINGLE_BYTE\n");
+#endif
                 mem->flash_state = FLASH_WRITE_SINGLE_BYTE;
             }
             break;
@@ -77,7 +89,9 @@ void complete_flash_command(gbamem_t* mem, gbabus_t* bus) {
 }
 
 void write_byte_flash(gbamem_t* mem, gbabus_t* bus, word address, byte value) {
+#ifdef FLASH_VERBOSE_LOG
     printf("%d [0x%08X] = 0x%02X\n", mem->flash_state, address, value);
+#endif
     switch (mem->flash_state) {
         case FLASH_READY:
         case FLASH_CHIP_ID:
@@ -127,12 +141,16 @@ void write_byte_flash(gbamem_t* mem, gbabus_t* bus, word address, byte value) {
             mem->flash_command |= value;
 
             if (address == 0xE005555 && mem->flash_command == FLASHC_ERASE_ENTIRE_CHIP) {
+#ifdef FLASH_VERBOSE_LOG
                 printf("FLASHC_ERASE_ENTIRE_CHIP\n");
+#endif
                 memset(mem->backup, 0xFF, mem->backup_size);
                 bus->ime_temp.raw = bus->interrupt_master_enable.raw;
                 bus->interrupt_master_enable.enable = false;
             } else {
+#ifdef FLASH_VERBOSE_LOG
                 printf("FLASHC_ERASE_BLOCK\n");
+#endif
                 word start = address & 0x000F000;
                 // TODO: Replace with memset?
                 for (word block = 0x000; block < 0x1000; block++) {
@@ -144,7 +162,9 @@ void write_byte_flash(gbamem_t* mem, gbabus_t* bus, word address, byte value) {
             }
             // The games are told to wait until a given value == 0xFF
             // Since we're erasing by overwriting with 0xFFs, we can just go back into FLASH_READY mode
+#ifdef FLASH_VERBOSE_LOG
             printf("FLASH_READY\n");
+#endif
             mem->flash_state = FLASH_READY;
             break;
         case FLASH_ERASE_WRITE_SECTOR: {
@@ -186,7 +206,9 @@ void write_byte_flash(gbamem_t* mem, gbabus_t* bus, word address, byte value) {
 }
 
 byte read_byte_flash(gbamem_t* mem, word address, backup_type_t type) {
+#ifdef FLASH_VERBOSE_LOG
     printf("X = [0x%08X]\n", address);
+#endif
     switch (mem->flash_state) {
         case FLASH_CMD_1:
             logfatal("Unimplemented: Reading byte from [0x%08X] when in mode FLASH_CMD_1", address)
