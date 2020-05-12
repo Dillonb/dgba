@@ -14,3 +14,5 @@ tests
 gba_bios.bin
 normmatt_bios.bin
 logtester
+callgrind.out.*
+*.zip
