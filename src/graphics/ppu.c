@@ -251,7 +251,7 @@ void render_obj(gba_ppu_t* ppu) {
                         // Tiles are twice as wide in 256 color mode
                         int x_tid_offset = (adjusted_sprite_x / 8) << attr0.is_256color;
                         int tid_offset_by_x = tid + x_tid_offset;
-                        word tile_address = 0x06010000 + tid_offset_by_x * OBJ_TILE_SIZE;
+                        word tile_address = 0x10000 + tid_offset_by_x * OBJ_TILE_SIZE;
 
                         int in_tile_x = adjusted_sprite_x % 8;
                         int in_tile_y = adjusted_sprite_y % 8;
@@ -259,7 +259,7 @@ void render_obj(gba_ppu_t* ppu) {
                         int in_tile_offset = in_tile_x + in_tile_y * 8;
                         tile_address += in_tile_offset >> (!attr0.is_256color);
 
-                        byte tile = gba_read_byte(tile_address);
+                        byte tile = ppu->vram[tile_address];
                         if (!attr0.is_256color) {
                             tile >>= (in_tile_offset % 2) * 4;
                             tile &= 0xF;
@@ -324,7 +324,7 @@ INLINE void render_screenentry(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X]
         tile_y = 7 - tile_y;
     }
 
-    render_tile(se.tid, se.pb, line, screen_x, is_256color, character_base_addr, tile_x, tile_y);
+    render_tile(ppu, se.tid, se.pb, line, screen_x, is_256color, character_base_addr, tile_x, tile_y);
 }
 
 INLINE bool should_render_bg_pixel(gba_ppu_t* ppu, int x, int y, bool win0in, bool win1in, bool winout, bool objout) {
@@ -409,7 +409,7 @@ void render_bg_affine(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X], BGCNT_t
     // Tileset (like pattern tables in the NES)
     word character_base_addr = bgcnt->character_base_block * CHARBLOCK_SIZE;
     // Tile map (like nametables in the NES)
-    word screen_base_addr = 0x06000000 + bgcnt->screen_base_block * SCREENBLOCK_SIZE;
+    word screen_base_addr = bgcnt->screen_base_block * SCREENBLOCK_SIZE;
 
     int bg_width;
     int bg_height;
@@ -452,7 +452,7 @@ void render_bg_affine(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X], BGCNT_t
 
         if (adjusted_y < bg_height && adjusted_x < bg_width && should_render_bg_pixel(ppu, screen_x, ppu->y, win0in, win1in, winout, objout)) {
             int se_number = (adjusted_x / 8) + (adjusted_y / 8) * (bg_width / 8);
-            byte tid = gba_read_byte(screen_base_addr + se_number);
+            byte tid = ppu->vram[screen_base_addr + se_number];
             render_tile(ppu, tid, 0, line, screen_x, true, character_base_addr, adjusted_x % 8, adjusted_y % 8);
         } else {
             (*line)[screen_x].r = 0;
