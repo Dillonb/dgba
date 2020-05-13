@@ -26,6 +26,8 @@ INLINE word open_bus(word addr);
 #define REGION_SRAM       0x0E
 #define REGION_SRAM_MIRR  0x0F
 
+#define HALF_FROM_BYTE_ARRAY(arr, index) (((arr)[(index) + 1] << 8) | (arr[index]))
+
 gbabus_t* init_gbabus() {
     gbabus_t* bus_state = malloc(sizeof(gbabus_t));
     memset(bus_state, 0, sizeof(gbabus_t));
@@ -731,27 +733,97 @@ byte gba_read_byte(word addr) {
 
 INLINE half inline_gba_read_half(word address) {
     address &= ~(sizeof(half) - 1);
-    if (is_ioreg(address)) {
-        byte ioreg_size = get_ioreg_size_for_addr(address);
-        unimplemented(ioreg_size > sizeof(half), "Reading from a too-large ioreg from gba_read_half")
-        if (ioreg_size == sizeof(half)) {
-            return read_half_ioreg(address);
-        } else if (!is_ioreg_readable(address & ~(sizeof(word) - 1))) {
-            return open_bus(address);
-        } else if (ioreg_size == 0) {
-            // Unused io register
-            logwarn("Read from unused half size ioregister!")
-            return 0;
+    switch (address >> 24) {
+        case REGION_BIOS: {
+            if (address < GBA_BIOS_SIZE) { // BIOS
+                return gbabios_read_byte(address) | (gbabios_read_byte(address + 1) << 8);
+            } else {
+                return open_bus(address);
+            }
         }
-    }
+        case REGION_EWRAM: {
+            word index = (address - 0x02000000) % 0x40000;
+            return HALF_FROM_BYTE_ARRAY(mem->ewram, index);
+        }
+        case REGION_IWRAM: {
+            word index = (address - 0x03000000) % 0x8000;
+            return HALF_FROM_BYTE_ARRAY(mem->iwram, index);
+        }
+        case REGION_IOREG: {
+            if (address < 0x04000400) {
+                byte size = get_ioreg_size_for_addr(address);
+                switch (size) {
+                    case 0:
+                        logwarn("Returning open bus (UNUSED HALF IOREG 0x%08X)", address)
+                        return open_bus(address);
+                    case sizeof(byte):
+                        return read_byte_ioreg(address) | (read_byte_ioreg(address + 1) << 8);
+                    case sizeof(half):
+                        return read_half_ioreg(address);
+                    case sizeof(word):
+                        logfatal("Reading word ioreg from gba_read_half()")
+                }
+            } else {
+                logwarn("Tried to read from 0x%08X", address)
+                return open_bus(address);
+            }
+        }
+        case REGION_PRAM: {
+            word index = (address - 0x5000000) % 0x400;
+            return HALF_FROM_BYTE_ARRAY(ppu->pram, index);
+        }
+        case REGION_VRAM: {
+            word index = (address - 0x06000000) % VRAM_SIZE;
+            return HALF_FROM_BYTE_ARRAY(ppu->vram, index);
+        }
+        case REGION_OAM: {
+            word index = (address - 0x07000000) % OAM_SIZE;
+            return HALF_FROM_BYTE_ARRAY(ppu->oam, index);
+        }
+        case REGION_GAMEPAK0_L:
+        case REGION_GAMEPAK0_H:
+        case REGION_GAMEPAK1_L:
+        case REGION_GAMEPAK1_H:
+        case REGION_GAMEPAK2_L: {
+            word index = address & 0x1FFFFFF;
+            if (index < mem->rom_size) {
+                return HALF_FROM_BYTE_ARRAY(mem->rom, index);
+            } else {
+                return open_bus(address);
+            }
+        }
 
-    if (is_open_bus(address)) {
-        return open_bus(address);
-    }
-    byte lower = inline_gba_read_byte(address);
-    byte upper = inline_gba_read_byte(address + 1);
+        case REGION_GAMEPAK2_H:
+            if (bus->backup_type == EEPROM) {
+                if (mem->rom_size <= 0x1000000 || address >= 0xDFFFF00) {
+                    return 1;
+                }
+            }
+            word index = address & 0x1FFFFFF;
+            if (index < mem->rom_size) {
+                return HALF_FROM_BYTE_ARRAY(mem->rom, index);
+            } else {
+                return open_bus(address);
+            }
 
-    return (upper << 8u) | lower;
+        case REGION_SRAM:
+            switch (bus->backup_type) {
+                case SRAM:
+                    return HALF_FROM_BYTE_ARRAY(mem->backup, address & 0x7FFF);
+                case FLASH64K:
+                case FLASH128K:
+                    logfatal("gba_read_half from FLASH!")
+                default: break;
+            }
+            return 0;
+
+        case REGION_SRAM_MIRR:
+            if (bus->backup_type == SRAM) {
+                return HALF_FROM_BYTE_ARRAY(mem->backup, address & 0x7FFF);
+            }
+            return 0;
+    }
+    return open_bus(address);
 }
 
 half gba_read_half(word address) {
