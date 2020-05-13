@@ -54,7 +54,7 @@ void render_line_mode3(gba_ppu_t* ppu) {
             offset *= 2;
 
             gba_color_t color;
-            color.raw = gba_read_half(0x06000000 + offset) & 0x7FFF;
+            color.raw = HALF_FROM_BYTE_ARRAY(ppu->vram, offset) & 0x7FFF;
 
             ppu->screen[ppu->y][x].a = 0xFF;
             ppu->screen[ppu->y][x].r = FIVEBIT_TO_EIGHTBIT_COLOR(color.r);
@@ -84,7 +84,7 @@ void render_line_mode4(gba_ppu_t* ppu) {
                 ppu->screen[ppu->y][x].b = 0;
             } else {
                 gba_color_t color;
-                color.raw = gba_read_half(0x05000000 | (0x20 * PALETTE_BANK_BACKGROUND + 2 * tile)) & 0x7FFF;
+                color.raw = HALF_FROM_BYTE_ARRAY(ppu->pram, (0x20 * PALETTE_BANK_BACKGROUND + 2 * tile)) & 0x7FFF;
 
                 ppu->screen[ppu->y][x].a = 0xFF;
                 ppu->screen[ppu->y][x].r = FIVEBIT_TO_EIGHTBIT_COLOR(color.r);
@@ -130,9 +130,9 @@ void render_obj(gba_ppu_t* ppu) {
     }
 
     for (int sprite = 0; sprite < 128; sprite++) {
-        attr0.raw = gba_read_half(0x07000000 + (sprite * 8) + 0);
-        attr1.raw = gba_read_half(0x07000000 + (sprite * 8) + 2);
-        attr2.raw = gba_read_half(0x07000000 + (sprite * 8) + 4);
+        attr0.raw = HALF_FROM_BYTE_ARRAY(ppu->oam, (sprite * 8) + 0);
+        attr1.raw = HALF_FROM_BYTE_ARRAY(ppu->oam, (sprite * 8) + 2);
+        attr2.raw = HALF_FROM_BYTE_ARRAY(ppu->oam, (sprite * 8) + 4);
 
         int height = sprite_heights[attr0.shape][attr1.size];
         int width = sprite_widths[attr0.shape][attr1.size];
@@ -173,10 +173,10 @@ void render_obj(gba_ppu_t* ppu) {
 
         obj_affine_t affine;
         if (is_affine) {
-            affine.pa = gba_read_half(0x07000000 + attr1.affine_index * 32 + 6);
-            affine.pb = gba_read_half(0x07000000 + attr1.affine_index * 32 + 14);
-            affine.pc = gba_read_half(0x07000000 + attr1.affine_index * 32 + 22);
-            affine.pd = gba_read_half(0x07000000 + attr1.affine_index * 32 + 30);
+            affine.pa = HALF_FROM_BYTE_ARRAY(ppu->oam, attr1.affine_index * 32 + 6);
+            affine.pb = HALF_FROM_BYTE_ARRAY(ppu->oam, attr1.affine_index * 32 + 14);
+            affine.pc = HALF_FROM_BYTE_ARRAY(ppu->oam, attr1.affine_index * 32 + 22);
+            affine.pd = HALF_FROM_BYTE_ARRAY(ppu->oam, attr1.affine_index * 32 + 30);
             if (is_double_affine) { // double rendering area
                 screen_min_y -= hheight;
                 screen_max_y += hheight;
@@ -267,14 +267,14 @@ void render_obj(gba_ppu_t* ppu) {
 
                         if (tile != 0) {
 
-                            word palette_address = 0x05000200; // OBJ palette base
+                            word palette_address = 0x200; // OBJ palette base
                             if (attr0.is_256color) {
                                 palette_address += 2 * tile;
                             } else {
                                 palette_address += (0x20 * attr2.pb + 2 * tile);
                             }
                             ppu->obj_priorities[screen_x] = attr2.priority;
-                            ppu->objbuf[screen_x].raw = gba_read_half(palette_address);
+                            ppu->objbuf[screen_x].raw = HALF_FROM_BYTE_ARRAY(ppu->pram, palette_address);
                             ppu->objbuf[screen_x].transparent = false;
                         }
                     }
@@ -294,31 +294,26 @@ typedef union reg_se {
     };
 } reg_se_t;
 
-INLINE void render_tile(int tid, int pb, gba_color_t (*line)[GBA_SCREEN_X], int screen_x, bool is_256color, word character_base_addr, int tile_x, int tile_y) {
+INLINE void render_tile(gba_ppu_t* ppu, int tid, int pb, gba_color_t (*line)[GBA_SCREEN_X], int screen_x, bool is_256color, word character_base_addr, int tile_x, int tile_y) {
     int in_tile_offset_divisor = is_256color ? 1 : 2;
     int tile_size = is_256color ? 0x40 : 0x20;
     int in_tile_offset = tile_x + tile_y * 8;
     word tile_address = character_base_addr + tid * tile_size;
     tile_address += in_tile_offset / in_tile_offset_divisor;
 
-    byte tile = gba_read_byte(tile_address);
+    byte tile = ppu->vram[tile_address];
 
     if (!is_256color) {
         tile >>= (in_tile_offset % 2) * 4;
         tile &= 0xF;
     }
 
-    word palette_address = 0x05000000;
-    if (is_256color) {
-        palette_address += 2 * tile;
-    } else {
-        palette_address += (0x20 * pb + 2 * tile);
-    }
-    (*line)[screen_x].raw = gba_read_half(palette_address);
+    word palette_address = is_256color ? 2 * tile : (0x20 * pb + 2 * tile);
+    (*line)[screen_x].raw = HALF_FROM_BYTE_ARRAY(ppu->pram, palette_address);
     (*line)[screen_x].transparent = tile == 0; // This color should only be drawn if we need transparency
 }
 
-INLINE void render_screenentry(gba_color_t (*line)[GBA_SCREEN_X], int screen_x, reg_se_t se, bool is_256color, word character_base_addr, int tilemap_x, int tilemap_y) {
+INLINE void render_screenentry(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X], int screen_x, reg_se_t se, bool is_256color, word character_base_addr, int tilemap_x, int tilemap_y) {
     // Find the tile
     int tile_x = tilemap_x % 8;
     if (se.hflip) {
@@ -360,10 +355,9 @@ INLINE bool should_render_bg_pixel(gba_ppu_t* ppu, int x, int y, bool win0in, bo
 #define CHARBLOCK_SIZE  0x4000
 INLINE void render_bg_regular(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X], BGCNT_t* bgcnt, int hofs, int vofs, bool win0in, bool win1in, bool winout, bool objout) {
     // Tileset (like pattern tables in the NES)
-    word character_base_addr = 0x06000000 + bgcnt->character_base_block * CHARBLOCK_SIZE;
+    word character_base_addr = bgcnt->character_base_block * CHARBLOCK_SIZE;
     // Tile map (like nametables in the NES)
-    word screen_base_addr = 0x06000000 + bgcnt->screen_base_block * SCREENBLOCK_SIZE;
-
+    word screen_base_addr = bgcnt->screen_base_block * SCREENBLOCK_SIZE;
 
     reg_se_t se;
     for (int x = 0; x < GBA_SCREEN_X; x++) {
@@ -397,8 +391,8 @@ INLINE void render_bg_regular(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X],
             int tilemap_y = (ppu->y + vofs) % 256;
 
             int se_number = (tilemap_x / 8) + (tilemap_y / 8) * 32;
-            se.raw = gba_read_half(screen_base_addr + screenblock_number * SCREENBLOCK_SIZE + se_number * 2);
-            render_screenentry(line, x, se, bgcnt->is_256color, character_base_addr, tilemap_x, tilemap_y);
+            se.raw = HALF_FROM_BYTE_ARRAY(ppu->vram, (screen_base_addr + screenblock_number * SCREENBLOCK_SIZE + se_number * 2));
+            render_screenentry(ppu, line, x, se, bgcnt->is_256color, character_base_addr, tilemap_x, tilemap_y);
         } else {
             (*line)[x].r = 0;
             (*line)[x].g = 0;
@@ -413,7 +407,7 @@ void render_bg_affine(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X], BGCNT_t
                       bg_referencepoint_container_t* x, bg_referencepoint_container_t* y,
                       bg_rotation_scaling_t* pa, bg_rotation_scaling_t* pb, bg_rotation_scaling_t* pc, bg_rotation_scaling_t* pd) {
     // Tileset (like pattern tables in the NES)
-    word character_base_addr = 0x06000000 + bgcnt->character_base_block * CHARBLOCK_SIZE;
+    word character_base_addr = bgcnt->character_base_block * CHARBLOCK_SIZE;
     // Tile map (like nametables in the NES)
     word screen_base_addr = 0x06000000 + bgcnt->screen_base_block * SCREENBLOCK_SIZE;
 
@@ -459,7 +453,7 @@ void render_bg_affine(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X], BGCNT_t
         if (adjusted_y < bg_height && adjusted_x < bg_width && should_render_bg_pixel(ppu, screen_x, ppu->y, win0in, win1in, winout, objout)) {
             int se_number = (adjusted_x / 8) + (adjusted_y / 8) * (bg_width / 8);
             byte tid = gba_read_byte(screen_base_addr + se_number);
-            render_tile(tid, 0, line, screen_x, true, character_base_addr, adjusted_x % 8, adjusted_y % 8);
+            render_tile(ppu, tid, 0, line, screen_x, true, character_base_addr, adjusted_x % 8, adjusted_y % 8);
         } else {
             (*line)[screen_x].r = 0;
             (*line)[screen_x].g = 0;
