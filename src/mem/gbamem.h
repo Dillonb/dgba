@@ -2,6 +2,7 @@
 #define __GBAMEM_H__
 
 #include <stddef.h>
+#include <stdbool.h>
 
 #include "../common/util.h"
 #include "gbabus.h"
@@ -33,6 +34,7 @@ typedef struct gbamem {
     byte iwram[IWRAM_SIZE];
     size_t backup_size;
     byte* backup;
+    bool backup_dirty;
     const char* backup_path;
     const char* savestate_path;
 
@@ -41,6 +43,7 @@ typedef struct gbamem {
     word flash_command;
     byte flash_bank;
     word flash_erase_write_sector_first_address;
+    int backup_persist_countdown;
 } gbamem_t;
 
 gbamem_t* init_mem();

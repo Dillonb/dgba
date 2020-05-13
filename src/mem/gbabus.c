@@ -28,6 +28,7 @@ INLINE word open_bus(word addr);
 
 gbabus_t* init_gbabus() {
     gbabus_t* bus_state = malloc(sizeof(gbabus_t));
+    memset(bus_state, 0, sizeof(gbabus_t));
     bus_state->interrupt_master_enable.raw = 0;
     bus_state->interrupt_enable.raw = 0;
     bus_state->KEYINPUT.raw = 0xFFFF;
@@ -794,6 +795,7 @@ void gba_write_byte(word addr, byte value) {
         switch (bus->backup_type) {
             case SRAM:
                 mem->backup[addr & 0x7FFF] = value;
+                mem->backup_dirty = true;
                 break;
             case UNKNOWN:
                 logwarn("Tried to access backup when backup type unknown!")

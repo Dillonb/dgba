@@ -19,6 +19,8 @@ bool should_quit = false;
 #define VISIBLE_LINES 160
 #define VBLANK_LINES 68
 
+#define BACKUP_PERSIST_DEBOUNCE_FRAMES 10
+
 const char* get_backup_path(const char* romfile) {
     char buf[PATH_MAX];
     char* rom_path = realpath(romfile, buf);
@@ -189,6 +191,40 @@ void gba_system_step() {
     inline_gba_system_step();
 }
 
+void persist_backup() {
+    if (mem->backup_dirty) {
+        mem->backup_persist_countdown = BACKUP_PERSIST_DEBOUNCE_FRAMES;
+        mem->backup_dirty = 0;
+    } else if (--mem->backup_persist_countdown == 0) {
+        if (bus->backup_type != UNKNOWN && mem->backup != NULL) {
+            FILE *fp = fopen(mem->backup_path, "wb");
+            if (fp != NULL) {
+                fwrite(mem->backup, mem->backup_size, 1, fp);
+                fclose(fp);
+            }
+            mem->backup_dirty = false;
+        }
+    }
+}
+
+void cleanup() {
+    free(mem->backup);
+    free((void*)mem->backup_path);
+    free((void*)mem->savestate_path);
+    free(mem->rom);
+    free(mem);
+    mem = NULL;
+
+    free(ppu);
+    ppu = NULL;
+    free(bus);
+    bus = NULL;
+    free(apu);
+    apu = NULL;
+    free(cpu);
+    cpu = NULL;
+}
+
 void gba_system_loop() {
     int extra = 0;
     while (!should_quit) {
@@ -206,15 +242,10 @@ void gba_system_loop() {
             ppu_end_hblank(ppu);
         }
         ppu_end_vblank(ppu);
+        persist_backup();
     }
 
-    if (bus->backup_type != UNKNOWN && mem->backup != NULL) {
-        FILE *fp = fopen(mem->backup_path, "wb");
-        if (fp != NULL) {
-            fwrite(mem->backup, mem->backup_size, 1, fp);
-            fclose(fp);
-        }
-    }
+    cleanup();
 }
 
 typedef struct savestate_header {

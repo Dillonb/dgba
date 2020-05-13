@@ -34,8 +34,6 @@ void apu_push_sample(gba_apu_t* apu) {
     if (size < AUDIO_BIGBUFFER_SIZE) {
         float sample = (convert_sample(apu->fifo[0].sample) + convert_sample(apu->fifo[1].sample)) / 2;
         apu->bigbuffer.buf[(apu->bigbuffer.write_index++) % AUDIO_BIGBUFFER_SIZE] = sample;
-    } else {
-        printf("Buffer overrun! Skipping a sample\n");
     }
 }
 

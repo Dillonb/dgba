@@ -147,6 +147,7 @@ void write_byte_flash(gbamem_t* mem, gbabus_t* bus, word address, byte value) {
                 memset(mem->backup, 0xFF, mem->backup_size);
                 bus->ime_temp.raw = bus->interrupt_master_enable.raw;
                 bus->interrupt_master_enable.enable = false;
+                mem->backup_dirty = true;
             } else {
 #ifdef FLASH_VERBOSE_LOG
                 printf("FLASHC_ERASE_BLOCK\n");
@@ -159,6 +160,7 @@ void write_byte_flash(gbamem_t* mem, gbabus_t* bus, word address, byte value) {
                     unimplemented(index >= mem->backup_size, "Out of bounds access to backup!")
                     mem->backup[index] = 0xFF;
                 }
+                mem->backup_dirty = true;
             }
             // The games are told to wait until a given value == 0xFF
             // Since we're erasing by overwriting with 0xFFs, we can just go back into FLASH_READY mode
@@ -182,6 +184,7 @@ void write_byte_flash(gbamem_t* mem, gbabus_t* bus, word address, byte value) {
                 mem->flash_erase_write_sector_first_address = 0;
                 mem->flash_state = FLASH_READY;
             }
+            mem->backup_dirty = true;
             break;
         }
         case FLASH_WRITE_SINGLE_BYTE: {
@@ -191,6 +194,7 @@ void write_byte_flash(gbamem_t* mem, gbabus_t* bus, word address, byte value) {
             }
             mem->backup[index] = value;
             mem->flash_state = FLASH_READY;
+            mem->backup_dirty = true;
             break;
         }
         case FLASH_BANKSWITCH:
