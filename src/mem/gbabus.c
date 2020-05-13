@@ -26,8 +26,6 @@ INLINE word open_bus(word addr);
 #define REGION_SRAM       0x0E
 #define REGION_SRAM_MIRR  0x0F
 
-#define HALF_FROM_BYTE_ARRAY(arr, index) (((arr)[(index) + 1] << 8) | (arr[index]))
-
 gbabus_t* init_gbabus() {
     gbabus_t* bus_state = malloc(sizeof(gbabus_t));
     memset(bus_state, 0, sizeof(gbabus_t));
@@ -912,27 +910,104 @@ void gba_write_half(word address, half value) {
 word gba_read_word(word address) {
     address &= ~(sizeof(word) - 1);
 
-    if (is_ioreg(address)) {
-        byte ioreg_size = get_ioreg_size_for_addr(address);
-        if(ioreg_size == sizeof(word)) {
-            return read_word_ioreg(address);
-        } else if (ioreg_size == 0) {
-            return open_bus(address);
-        } else if (!is_ioreg_readable(address)
-                   && !is_ioreg_readable(address + 1)
-                   && !is_ioreg_readable(address + 2)
-                   && !is_ioreg_readable(address + 3)) {
-            return open_bus(address);
+    switch (address >> 24) {
+        case REGION_BIOS: {
+            if (address < GBA_BIOS_SIZE) { // BIOS
+                return gbabios_read_byte(address)
+                       | (gbabios_read_byte(address + 1) << 8)
+                       | (gbabios_read_byte(address + 2) << 16)
+                       | (gbabios_read_byte(address + 3) << 24);
+            } else {
+                return open_bus(address);
+            }
         }
-        // Otherwise, it'll be smaller than a word, and we'll read each part from the respective registers.
-    }
-    if (is_open_bus(address)) {
-        return open_bus(address);
-    }
-    word lower = inline_gba_read_half(address);
-    word upper = inline_gba_read_half(address + 2);
 
-    return (upper << 16u) | lower;
+        case REGION_EWRAM: {
+            word index = (address - 0x02000000) % 0x40000;
+            return WORD_FROM_BYTE_ARRAY(mem->ewram, index);
+        }
+        case REGION_IWRAM: {
+            word index = (address - 0x03000000) % 0x8000;
+            return WORD_FROM_BYTE_ARRAY(mem->iwram, index);
+        }
+        case REGION_IOREG: {
+            if (address < 0x04000400) {
+                byte size = get_ioreg_size_for_addr(address);
+                switch (size) {
+                    case 0:
+                        logwarn("Returning open bus (UNUSED WORD IOREG 0x%08X)", address)
+                        return open_bus(address);
+                    case sizeof(byte):
+                        return read_byte_ioreg(address)
+                               | (read_byte_ioreg(address + 1) << 8)
+                               | (read_byte_ioreg(address + 2) << 16)
+                               | (read_byte_ioreg(address + 3) << 24);
+                    case sizeof(half):
+                        return read_half_ioreg(address) | (read_half_ioreg(address + 2) << 16);
+                    case sizeof(word):
+                        return read_word_ioreg(address);
+                }
+            } else {
+                logwarn("Tried to read from 0x%08X", address)
+                return open_bus(address);
+            }
+        }
+        case REGION_PRAM: {
+            word index = (address - 0x5000000) % 0x400;
+            return WORD_FROM_BYTE_ARRAY(ppu->pram, index);
+        }
+        case REGION_VRAM: {
+            word index = (address - 0x06000000) % VRAM_SIZE;
+            return WORD_FROM_BYTE_ARRAY(ppu->vram, index);
+        }
+        case REGION_OAM: {
+            word index = (address - 0x07000000) % OAM_SIZE;
+            return WORD_FROM_BYTE_ARRAY(ppu->oam, index);
+        }
+        case REGION_GAMEPAK0_L:
+        case REGION_GAMEPAK0_H:
+        case REGION_GAMEPAK1_L:
+        case REGION_GAMEPAK1_H:
+        case REGION_GAMEPAK2_L: {
+            word index = address & 0x1FFFFFF;
+            if (index < mem->rom_size) {
+                return WORD_FROM_BYTE_ARRAY(mem->rom, index);
+            } else {
+                return open_bus(address);
+            }
+        }
+
+        case REGION_GAMEPAK2_H:
+            if (bus->backup_type == EEPROM) {
+                if (mem->rom_size <= 0x1000000 || address >= 0xDFFFF00) {
+                    return 1;
+                }
+            }
+            word index = address & 0x1FFFFFF;
+            if (index < mem->rom_size) {
+                return WORD_FROM_BYTE_ARRAY(mem->rom, index);
+            } else {
+                return open_bus(address);
+            }
+
+        case REGION_SRAM:
+            switch (bus->backup_type) {
+                case SRAM:
+                    return WORD_FROM_BYTE_ARRAY(mem->backup, address & 0x7FFF);
+                case FLASH64K:
+                case FLASH128K:
+                    logfatal("gba_read_word from FLASH!")
+                default: break;
+            }
+            return 0;
+
+        case REGION_SRAM_MIRR:
+            if (bus->backup_type == SRAM) {
+                return WORD_FROM_BYTE_ARRAY(mem->backup, address & 0x7FFF);
+            }
+            return 0;
+    }
+    return open_bus(address);
 }
 
 void gba_write_word(word address, word value) {
