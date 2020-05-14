@@ -9,6 +9,7 @@
 #define SCREEN_SCALE 4
 
 static bool initialized = false;
+static bool ctrl_state = false;
 static SDL_Window* window = NULL;
 static uint32_t window_id;
 static SDL_Renderer* renderer = NULL;
@@ -41,9 +42,15 @@ void initialize() {
 void update_key(SDL_Keycode sdlk, bool state) {
     KEYINPUT_t* KEYINPUT = get_keyinput();
     switch (sdlk) {
+        case SDLK_LCTRL:
+        case SDLK_RCTRL:
+            ctrl_state = state;
+            break;
         case SDLK_ESCAPE:
             logwarn("User pressed escape")
-            should_quit = true;
+            if (ctrl_state) {
+                should_quit = true;
+            }
             break;
         case SDLK_UP:
         case SDLK_w:
