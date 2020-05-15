@@ -524,7 +524,7 @@ INLINE void merge_bgs(gba_ppu_t* ppu) {
         bool non_transparent_drawn = false;
         int last_layer_drawn = -1;
         gba_color_t last = {{.r = 0, .g = 0, .b = 0}};
-        bool blended_already = false;
+        gba_color_t draw = {{.r = 0, .g = 0, .b = 0}};
 
         for (int i = 3; i >= 0; i--) { // Draw them in reverse priority order, so the highest priority BG is drawn last.
             int bg = background_priorities[i];
@@ -535,6 +535,7 @@ INLINE void merge_bgs(gba_ppu_t* ppu) {
                 last.r = ppu->objbuf[x].r;
                 last.g = ppu->objbuf[x].g;
                 last.b = ppu->objbuf[x].b;
+                draw = last;
                 non_transparent_drawn = true;
                 last_layer_drawn = BG_OBJ;
             } else {
@@ -556,8 +557,6 @@ INLINE void merge_bgs(gba_ppu_t* ppu) {
                 bool should_blend = should_draw && bg_top[i] && (should_blend_multiple || should_blend_single);
 
                 if (should_blend) {
-                    unimplemented(blended_already, "Trying to blend twice???")
-                    blended_already = true;
                     byte eva = ppu->BLDALPHA.eva >= 0b10000 ? 0b10000 : ppu->BLDALPHA.eva;
                     byte evb = ppu->BLDALPHA.evb >= 0b10000 ? 0b10000 : ppu->BLDALPHA.evb;
                     byte ey  = ppu->BLDY.ey      >= 0b10000 ? 0b10000 : ppu->BLDY.ey;
@@ -570,51 +569,53 @@ INLINE void merge_bgs(gba_ppu_t* ppu) {
                             word new_g = last.g * evb + pixel.g * eva;
                             word new_b = last.b * evb + pixel.b * eva;
 
-                            last.r = word_min(0x1F, new_r >> 4);
-                            last.g = word_min(0x1F, new_g >> 4);
-                            last.b = word_min(0x1F, new_b >> 4);
+                            draw.r = word_min(0x1F, new_r >> 4);
+                            draw.g = word_min(0x1F, new_g >> 4);
+                            draw.b = word_min(0x1F, new_b >> 4);
 
                             last_layer_drawn = bg;
+                            last = pixel;
                             break;
                         }
                         case BLD_WHITE: {
                             word white_factor = 0x1F *  ey;
-                            last.r = (pixel.r * (16 - ey) + white_factor) >> 4;
-                            last.r = word_min(0x1F, last.r);
+                            draw.r = (pixel.r * (16 - ey) + white_factor) >> 4;
+                            draw.r = word_min(0x1F, last.r);
 
-                            last.g = (pixel.g * (16 - ey) + white_factor) >> 4;
-                            last.g = word_min(0x1F, last.g);
+                            draw.g = (pixel.g * (16 - ey) + white_factor) >> 4;
+                            draw.g = word_min(0x1F, last.g);
 
-                            last.b = (pixel.b * (16 - ey) + white_factor) >> 4;
-                            last.b = word_min(0x1F, last.b);
+                            draw.b = (pixel.b * (16 - ey) + white_factor) >> 4;
+                            draw.b = word_min(0x1F, last.b);
 
                             if (!pixel.transparent) {
                                 non_transparent_drawn = true;
                             }
                             last_layer_drawn = bg;
+                            last = pixel;
                             break;
                         }
                         case BLD_BLACK: {
-                            last.r = (pixel.r * (16 - ey)) >> 4;
-                            last.r = word_min(0x1F, last.r);
+                            draw.r = (pixel.r * (16 - ey)) >> 4;
+                            draw.r = word_min(0x1F, last.r);
 
-                            last.g = (pixel.g * (16 - ey)) >> 4;
-                            last.g = word_min(0x1F, last.g);
+                            draw.g = (pixel.g * (16 - ey)) >> 4;
+                            draw.g = word_min(0x1F, last.g);
 
-                            last.b = (pixel.b * (16 - ey)) >> 4;
-                            last.b = word_min(0x1F, last.b);
+                            draw.b = (pixel.b * (16 - ey)) >> 4;
+                            draw.b = word_min(0x1F, last.b);
 
                             if (!pixel.transparent) {
                                 non_transparent_drawn = true;
                             }
                             last_layer_drawn = bg;
+                            last = pixel;
                             break;
                         }
                     }
                 } else if (should_draw) {
-                    last.r = pixel.r;
-                    last.g = pixel.g;
-                    last.b = pixel.b;
+                    last = pixel;
+                    draw = pixel;
 
                     if (!pixel.transparent) {
                         non_transparent_drawn = true;
@@ -625,9 +626,9 @@ INLINE void merge_bgs(gba_ppu_t* ppu) {
         }
 
         ppu->screen[ppu->y][x].a = 0xFF;
-        ppu->screen[ppu->y][x].r = FIVEBIT_TO_EIGHTBIT_COLOR(last.r);
-        ppu->screen[ppu->y][x].g = FIVEBIT_TO_EIGHTBIT_COLOR(last.g);
-        ppu->screen[ppu->y][x].b = FIVEBIT_TO_EIGHTBIT_COLOR(last.b);
+        ppu->screen[ppu->y][x].r = FIVEBIT_TO_EIGHTBIT_COLOR(draw.r);
+        ppu->screen[ppu->y][x].g = FIVEBIT_TO_EIGHTBIT_COLOR(draw.g);
+        ppu->screen[ppu->y][x].b = FIVEBIT_TO_EIGHTBIT_COLOR(draw.b);
     }
 }
 
