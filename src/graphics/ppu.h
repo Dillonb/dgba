@@ -13,7 +13,7 @@
 #define VRAM_SIZE  0x18000
 #define OAM_SIZE   0x400
 
-#define FIVEBIT_TO_EIGHTBIT_COLOR(c) (c<<3)|(c&7)
+#define FIVEBIT_TO_EIGHTBIT_COLOR(c) ((c<<3)|(c&7))
 
 typedef union DISPCNT {
     struct {
@@ -192,31 +192,46 @@ typedef union MOSAIC {
     half raw;
 } MOSAIC_t;
 
+#define BLD_OFF 0b00
+#define BLD_STD 0b01
+#define BLD_WHITE 0b10
+#define BLD_BLACK 0b11
+
 typedef union BLDCNT {
     struct {
-        bool bg0_first_target_pixel:1;
-        bool bg1_first_target_pixel:1;
-        bool bg2_first_target_pixel:1;
-        bool bg3_first_target_pixel:1;
-        bool obj_first_target_pixel:1;
-        bool bd_first_target_pixel:1;
-        unsigned color_special_effect:2;
-        bool bg0_second_target_pixel:1;
-        bool bg1_second_target_pixel:1;
-        bool bg2_second_target_pixel:1;
-        bool bg3_second_target_pixel:1;
-        bool obj_second_target_pixel:1;
-        bool bd_second_target_pixel:1;
+        bool aBG0:1;
+        bool aBG1:1;
+        bool aBG2:1;
+        bool aBG3:1;
+        bool aOBJ:1;
+        bool aBD:1;
+        unsigned blend_mode:2;
+        bool bBG0:1;
+        bool bBG1:1;
+        bool bBG2:1;
+        bool bBG3:1;
+        bool bOBJ:1;
+        bool bBD:1;
         unsigned:2;
     };
     half raw;
 } BLDCNT_t;
 
 typedef union BLDALPHA {
+    struct {
+        unsigned eva:5;
+        unsigned:3;
+        unsigned evb:5;
+        unsigned:3;
+    };
     half raw;
 } BLDALPHA_t;
 
 typedef union BLDY {
+    struct {
+        unsigned ey:5;
+        unsigned:11;
+    };
     half raw;
 } BLDY_t;
 
