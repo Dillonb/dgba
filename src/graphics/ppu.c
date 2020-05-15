@@ -488,6 +488,15 @@ void refresh_background_priorities(gba_ppu_t* ppu) {
     }
 }
 
+INLINE word word_min(word a, word b) {
+    if (a < b) {
+        return a;
+    }
+    return b;
+}
+
+#define BG_OBJ 4
+
 INLINE void merge_bgs(gba_ppu_t* ppu) {
     bool bg_enabled[] = {
             ppu->DISPCNT.screen_display_bg0,
@@ -499,31 +508,36 @@ INLINE void merge_bgs(gba_ppu_t* ppu) {
             ppu->BLDCNT.aBG0,
             ppu->BLDCNT.aBG1,
             ppu->BLDCNT.aBG2,
-            ppu->BLDCNT.aBG3
+            ppu->BLDCNT.aBG3,
+            ppu->BLDCNT.aOBJ
     };
 
     bool bg_bottom[] = {
             ppu->BLDCNT.bBG0,
             ppu->BLDCNT.bBG1,
             ppu->BLDCNT.bBG2,
-            ppu->BLDCNT.bBG3
+            ppu->BLDCNT.bBG3,
+            ppu->BLDCNT.aOBJ
     };
 
     for (int x = 0; x < GBA_SCREEN_X; x++) {
         bool non_transparent_drawn = false;
-        int nontransparent_layer_drawn = -1;
+        int last_layer_drawn = -1;
+        gba_color_t last = {{.r = 0, .g = 0, .b = 0}};
+        bool blended_already = false;
+
         for (int i = 3; i >= 0; i--) { // Draw them in reverse priority order, so the highest priority BG is drawn last.
+            int bg = background_priorities[i];
             // If the OBJ pixel here has the same priority as the BG, draw it instead.
             // "Sprites cover backgrounds of the same priority"
             if (ppu->obj_priorities[x] == i && !ppu->objbuf[x].transparent) {
-                ppu->screen[ppu->y][x].a = 0xFF;
-                ppu->screen[ppu->y][x].r = FIVEBIT_TO_EIGHTBIT_COLOR(ppu->objbuf[x].r);
-                ppu->screen[ppu->y][x].g = FIVEBIT_TO_EIGHTBIT_COLOR(ppu->objbuf[x].g);
-                ppu->screen[ppu->y][x].b = FIVEBIT_TO_EIGHTBIT_COLOR(ppu->objbuf[x].b);
+                // TODO OBJ blending goes here
+                last.r = ppu->objbuf[x].r;
+                last.g = ppu->objbuf[x].g;
+                last.b = ppu->objbuf[x].b;
                 non_transparent_drawn = true;
-                nontransparent_layer_drawn = i;
+                last_layer_drawn = BG_OBJ;
             } else {
-                int bg = background_priorities[i];
                 gba_color_t pixel = ppu->bgbuf[bg][x];
                 bool should_draw = bg_enabled[bg];
                 if (pixel.transparent) {
@@ -533,72 +547,87 @@ INLINE void merge_bgs(gba_ppu_t* ppu) {
                 bool should_blend_single = ppu->BLDCNT.blend_mode == BLD_BLACK || ppu->BLDCNT.blend_mode == BLD_WHITE;
 
                 bool should_blend_multiple = (ppu->BLDCNT.blend_mode == BLD_STD
-                                              && non_transparent_drawn
-                                              && nontransparent_layer_drawn > 0  // Shouldn't blend if we've never drawn anything on this pixel yet
+                                              && last_layer_drawn > -1  // Shouldn't blend if we've never drawn anything on this pixel yet
                                               && i != 3 // Don't blend if we're the very bottom layer
-                                              && bg_bottom[nontransparent_layer_drawn]); // last non-transparent layer drawn is enabled for blending as a _bottom layer_
+                                              && bg_bottom[last_layer_drawn]); // last layer drawn is enabled for blending as a _bottom layer_
 
 
-                // current layer is enabled for blending as a _top layer_, and eligible to be blended given above conditions.
-                bool should_blend = bg_top[i] && (should_blend_multiple || should_blend_single);
-
-                double eva = 1/(double)(ppu->BLDALPHA.eva > 0b10000 ? 0b10000 : ppu->BLDALPHA.eva);
-                double evb = 1/(double)(ppu->BLDALPHA.evb > 0b10000 ? 0b10000 : ppu->BLDALPHA.evb);
-                double ey =  1/(double)(ppu->BLDY.ey > 0b10000 ? 0b10000 : ppu->BLDY.ey);
+                // current layer is enabled for drawing, blending as a _top layer_, and eligible to be blended given above conditions.
+                bool should_blend = should_draw && bg_top[i] && (should_blend_multiple || should_blend_single);
 
                 if (should_blend) {
+                    unimplemented(blended_already, "Trying to blend twice???")
+                    blended_already = true;
+                    byte eva = ppu->BLDALPHA.eva >= 0b10000 ? 0b10000 : ppu->BLDALPHA.eva;
+                    byte evb = ppu->BLDALPHA.evb >= 0b10000 ? 0b10000 : ppu->BLDALPHA.evb;
+                    byte ey  = ppu->BLDY.ey      >= 0b10000 ? 0b10000 : ppu->BLDY.ey;
+
                     switch (ppu->BLDCNT.blend_mode) {
                         case BLD_OFF:
                             logfatal("Determined we should blend even though blending was off?")
                         case BLD_STD: {
-                            byte r = (byte)(ppu->screen[ppu->y][x].r * evb);
-                            byte g = (byte)(ppu->screen[ppu->y][x].g * evb);
-                            byte b = (byte)(ppu->screen[ppu->y][x].b * evb);
+                            word new_r = last.r * evb + pixel.r * eva;
+                            word new_g = last.g * evb + pixel.g * eva;
+                            word new_b = last.b * evb + pixel.b * eva;
 
-                            ppu->screen[ppu->y][x].r = (byte)(FIVEBIT_TO_EIGHTBIT_COLOR(pixel.r) * eva) + r;
-                            ppu->screen[ppu->y][x].g = (byte)(FIVEBIT_TO_EIGHTBIT_COLOR(pixel.g) * eva) + g;
-                            ppu->screen[ppu->y][x].b = (byte)(FIVEBIT_TO_EIGHTBIT_COLOR(pixel.b) * eva) + b;
+                            last.r = word_min(0x1F, new_r >> 4);
+                            last.g = word_min(0x1F, new_g >> 4);
+                            last.b = word_min(0x1F, new_b >> 4);
+
+                            last_layer_drawn = bg;
                             break;
                         }
                         case BLD_WHITE: {
-                            byte white_factor = 0xFF *  ey;
-                            ppu->screen[ppu->y][x].a = 0xFF;
-                            ppu->screen[ppu->y][x].r = (byte)(FIVEBIT_TO_EIGHTBIT_COLOR(pixel.r) * (1 - ey)) + white_factor;
-                            ppu->screen[ppu->y][x].g = (byte)(FIVEBIT_TO_EIGHTBIT_COLOR(pixel.g) * (1 - ey)) + white_factor;
-                            ppu->screen[ppu->y][x].b = (byte)(FIVEBIT_TO_EIGHTBIT_COLOR(pixel.b) * (1 - ey)) + white_factor;
+                            word white_factor = 0x1F *  ey;
+                            last.r = (pixel.r * (16 - ey) + white_factor) >> 4;
+                            last.r = word_min(0x1F, last.r);
+
+                            last.g = (pixel.g * (16 - ey) + white_factor) >> 4;
+                            last.g = word_min(0x1F, last.g);
+
+                            last.b = (pixel.b * (16 - ey) + white_factor) >> 4;
+                            last.b = word_min(0x1F, last.b);
 
                             if (!pixel.transparent) {
                                 non_transparent_drawn = true;
-                                nontransparent_layer_drawn = i;
                             }
+                            last_layer_drawn = bg;
                             break;
                         }
                         case BLD_BLACK: {
-                            ppu->screen[ppu->y][x].a = 0xFF;
-                            ppu->screen[ppu->y][x].r = (byte)(FIVEBIT_TO_EIGHTBIT_COLOR(pixel.r) * (1 - ey));
-                            ppu->screen[ppu->y][x].g = (byte)(FIVEBIT_TO_EIGHTBIT_COLOR(pixel.g) * (1 - ey));
-                            ppu->screen[ppu->y][x].b = (byte)(FIVEBIT_TO_EIGHTBIT_COLOR(pixel.b) * (1 - ey));
+                            last.r = (pixel.r * (16 - ey)) >> 4;
+                            last.r = word_min(0x1F, last.r);
+
+                            last.g = (pixel.g * (16 - ey)) >> 4;
+                            last.g = word_min(0x1F, last.g);
+
+                            last.b = (pixel.b * (16 - ey)) >> 4;
+                            last.b = word_min(0x1F, last.b);
 
                             if (!pixel.transparent) {
                                 non_transparent_drawn = true;
-                                nontransparent_layer_drawn = i;
                             }
+                            last_layer_drawn = bg;
                             break;
                         }
                     }
                 } else if (should_draw) {
-                    ppu->screen[ppu->y][x].a = 0xFF;
-                    ppu->screen[ppu->y][x].r = FIVEBIT_TO_EIGHTBIT_COLOR(pixel.r);
-                    ppu->screen[ppu->y][x].g = FIVEBIT_TO_EIGHTBIT_COLOR(pixel.g);
-                    ppu->screen[ppu->y][x].b = FIVEBIT_TO_EIGHTBIT_COLOR(pixel.b);
+                    last.r = pixel.r;
+                    last.g = pixel.g;
+                    last.b = pixel.b;
 
                     if (!pixel.transparent) {
                         non_transparent_drawn = true;
-                        nontransparent_layer_drawn = i;
                     }
+                    last_layer_drawn = bg;
                 }
             }
         }
+
+        ppu->screen[ppu->y][x].a = 0xFF;
+        ppu->screen[ppu->y][x].r = FIVEBIT_TO_EIGHTBIT_COLOR(last.r);
+        ppu->screen[ppu->y][x].g = FIVEBIT_TO_EIGHTBIT_COLOR(last.g);
+        ppu->screen[ppu->y][x].b = FIVEBIT_TO_EIGHTBIT_COLOR(last.b);
     }
 }
 
