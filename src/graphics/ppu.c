@@ -566,6 +566,28 @@ INLINE void merge_bgs(gba_ppu_t* ppu) {
         gba_color_t last = {{.r = 0, .g = 0, .b = 0}};
         gba_color_t draw = {{.r = 0, .g = 0, .b = 0}};
 
+        bool should_blend_window = true;
+
+        // TODO really should be cacheing all this window stuff and only doing it once per pixel/scanline
+        bool win0 = is_win0(ppu, x, ppu->y);
+        bool win1 = is_win1(ppu, x, ppu->y);
+        bool winout = !(win0 || win1);
+
+        bool win0_display = ppu->DISPCNT.window0_display;
+        bool win1_display = ppu->DISPCNT.window1_display;
+        bool winobj_display = ppu->DISPCNT.obj_window_display;
+        bool winout_display = win0_display || win1_display;
+
+        if (win0 && win0_display) {
+            should_blend_window = ppu->WININ.win0_color_special_effect_enable;
+        } else if (win1 && win1_display) {
+            should_blend_window = ppu->WININ.win1_color_special_effect_enable;
+        } else if (ppu->obj_window[x] && winobj_display) {
+            should_blend_window = ppu->WINOUT.obj_color_special_effect_enable;
+        } else if (winout && winout_display) {
+            should_blend_window = ppu->WINOUT.outside_color_special_effect_enable;
+        }
+
         for (int i = 3; i >= 0; i--) { // Draw them in reverse priority order, so the highest priority BG is drawn last.
             int bg = background_priorities[i];
             bool should_draw = bg_enabled[bg];
@@ -580,8 +602,8 @@ INLINE void merge_bgs(gba_ppu_t* ppu) {
 
 
             // current layer is enabled for drawing, blending as a _top layer_, and eligible to be blended given above conditions.
-            bool should_blend = bg_top[i] && (should_blend_multiple || should_blend_single);
-            bool should_blend_obj = ppu->obj_alpha[x] && (overlaps_target_pixel || should_blend_single);
+            bool should_blend = should_blend_window && (bg_top[bg] && (should_blend_multiple || should_blend_single));
+            bool should_blend_obj = should_blend_window && (ppu->obj_alpha[x] && (overlaps_target_pixel || should_blend_single));
             bool force_obj_std_blend = overlaps_target_pixel;
 
             // If the OBJ pixel here has the same priority as the BG, draw it instead.
@@ -618,7 +640,7 @@ INLINE void merge_bgs(gba_ppu_t* ppu) {
                     // If the pixel is transparent, only draw it if we haven't drawn a non-transparent
                     should_draw &= !non_transparent_drawn;
                 }
-                if (should_draw && should_blend) {
+                if (should_draw && should_blend && !pixel.transparent) {
                     switch (ppu->BLDCNT.blend_mode) {
                         case BLD_OFF:
                             logfatal("Determined we should blend even though blending was off?")
