@@ -413,9 +413,7 @@ INLINE void render_bg_regular(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X],
             se.raw = HALF_FROM_BYTE_ARRAY(ppu->vram, (screen_base_addr + screenblock_number * SCREENBLOCK_SIZE + se_number * 2));
             render_screenentry(ppu, line, x, se, bgcnt->is_256color, character_base_addr, tilemap_x, tilemap_y);
         } else {
-            (*line)[x].r = 0;
-            (*line)[x].g = 0;
-            (*line)[x].b = 0;
+            (*line)[x].raw = HALF_FROM_BYTE_ARRAY(ppu->pram, 0);
             (*line)[x].transparent = true;
         }
     }
@@ -469,15 +467,12 @@ void render_bg_affine(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X], BGCNT_t
             }
         }
 
-        if (adjusted_y < bg_height && adjusted_x < bg_width &&
-                should_render_pixel_window(ppu, screen_x, ppu->y, win0in, win1in, winout, objin)) {
+        if (adjusted_y < bg_height && adjusted_x < bg_width && should_render_pixel_window(ppu, screen_x, ppu->y, win0in, win1in, winout, objin)) {
             int se_number = (adjusted_x / 8) + (adjusted_y / 8) * (bg_width / 8);
             byte tid = ppu->vram[screen_base_addr + se_number];
             render_tile(ppu, tid, 0, line, screen_x, true, character_base_addr, adjusted_x % 8, adjusted_y % 8);
         } else {
-            (*line)[screen_x].r = 0;
-            (*line)[screen_x].g = 0;
-            (*line)[screen_x].b = 0;
+            (*line)[screen_x].raw = HALF_FROM_BYTE_ARRAY(ppu->pram, 0);
             (*line)[screen_x].transparent = true;
         }
     }
