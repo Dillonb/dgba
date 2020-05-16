@@ -117,6 +117,16 @@ int sprite_widths[3][4] = {
 };
 
 #define OBJ_TILE_SIZE 0x20
+
+#define OBJ_MODE_NORMAL  0b00
+#define OBJ_MODE_ALPHA   0b01
+#define OBJ_MODE_OBJWIN  0b10
+
+#define OBJ_AFF_MODE_NORMAL 0b00
+#define OBJ_AFF_MODE_AFFINE 0b01
+#define OBJ_AFF_MODE_HIDE   0b10
+#define OBJ_AFF_MODE_DOUBLE 0b11
+
 void render_obj(gba_ppu_t* ppu) {
     obj_attr0_t attr0;
     obj_attr1_t attr1;
@@ -141,8 +151,8 @@ void render_obj(gba_ppu_t* ppu) {
         int hheight = height / 2;
         int hwidth = width / 2;
 
-        bool is_double_affine = attr0.affine_object_mode == 0b11;
-        bool is_affine = attr0.affine_object_mode == 0b01 || is_double_affine;
+        bool is_double_affine = attr0.affine_object_mode == OBJ_AFF_MODE_DOUBLE;
+        bool is_affine = attr0.affine_object_mode == OBJ_AFF_MODE_AFFINE || is_double_affine;
 
         int adjusted_x = attr1.x;
         int adjusted_y = attr0.y;
@@ -203,7 +213,7 @@ void render_obj(gba_ppu_t* ppu) {
         }
 
         if (ppu->y >= screen_min_y && ppu->y < screen_max_y) { // If the sprite is visible, we should draw it.
-            if (attr0.affine_object_mode != 0b10) { // Not disabled
+            if (attr0.affine_object_mode != OBJ_AFF_MODE_HIDE) { // Not disabled
                 int sprite_x_start = is_double_affine ? -hwidth : 0;
                 int sprite_x_end   = is_double_affine ? width + hwidth : width;
                 for (int sprite_x = sprite_x_start; sprite_x < sprite_x_end; sprite_x++) {
@@ -273,9 +283,12 @@ void render_obj(gba_ppu_t* ppu) {
                             } else {
                                 palette_address += (0x20 * attr2.pb + 2 * tile);
                             }
-                            ppu->obj_priorities[screen_x] = attr2.priority;
-                            ppu->objbuf[screen_x].raw = HALF_FROM_BYTE_ARRAY(ppu->pram, palette_address);
-                            ppu->objbuf[screen_x].transparent = false;
+                            if (attr0.graphics_mode != OBJ_MODE_OBJWIN) {
+                                ppu->obj_priorities[screen_x] = attr2.priority;
+                                ppu->obj_alpha[screen_x] = attr0.graphics_mode == OBJ_MODE_ALPHA;
+                                ppu->objbuf[screen_x].raw = HALF_FROM_BYTE_ARRAY(ppu->pram, palette_address);
+                                ppu->objbuf[screen_x].transparent = false;
+                            }
                         }
                     }
                 }
@@ -495,9 +508,29 @@ INLINE word word_min(word a, word b) {
     return b;
 }
 
+INLINE gba_color_t blend(gba_color_t bottom, byte factor_bottom, gba_color_t top, byte factor_top) {
+    gba_color_t blended;
+    word new_r = bottom.r * factor_bottom + top.r * factor_top;
+    word new_g = bottom.g * factor_bottom + top.g * factor_top;
+    word new_b = bottom.b * factor_bottom + top.b * factor_top;
+
+    blended.r = word_min(0x1F, new_r >> 4);
+    blended.g = word_min(0x1F, new_g >> 4);
+    blended.b = word_min(0x1F, new_b >> 4);
+
+    return blended;
+}
+
 #define BG_OBJ 4
 
+gba_color_t white = {{.r = 0x1F, .g = 0x1F, .b = 0x1F}};
+gba_color_t black = {{.r = 0, .g = 0, .b = 0}};
+
 INLINE void merge_bgs(gba_ppu_t* ppu) {
+    byte eva = ppu->BLDALPHA.eva >= 0b10000 ? 0b10000 : ppu->BLDALPHA.eva;
+    byte evb = ppu->BLDALPHA.evb >= 0b10000 ? 0b10000 : ppu->BLDALPHA.evb;
+    byte ey  = ppu->BLDY.ey      >= 0b10000 ? 0b10000 : ppu->BLDY.ey;
+
     bool bg_enabled[] = {
             ppu->DISPCNT.screen_display_bg0,
             ppu->DISPCNT.screen_display_bg1,
@@ -528,91 +561,56 @@ INLINE void merge_bgs(gba_ppu_t* ppu) {
 
         for (int i = 3; i >= 0; i--) { // Draw them in reverse priority order, so the highest priority BG is drawn last.
             int bg = background_priorities[i];
+            bool should_draw = bg_enabled[bg];
+
+            bool should_blend_single = ppu->BLDCNT.blend_mode == BLD_BLACK || ppu->BLDCNT.blend_mode == BLD_WHITE;
+
+            bool should_blend_multiple = (ppu->BLDCNT.blend_mode == BLD_STD
+                                          && last_layer_drawn > -1  // Shouldn't blend if we've never drawn anything on this pixel yet
+                                          && i != 3 // Don't blend if we're the very bottom layer
+                                          && bg_bottom[last_layer_drawn]); // last layer drawn is enabled for blending as a _bottom layer_
+
+
+            // current layer is enabled for drawing, blending as a _top layer_, and eligible to be blended given above conditions.
+            bool should_blend = bg_top[i] && (should_blend_multiple || should_blend_single);
+
             // If the OBJ pixel here has the same priority as the BG, draw it instead.
             // "Sprites cover backgrounds of the same priority"
             if (ppu->obj_priorities[x] == i && !ppu->objbuf[x].transparent) {
-                // TODO OBJ blending goes here
-                last.r = ppu->objbuf[x].r;
-                last.g = ppu->objbuf[x].g;
-                last.b = ppu->objbuf[x].b;
-                draw = last;
+                gba_color_t pixel = ppu->objbuf[x];
+                // TODO Blending
+                draw = pixel;
+                last = pixel;
                 non_transparent_drawn = true;
                 last_layer_drawn = BG_OBJ;
             } else {
                 gba_color_t pixel = ppu->bgbuf[bg][x];
-                bool should_draw = bg_enabled[bg];
                 if (pixel.transparent) {
                     // If the pixel is transparent, only draw it if we haven't drawn a non-transparent
                     should_draw &= !non_transparent_drawn;
                 }
-                bool should_blend_single = ppu->BLDCNT.blend_mode == BLD_BLACK || ppu->BLDCNT.blend_mode == BLD_WHITE;
-
-                bool should_blend_multiple = (ppu->BLDCNT.blend_mode == BLD_STD
-                                              && last_layer_drawn > -1  // Shouldn't blend if we've never drawn anything on this pixel yet
-                                              && i != 3 // Don't blend if we're the very bottom layer
-                                              && bg_bottom[last_layer_drawn]); // last layer drawn is enabled for blending as a _bottom layer_
-
-
-                // current layer is enabled for drawing, blending as a _top layer_, and eligible to be blended given above conditions.
-                bool should_blend = should_draw && bg_top[i] && (should_blend_multiple || should_blend_single);
-
-                if (should_blend) {
-                    byte eva = ppu->BLDALPHA.eva >= 0b10000 ? 0b10000 : ppu->BLDALPHA.eva;
-                    byte evb = ppu->BLDALPHA.evb >= 0b10000 ? 0b10000 : ppu->BLDALPHA.evb;
-                    byte ey  = ppu->BLDY.ey      >= 0b10000 ? 0b10000 : ppu->BLDY.ey;
-
+                if (should_draw && should_blend) {
                     switch (ppu->BLDCNT.blend_mode) {
                         case BLD_OFF:
                             logfatal("Determined we should blend even though blending was off?")
                         case BLD_STD: {
-                            word new_r = last.r * evb + pixel.r * eva;
-                            word new_g = last.g * evb + pixel.g * eva;
-                            word new_b = last.b * evb + pixel.b * eva;
-
-                            draw.r = word_min(0x1F, new_r >> 4);
-                            draw.g = word_min(0x1F, new_g >> 4);
-                            draw.b = word_min(0x1F, new_b >> 4);
-
-                            last_layer_drawn = bg;
-                            last = pixel;
+                            draw = blend(last, evb, pixel, eva);
                             break;
                         }
                         case BLD_WHITE: {
-                            word white_factor = 0x1F *  ey;
-                            draw.r = (pixel.r * (16 - ey) + white_factor) >> 4;
-                            draw.r = word_min(0x1F, last.r);
-
-                            draw.g = (pixel.g * (16 - ey) + white_factor) >> 4;
-                            draw.g = word_min(0x1F, last.g);
-
-                            draw.b = (pixel.b * (16 - ey) + white_factor) >> 4;
-                            draw.b = word_min(0x1F, last.b);
-
-                            if (!pixel.transparent) {
-                                non_transparent_drawn = true;
-                            }
-                            last_layer_drawn = bg;
-                            last = pixel;
+                            draw = blend(white, ey, pixel, 16 - ey);
                             break;
                         }
                         case BLD_BLACK: {
-                            draw.r = (pixel.r * (16 - ey)) >> 4;
-                            draw.r = word_min(0x1F, last.r);
-
-                            draw.g = (pixel.g * (16 - ey)) >> 4;
-                            draw.g = word_min(0x1F, last.g);
-
-                            draw.b = (pixel.b * (16 - ey)) >> 4;
-                            draw.b = word_min(0x1F, last.b);
-
-                            if (!pixel.transparent) {
-                                non_transparent_drawn = true;
-                            }
-                            last_layer_drawn = bg;
-                            last = pixel;
+                            draw = blend(black, ey, pixel, 16 - ey);
                             break;
                         }
                     }
+                    if (!pixel.transparent) {
+                        non_transparent_drawn = true;
+                    }
+                    last_layer_drawn = bg;
+                    last = pixel;
                 } else if (should_draw) {
                     last = pixel;
                     draw = pixel;
