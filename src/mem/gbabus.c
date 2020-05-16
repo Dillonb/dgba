@@ -41,7 +41,7 @@ gbabus_t* init_gbabus() {
 
     // Loop through every single word aligned address in the ROM and try to find what backup type it is (you read that right)
     // Start at 0xE4 since everything before that is part of the header
-    for (int addr = 0xE4; addr < (mem->rom_size - 4); addr += 4) {
+    for (int addr = 0xE4; addr < (mem->rom_size - 9); addr += 4) {
         if (memcmp("SRAM", &mem->rom[addr], 4) == 0) {
             bus_state->backup_type = SRAM;
             logwarn("Determined backup type: SRAM")
@@ -547,43 +547,6 @@ INLINE half read_half_ioreg(word addr) {
     } else {
         logwarn("Ignoring read from half ioreg at 0x%08X and returning 0.", addr)
         return 0;
-    }
-}
-
-INLINE bool is_open_bus(word address) {
-    switch (address >> 24) {
-        case 0x0:
-            return address >= GBA_BIOS_SIZE;
-        case 0x1:
-            return true;
-        case 0x2:
-        case 0x3:
-        case 0x4:
-        case 0x5:
-        case 0x6:
-        case 0x7:
-        case 0x8:
-            return false;
-        case 0x9:
-        case 0xA:
-        case 0xB:
-        case 0xC:
-            return (address & 0x1FFFFFF) >= mem->rom_size;
-        case 0xD:
-            unimplemented(bus->backup_type == EEPROM, "This region is different when the backup type is EEPROM")
-            return (address & 0x1FFFFFF) >= mem->rom_size;
-        case 0xE:
-            if (bus->backup_type == FLASH64K || bus->backup_type == FLASH128K) {
-                return (address & 0x1FFFFFF) >= mem->rom_size;
-            } else if (bus->backup_type == EEPROM || bus->backup_type == SRAM) {
-                return false;
-            } else {
-                logfatal("Unknown backup type %d", bus->backup_type)
-            }
-        case 0xF:
-            return false; // Always
-        default:
-            return true;
     }
 }
 
