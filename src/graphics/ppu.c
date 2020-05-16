@@ -550,7 +550,7 @@ INLINE void merge_bgs(gba_ppu_t* ppu) {
             ppu->BLDCNT.bBG1,
             ppu->BLDCNT.bBG2,
             ppu->BLDCNT.bBG3,
-            ppu->BLDCNT.aOBJ
+            ppu->BLDCNT.bOBJ
     };
 
     for (int x = 0; x < GBA_SCREEN_X; x++) {
@@ -565,21 +565,43 @@ INLINE void merge_bgs(gba_ppu_t* ppu) {
 
             bool should_blend_single = ppu->BLDCNT.blend_mode == BLD_BLACK || ppu->BLDCNT.blend_mode == BLD_WHITE;
 
-            bool should_blend_multiple = (ppu->BLDCNT.blend_mode == BLD_STD
-                                          && last_layer_drawn > -1  // Shouldn't blend if we've never drawn anything on this pixel yet
+            bool overlaps_target_pixel = (last_layer_drawn > -1  // Shouldn't blend if we've never drawn anything on this pixel yet
                                           && i != 3 // Don't blend if we're the very bottom layer
                                           && bg_bottom[last_layer_drawn]); // last layer drawn is enabled for blending as a _bottom layer_
+
+            bool should_blend_multiple = (ppu->BLDCNT.blend_mode == BLD_STD && overlaps_target_pixel);
 
 
             // current layer is enabled for drawing, blending as a _top layer_, and eligible to be blended given above conditions.
             bool should_blend = bg_top[i] && (should_blend_multiple || should_blend_single);
+            bool should_blend_obj = ppu->obj_alpha[x] && (overlaps_target_pixel || should_blend_single);
+            bool force_obj_std_blend = overlaps_target_pixel;
 
             // If the OBJ pixel here has the same priority as the BG, draw it instead.
             // "Sprites cover backgrounds of the same priority"
             if (ppu->obj_priorities[x] == i && !ppu->objbuf[x].transparent) {
                 gba_color_t pixel = ppu->objbuf[x];
-                // TODO Blending
-                draw = pixel;
+                if (should_blend_obj) {
+                    byte obj_blend_mode = force_obj_std_blend ? BLD_STD : ppu->BLDCNT.blend_mode;
+                    switch (obj_blend_mode) {
+                        case BLD_OFF:
+                            logfatal("Determined we should blend even though blending was off?")
+                        case BLD_STD: {
+                            draw = blend(last, evb, pixel, eva);
+                            break;
+                        }
+                        case BLD_WHITE: {
+                            draw = blend(white, ey, pixel, 16 - ey);
+                            break;
+                        }
+                        case BLD_BLACK: {
+                            draw = blend(black, ey, pixel, 16 - ey);
+                            break;
+                        }
+                    }
+                } else {
+                    draw = pixel;
+                }
                 last = pixel;
                 non_transparent_drawn = true;
                 last_layer_drawn = BG_OBJ;
