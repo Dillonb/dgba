@@ -259,6 +259,7 @@ typedef struct gba_ppu {
     gba_color_t objbuf[GBA_SCREEN_X];
     byte obj_priorities[GBA_SCREEN_X];
     bool obj_alpha[GBA_SCREEN_X];
+    bool obj_window[GBA_SCREEN_X];
 
     // Memory
     byte pram[PRAM_SIZE];

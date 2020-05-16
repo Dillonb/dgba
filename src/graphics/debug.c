@@ -283,12 +283,14 @@ void actual_dbg_tick() {
         DUI_Println("WIN1V y1: %d y2: %d", ppu->WIN1V.y1, ppu->WIN1V.y2);
         DUI_Println("");
 
-        DUI_Println("WIN0   bg0: %d bg1: %d bg2: %d bg3: %d\n"
-                    "WIN1   bg0: %d bg1: %d bg2: %d bg3: %d\n"
-                    "WINOUT bg0: %d bg1: %d bg2: %d bg3: %d",
-                    ppu->WININ.win0_bg0_enable, ppu->WININ.win0_bg1_enable, ppu->WININ.win0_bg2_enable, ppu->WININ.win0_bg3_enable,
-                    ppu->WININ.win1_bg0_enable, ppu->WININ.win1_bg1_enable, ppu->WININ.win1_bg2_enable, ppu->WININ.win1_bg3_enable,
-                    ppu->WINOUT.outside_bg0_enable, ppu->WINOUT.outside_bg1_enable, ppu->WINOUT.outside_bg2_enable, ppu->WINOUT.outside_bg3_enable);
+        DUI_Println("WIN0   bg0: %d bg1: %d bg2: %d bg3: %d obj: %d\n"
+                    "WIN1   bg0: %d bg1: %d bg2: %d bg3: %d obj: %d\n"
+                    "WINOBJ bg0: %d bg1: %d bg2: %d bg3: %d obj: %d\n"
+                    "WINOUT bg0: %d bg1: %d bg2: %d bg3: %d obj: %d",
+                    ppu->WININ.win0_bg0_enable, ppu->WININ.win0_bg1_enable, ppu->WININ.win0_bg2_enable, ppu->WININ.win0_bg3_enable, ppu->WININ.win0_obj_enable,
+                    ppu->WININ.win1_bg0_enable, ppu->WININ.win1_bg1_enable, ppu->WININ.win1_bg2_enable, ppu->WININ.win1_bg3_enable, ppu->WININ.win1_obj_enable,
+                    ppu->WINOUT.obj_bg0_enable, ppu->WINOUT.obj_bg1_enable, ppu->WINOUT.obj_bg2_enable, ppu->WINOUT.obj_bg3_enable, ppu->WINOUT.obj_obj_enable,
+                    ppu->WINOUT.outside_bg0_enable, ppu->WINOUT.outside_bg1_enable, ppu->WINOUT.outside_bg2_enable, ppu->WINOUT.outside_bg3_enable, ppu->WINOUT.outside_obj_enable);
     }
 
     if (DUI_Tab("RAM Dumping", TAB_TILE_DATA, &tab_index)) {

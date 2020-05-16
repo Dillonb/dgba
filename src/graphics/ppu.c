@@ -45,6 +45,30 @@ INLINE bool is_win1(gba_ppu_t* ppu, int x, int y) {
     return is_win(x, y, ppu->WIN1H.x1, ppu->WIN1H.x2, ppu->WIN1V.y1, ppu->WIN1V.y2);
 }
 
+INLINE bool should_render_pixel_window(gba_ppu_t* ppu, int x, int y, bool win0in, bool win1in, bool winout, bool objin) {
+    bool is_win0in = is_win0(ppu, x, y);
+    bool is_win1in = is_win1(ppu, x, y);
+    bool is_winobj = ppu->obj_window[x];
+    bool is_winout = !(is_win0in || is_win1in);
+
+    bool win0_display = ppu->DISPCNT.window0_display;
+    bool win1_display = ppu->DISPCNT.window1_display;
+    bool winobj_display = ppu->DISPCNT.obj_window_display;
+    bool winout_display = win0_display || win1_display;
+
+    if (win0_display && is_win0in) {
+        return win0in;
+    } else if (win1_display && is_win1in) {
+        return win1in;
+    } else if (winobj_display && is_winobj) {
+        return objin;
+    } else if (winout_display && is_winout) {
+        return winout;
+    }
+
+    return true;
+}
+
 #define PALETTE_BANK_BACKGROUND 0
 
 void render_line_mode3(gba_ppu_t* ppu) {
@@ -133,6 +157,7 @@ void render_obj(gba_ppu_t* ppu) {
     obj_attr2_t attr2;
     for (int x = 0; x < GBA_SCREEN_X; x++) {
         ppu->obj_priorities[x] = 0;
+        ppu->obj_window[x] = false;
         ppu->objbuf[x].transparent = true;
         ppu->objbuf[x].r = 0;
         ppu->objbuf[x].g = 0;
@@ -283,11 +308,15 @@ void render_obj(gba_ppu_t* ppu) {
                             } else {
                                 palette_address += (0x20 * attr2.pb + 2 * tile);
                             }
-                            if (attr0.graphics_mode != OBJ_MODE_OBJWIN) {
-                                ppu->obj_priorities[screen_x] = attr2.priority;
-                                ppu->obj_alpha[screen_x] = attr0.graphics_mode == OBJ_MODE_ALPHA;
-                                ppu->objbuf[screen_x].raw = HALF_FROM_BYTE_ARRAY(ppu->pram, palette_address);
-                                ppu->objbuf[screen_x].transparent = false;
+                            if (attr0.graphics_mode == OBJ_MODE_OBJWIN) {
+                                ppu->obj_window[screen_x] = true;
+                            } else {
+                                if (should_render_pixel_window(ppu, screen_x, ppu->y, ppu->WININ.win0_obj_enable, ppu->WININ.win1_obj_enable, ppu->WINOUT.outside_obj_enable, ppu->WINOUT.obj_obj_enable)) {
+                                    ppu->obj_priorities[screen_x] = attr2.priority;
+                                    ppu->obj_alpha[screen_x] = attr0.graphics_mode == OBJ_MODE_ALPHA;
+                                    ppu->objbuf[screen_x].raw = HALF_FROM_BYTE_ARRAY(ppu->pram, palette_address);
+                                    ppu->objbuf[screen_x].transparent = false;
+                                }
                             }
                         }
                     }
@@ -340,33 +369,10 @@ INLINE void render_screenentry(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X]
     render_tile(ppu, se.tid, se.pb, line, screen_x, is_256color, character_base_addr, tile_x, tile_y);
 }
 
-INLINE bool should_render_bg_pixel(gba_ppu_t* ppu, int x, int y, bool win0in, bool win1in, bool winout, bool objout) {
-    bool is_win0in = is_win0(ppu, x, y);
-    bool is_win1in = is_win1(ppu, x, y);
-    bool is_winout = !(is_win0in || is_win1in);
-
-    bool win0_enable = ppu->DISPCNT.window0_display;
-    bool win1_enable = ppu->DISPCNT.window1_display;
-    bool winout_enable = win0_enable || win1_enable;
-
-    if (win0_enable && is_win0in && !win0in) {
-        return false;
-    }
-
-    if (win1_enable && is_win1in && !win1in) {
-        return false;
-    }
-
-    if (winout_enable && is_winout && !winout) {
-        return false;
-    }
-
-    return true;
-}
 
 #define SCREENBLOCK_SIZE 0x800
 #define CHARBLOCK_SIZE  0x4000
-INLINE void render_bg_regular(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X], BGCNT_t* bgcnt, int hofs, int vofs, bool win0in, bool win1in, bool winout, bool objout) {
+INLINE void render_bg_regular(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X], BGCNT_t* bgcnt, int hofs, int vofs, bool win0in, bool win1in, bool winout, bool objin) {
     // Tileset (like pattern tables in the NES)
     word character_base_addr = bgcnt->character_base_block * CHARBLOCK_SIZE;
     // Tile map (like nametables in the NES)
@@ -374,7 +380,7 @@ INLINE void render_bg_regular(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X],
 
     reg_se_t se;
     for (int x = 0; x < GBA_SCREEN_X; x++) {
-        if (should_render_bg_pixel(ppu, x, ppu->y, win0in, win1in, winout, objout)) {
+        if (should_render_pixel_window(ppu, x, ppu->y, win0in, win1in, winout, objin)) {
             int screenblock_number;
             switch (bgcnt->screen_size) {
                 case 0:
@@ -416,7 +422,7 @@ INLINE void render_bg_regular(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X],
 }
 
 void render_bg_affine(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X], BGCNT_t* bgcnt,
-                      bool win0in, bool win1in, bool winout, bool objout,
+                      bool win0in, bool win1in, bool winout, bool objin,
                       bg_referencepoint_container_t* x, bg_referencepoint_container_t* y,
                       bg_rotation_scaling_t* pa, bg_rotation_scaling_t* pb, bg_rotation_scaling_t* pc, bg_rotation_scaling_t* pd) {
     // Tileset (like pattern tables in the NES)
@@ -463,7 +469,8 @@ void render_bg_affine(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X], BGCNT_t
             }
         }
 
-        if (adjusted_y < bg_height && adjusted_x < bg_width && should_render_bg_pixel(ppu, screen_x, ppu->y, win0in, win1in, winout, objout)) {
+        if (adjusted_y < bg_height && adjusted_x < bg_width &&
+                should_render_pixel_window(ppu, screen_x, ppu->y, win0in, win1in, winout, objin)) {
             int se_number = (adjusted_x / 8) + (adjusted_y / 8) * (bg_width / 8);
             byte tid = ppu->vram[screen_base_addr + se_number];
             render_tile(ppu, tid, 0, line, screen_x, true, character_base_addr, adjusted_x % 8, adjusted_y % 8);
