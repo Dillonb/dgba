@@ -21,7 +21,7 @@ It's a gba emulator. Things are _mostly working_.
 ### Flags
 - Use -s to skip the bios
 - Use -b bios_file.bin to load an alternate bios
-- Use -S <int> to set the scaling factor for the screen. Default 4.
+- Use -S X to set the scaling factor for the screen to a provided integer. Default 4.
 - Use -v to enable verbose logging. Repeat up to 3 times.
 - Use -d for debug mode. Currently does nothing.
 
