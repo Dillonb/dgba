@@ -158,10 +158,8 @@ void render_obj(gba_ppu_t* ppu) {
     for (int x = 0; x < GBA_SCREEN_X; x++) {
         ppu->obj_priorities[x] = 0;
         ppu->obj_window[x] = false;
+        ppu->objbuf[x].raw = HALF_FROM_BYTE_ARRAY(ppu->pram, 0);
         ppu->objbuf[x].transparent = true;
-        ppu->objbuf[x].r = 0;
-        ppu->objbuf[x].g = 0;
-        ppu->objbuf[x].b = 0;
     }
 
     for (int sprite = 0; sprite < 128; sprite++) {
@@ -524,6 +522,7 @@ INLINE gba_color_t blend(gba_color_t bottom, byte factor_bottom, gba_color_t top
 }
 
 #define BG_OBJ 4
+#define BG_BD  5
 
 gba_color_t white = {{.r = 0x1F, .g = 0x1F, .b = 0x1F}};
 gba_color_t black = {{.r = 0, .g = 0, .b = 0}};
@@ -544,7 +543,8 @@ INLINE void merge_bgs(gba_ppu_t* ppu) {
             ppu->BLDCNT.aBG1,
             ppu->BLDCNT.aBG2,
             ppu->BLDCNT.aBG3,
-            ppu->BLDCNT.aOBJ
+            ppu->BLDCNT.aOBJ,
+            ppu->BLDCNT.aBD
     };
 
     bool bg_bottom[] = {
@@ -552,14 +552,16 @@ INLINE void merge_bgs(gba_ppu_t* ppu) {
             ppu->BLDCNT.bBG1,
             ppu->BLDCNT.bBG2,
             ppu->BLDCNT.bBG3,
-            ppu->BLDCNT.bOBJ
+            ppu->BLDCNT.bOBJ,
+            ppu->BLDCNT.bBD
     };
 
     for (int x = 0; x < GBA_SCREEN_X; x++) {
         bool non_transparent_drawn = false;
-        int last_layer_drawn = -1;
-        gba_color_t last = {{.r = 0, .g = 0, .b = 0}};
-        gba_color_t draw = {{.r = 0, .g = 0, .b = 0}};
+        gba_color_t last;
+        last.raw = HALF_FROM_BYTE_ARRAY(ppu->pram, 0);
+        int last_layer_drawn = BG_BD;
+        gba_color_t draw = last;
 
         bool should_blend_window = true;
 
@@ -589,10 +591,7 @@ INLINE void merge_bgs(gba_ppu_t* ppu) {
 
             bool should_blend_single = ppu->BLDCNT.blend_mode == BLD_BLACK || ppu->BLDCNT.blend_mode == BLD_WHITE;
 
-            bool overlaps_target_pixel = (
-                    last_layer_drawn > -1  // Shouldn't blend if we've never drawn anything on this pixel yet
-                    && i != 3 // Don't blend if we're the very bottom layer
-                    && bg_bottom[last_layer_drawn]); // last layer drawn is enabled for blending as a _bottom layer_
+            bool overlaps_target_pixel = bg_bottom[last_layer_drawn]; // last layer drawn is enabled for blending as a _bottom layer_
 
             bool should_blend_multiple = (ppu->BLDCNT.blend_mode == BLD_STD && overlaps_target_pixel);
 
@@ -604,8 +603,8 @@ INLINE void merge_bgs(gba_ppu_t* ppu) {
 
             gba_color_t pixel = ppu->bgbuf[bg][x];
             if (pixel.transparent) {
-                // If the pixel is transparent, only draw it if we haven't drawn a non-transparent
-                should_draw &= !non_transparent_drawn;
+                // If the pixel is transparent, don't draw it, since we already defaulted to the backdrop color.
+                should_draw = false;
             }
             if (should_draw && should_blend && !pixel.transparent) {
                 switch (ppu->BLDCNT.blend_mode) {
