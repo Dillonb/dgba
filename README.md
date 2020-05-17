@@ -14,6 +14,7 @@ It's a gba emulator. Things are _mostly working_.
 ## Building
 - Install SDL and cmake, and optionally Capstone for disassembly output.
 - cd build && ./build.sh
+- Build tested on Linux and MacOS. Windows unsupported at this time.
 
 ## Running
 - ./gba rom.gba
