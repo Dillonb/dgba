@@ -6,7 +6,11 @@
 #include "debug.h"
 #include "../gba_system.h"
 
-#define SCREEN_SCALE 4
+static int SCREEN_SCALE = 4;
+
+void set_screen_scale(int scale) {
+    SCREEN_SCALE = scale;
+}
 
 static bool initialized = false;
 static bool ctrl_state = false;
