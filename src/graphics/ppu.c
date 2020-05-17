@@ -589,22 +589,59 @@ INLINE void merge_bgs(gba_ppu_t* ppu) {
 
             bool should_blend_single = ppu->BLDCNT.blend_mode == BLD_BLACK || ppu->BLDCNT.blend_mode == BLD_WHITE;
 
-            bool overlaps_target_pixel = (last_layer_drawn > -1  // Shouldn't blend if we've never drawn anything on this pixel yet
-                                          && i != 3 // Don't blend if we're the very bottom layer
-                                          && bg_bottom[last_layer_drawn]); // last layer drawn is enabled for blending as a _bottom layer_
+            bool overlaps_target_pixel = (
+                    last_layer_drawn > -1  // Shouldn't blend if we've never drawn anything on this pixel yet
+                    && i != 3 // Don't blend if we're the very bottom layer
+                    && bg_bottom[last_layer_drawn]); // last layer drawn is enabled for blending as a _bottom layer_
 
             bool should_blend_multiple = (ppu->BLDCNT.blend_mode == BLD_STD && overlaps_target_pixel);
 
 
             // current layer is enabled for drawing, blending as a _top layer_, and eligible to be blended given above conditions.
             bool should_blend = should_blend_window && (bg_top[bg] && (should_blend_multiple || should_blend_single));
-            bool should_blend_obj = should_blend_window && (ppu->obj_alpha[x] && (overlaps_target_pixel || should_blend_single));
+            bool should_blend_obj = ppu->obj_alpha[x] && (overlaps_target_pixel || should_blend_single);
             bool force_obj_std_blend = overlaps_target_pixel;
 
+            gba_color_t pixel = ppu->bgbuf[bg][x];
+            if (pixel.transparent) {
+                // If the pixel is transparent, only draw it if we haven't drawn a non-transparent
+                should_draw &= !non_transparent_drawn;
+            }
+            if (should_draw && should_blend && !pixel.transparent) {
+                switch (ppu->BLDCNT.blend_mode) {
+                    case BLD_OFF:
+                        logfatal("Determined we should blend even though blending was off?")
+                    case BLD_STD: {
+                        draw = blend(last, evb, pixel, eva);
+                        break;
+                    }
+                    case BLD_WHITE: {
+                        draw = blend(white, ey, pixel, 16 - ey);
+                        break;
+                    }
+                    case BLD_BLACK: {
+                        draw = blend(black, ey, pixel, 16 - ey);
+                        break;
+                    }
+                }
+                if (!pixel.transparent) {
+                    non_transparent_drawn = true;
+                }
+                last_layer_drawn = bg;
+                last = pixel;
+            } else if (should_draw) {
+                last = pixel;
+                draw = pixel;
+
+                if (!pixel.transparent) {
+                    non_transparent_drawn = true;
+                }
+                last_layer_drawn = bg;
+            }
             // If the OBJ pixel here has the same priority as the BG, draw it instead.
             // "Sprites cover backgrounds of the same priority"
             if (ppu->obj_priorities[x] == i && !ppu->objbuf[x].transparent) {
-                gba_color_t pixel = ppu->objbuf[x];
+                pixel = ppu->objbuf[x];
                 if (should_blend_obj) {
                     byte obj_blend_mode = force_obj_std_blend ? BLD_STD : ppu->BLDCNT.blend_mode;
                     switch (obj_blend_mode) {
@@ -629,46 +666,8 @@ INLINE void merge_bgs(gba_ppu_t* ppu) {
                 last = pixel;
                 non_transparent_drawn = true;
                 last_layer_drawn = BG_OBJ;
-            } else {
-                gba_color_t pixel = ppu->bgbuf[bg][x];
-                if (pixel.transparent) {
-                    // If the pixel is transparent, only draw it if we haven't drawn a non-transparent
-                    should_draw &= !non_transparent_drawn;
-                }
-                if (should_draw && should_blend && !pixel.transparent) {
-                    switch (ppu->BLDCNT.blend_mode) {
-                        case BLD_OFF:
-                            logfatal("Determined we should blend even though blending was off?")
-                        case BLD_STD: {
-                            draw = blend(last, evb, pixel, eva);
-                            break;
-                        }
-                        case BLD_WHITE: {
-                            draw = blend(white, ey, pixel, 16 - ey);
-                            break;
-                        }
-                        case BLD_BLACK: {
-                            draw = blend(black, ey, pixel, 16 - ey);
-                            break;
-                        }
-                    }
-                    if (!pixel.transparent) {
-                        non_transparent_drawn = true;
-                    }
-                    last_layer_drawn = bg;
-                    last = pixel;
-                } else if (should_draw) {
-                    last = pixel;
-                    draw = pixel;
-
-                    if (!pixel.transparent) {
-                        non_transparent_drawn = true;
-                    }
-                    last_layer_drawn = bg;
-                }
             }
         }
-
         ppu->screen[ppu->y][x].a = 0xFF;
         ppu->screen[ppu->y][x].r = FIVEBIT_TO_EIGHTBIT_COLOR(draw.r);
         ppu->screen[ppu->y][x].g = FIVEBIT_TO_EIGHTBIT_COLOR(draw.g);
