@@ -8,7 +8,6 @@ It's a gba emulator. Things are _mostly working_.
 - [ ] Mosaic effect
 - [ ] Better CPU/memory cycle accuracy
 - [ ] EEPROM backups
-- [ ] Better savestate support
 - [ ] Customizable controls
 
 ## Building
