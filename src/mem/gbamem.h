@@ -36,7 +36,7 @@ typedef struct gbamem {
     byte* backup;
     bool backup_dirty;
     const char* backup_path;
-    const char* savestate_path;
+    const char** savestate_path;
 
     // Flash state
     flash_state_t flash_state;

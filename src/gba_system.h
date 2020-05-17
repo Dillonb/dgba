@@ -5,6 +5,8 @@
 #include "graphics/ppu.h"
 #include "mem/gbabus.h"
 
+#define NUM_SAVESTATES 10
+
 extern bool cpu_stepped;
 
 extern arm7tdmi_t* cpu;

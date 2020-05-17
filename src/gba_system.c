@@ -4,6 +4,7 @@
 #include "mem/gbabus.h"
 #include "mem/gbarom.h"
 #include "mem/gbabios.h"
+#include "gba_system.h"
 
 int cycles = 0;
 
@@ -35,17 +36,17 @@ const char* get_backup_path(const char* romfile) {
     return backuppath;
 }
 
-const char* get_savestate_path(const char* romfile) {
+const char* get_savestate_path(const char* romfile, int number) {
     char buf[PATH_MAX];
     char* rom_path = realpath(romfile, buf);
-    int savestate_path_buf_size = strlen(rom_path) + 6; // .save + null terminator
+    int savestate_path_buf_size = strlen(rom_path) + 9; // .xx.save + null terminator
 
     if (savestate_path_buf_size >= PATH_MAX) {
         logfatal("Savestate path too long! How deeply are you nesting your directories?")
     }
 
     char* savestate_path = malloc(savestate_path_buf_size);
-    snprintf(savestate_path, savestate_path_buf_size, "%s.save", buf);
+    snprintf(savestate_path, savestate_path_buf_size, "%s.%02d.save", buf, number);
     return savestate_path;
 }
 
@@ -54,7 +55,10 @@ void init_gbasystem(const char* romfile, const char* bios_file) {
 
     load_gbarom(romfile);
     mem->backup_path = get_backup_path(romfile);
-    mem->savestate_path = get_savestate_path(romfile);
+    mem->savestate_path = malloc(NUM_SAVESTATES * sizeof(char*));
+    for (int i = 0; i < NUM_SAVESTATES; i++) {
+        mem->savestate_path[i] = get_savestate_path(romfile, i + 1);
+    }
     if (bios_file) {
         load_alternate_bios(bios_file);
     }
@@ -210,6 +214,9 @@ void persist_backup() {
 void cleanup() {
     free(mem->backup);
     free((void*)mem->backup_path);
+    for (int i = 0; i < 10; i++) {
+        free((void*)mem->savestate_path[i]);
+    }
     free((void*)mem->savestate_path);
     free(mem->rom);
     free(mem);
@@ -307,7 +314,7 @@ void load_state(const char* path) {
     // Restore mem. Need to restore ROM and backup space + paths.
     byte* rom = mem->rom;
     const char* backup_path = mem->backup_path;
-    const char* savestate_path = mem->savestate_path;
+    const char** savestate_path = mem->savestate_path;
     byte* backup = mem->backup;
     fread(mem, header.mem_size, 1, fp);
     mem->rom = rom;

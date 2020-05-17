@@ -43,6 +43,16 @@ void initialize() {
     SDL_RenderSetScale(renderer, SCREEN_SCALE, SCREEN_SCALE);
 }
 
+void save_load(bool state, int i) {
+    if (state) {
+        if (ctrl_state) {
+            load_state(mem->savestate_path[i]);
+        } else {
+            save_state(mem->savestate_path[i]);
+        }
+    }
+}
+
 void update_key(SDL_Keycode sdlk, bool state) {
     KEYINPUT_t* KEYINPUT = get_keyinput();
     switch (sdlk) {
@@ -90,15 +100,35 @@ void update_key(SDL_Keycode sdlk, bool state) {
         case SDLK_e:
             KEYINPUT->r = !state;
             break;
-        case SDLK_u:
-            if (state == true) {
-                save_state(mem->savestate_path);
-            }
+        case SDLK_1:
+            save_load(state, 0);
             break;
-        case SDLK_i:
-            if (state == true) {
-                load_state(mem->savestate_path);
-            }
+        case SDLK_2:
+            save_load(state, 1);
+            break;
+        case SDLK_3:
+            save_load(state, 2);
+            break;
+        case SDLK_4:
+            save_load(state, 3);
+            break;
+        case SDLK_5:
+            save_load(state, 4);
+            break;
+        case SDLK_6:
+            save_load(state, 5);
+            break;
+        case SDLK_7:
+            save_load(state, 6);
+            break;
+        case SDLK_8:
+            save_load(state, 7);
+            break;
+        case SDLK_9:
+            save_load(state, 8);
+            break;
+        case SDLK_0:
+            save_load(state, 9);
             break;
         default:
             break;
