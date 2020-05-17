@@ -74,7 +74,7 @@ INLINE bool should_render_pixel_window(gba_ppu_t* ppu, int x, int y, bool win0in
 void render_line_mode3(gba_ppu_t* ppu) {
     if (ppu->DISPCNT.screen_display_bg2) {
         for (int x = 0; x < GBA_SCREEN_X; x++) {
-            int offset = x + (ppu->y * GBA_SCREEN_X); // Calculate this based on BG2X/Y/VOFS/HOFS/etc
+            int offset = x + (ppu->y * GBA_SCREEN_X);
             offset *= 2;
 
             gba_color_t color;
@@ -98,7 +98,7 @@ void render_line_mode3(gba_ppu_t* ppu) {
 void render_line_mode4(gba_ppu_t* ppu) {
     if (ppu->DISPCNT.screen_display_bg2) {
         for (int x = 0; x < GBA_SCREEN_X; x++) {
-            int offset = x + (ppu->y * GBA_SCREEN_X); // Calculate this based on BG2X/Y/VOFS/HOFS/etc
+            int offset = x + (ppu->y * GBA_SCREEN_X);
             int index = ppu->DISPCNT.display_frame_select * 0xA000 + offset;
             int tile = ppu->vram[index];
             if (tile == 0) {
