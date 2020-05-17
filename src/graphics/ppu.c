@@ -250,7 +250,7 @@ void render_obj(gba_ppu_t* ppu) {
                         adjusted_sprite_x >>= 8;
                         adjusted_sprite_x += hwidth;
 
-                        if (adjusted_sprite_x > width || adjusted_sprite_x < 0) {
+                        if (adjusted_sprite_x >= width || adjusted_sprite_x < 0) {
                             continue;
                         }
 
@@ -258,7 +258,7 @@ void render_obj(gba_ppu_t* ppu) {
                         adjusted_sprite_y >>= 8;
                         adjusted_sprite_y += hheight;
 
-                        if (adjusted_sprite_y > height || adjusted_sprite_y < 0) {
+                        if (adjusted_sprite_y >= height || adjusted_sprite_y < 0) {
                             continue;
                         }
 
