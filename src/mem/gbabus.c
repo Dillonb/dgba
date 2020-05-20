@@ -57,7 +57,7 @@ gbabus_t* init_gbabus() {
         }
         if (memcmp("FLASH_", &mem->rom[addr], 6) == 0) {
             bus_state->backup_type = FLASH64K;
-            logfatal("Determined backup type: FLASH64K")
+            init_flash(mem, FLASH64K);
             break;
         }
         if (memcmp("FLASH512_", &mem->rom[addr], 9) == 0) {
