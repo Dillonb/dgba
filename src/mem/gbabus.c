@@ -368,6 +368,16 @@ INLINE half* get_half_ioreg_ptr(word addr, bool write) {
     }
 }
 
+void tmcnth_write(int n, half old_value) {
+    TMCNT_H_t old;
+    old.raw = old_value;
+    bus->TMSTART[n] = bus->TMCNT_H[n].start;
+    if (!old.start && bus->TMCNT_H[n].start) {
+        bus->TMINT[n].ticks = 0;
+        bus->TMINT[n].value = bus->TMCNT_L[n].timer_reload;
+    }
+}
+
 INLINE void write_half_ioreg_masked(word addr, half value, half mask) {
     half* ioreg = get_half_ioreg_ptr(addr, true);
     if (ioreg) {
@@ -385,6 +395,7 @@ INLINE void write_half_ioreg_masked(word addr, half value, half mask) {
             default:
                 break; // No special case
         }
+        half old_value = *ioreg;
         *ioreg &= (~mask);
         *ioreg |= (value & mask);
         switch (addr & 0xFFF) {
@@ -417,6 +428,18 @@ INLINE void write_half_ioreg_masked(word addr, half value, half mask) {
             case IO_DMA2CNT_L:
             case IO_DMA3CNT_L:
                 gba_dma();
+                break;
+            case IO_TM0CNT_H:
+                tmcnth_write(0, old_value);
+                break;
+            case IO_TM1CNT_H:
+                tmcnth_write(1, old_value);
+                break;
+            case IO_TM2CNT_H:
+                tmcnth_write(2, old_value);
+                break;
+            case IO_TM3CNT_H:
+                tmcnth_write(3, old_value);
                 break;
         }
     } else {

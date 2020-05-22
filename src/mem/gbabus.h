@@ -139,7 +139,6 @@ typedef union TMCNT_L {
 typedef struct TMINT {
     half value;
     half ticks;
-    bool previously_enabled;
 } TMINT_t;
 
 typedef union TMCNT_H {
@@ -225,6 +224,7 @@ typedef struct gbabus {
 
     SOUNDBIAS_t SOUNDBIAS;
 
+    bool TMSTART[4];
     TMCNT_L_t TMCNT_L[4];
     TMCNT_H_t TMCNT_H[4];
     TMINT_t TMINT[4];
