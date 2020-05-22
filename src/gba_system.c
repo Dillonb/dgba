@@ -84,60 +84,49 @@ int timer_shift[4] = {0, 6, 8, 10};
 // Optimizing modulus
 int timer_mask[4] = {0, 0x3F, 0xFF, 0x3FF};
 
-void timer_tick(int cyc) {
-    bool previous_overflow = false;
-    for (int n = 0; n < 4; n++) {
-        bool overflow = false;
+void timer_inc(int n, word clocks, word remainder) {
+    word new_value = bus->TMINT[n].value + clocks;
 
-        if (bus->TMSTART[n]) {
-            if (bus->TMCNT_H[n].cascade && !previous_overflow) {
-                continue;
-            }
+    while (new_value > 0xFFFF) {
+        new_value = bus->TMCNT_L[n].timer_reload + (new_value - 0xFFFF);
 
-            if (bus->TMCNT_H[n].cascade && !previous_overflow) {
-                previous_overflow = false;
-                continue; // Don't inc
-            }
-
-            if (bus->TMCNT_H[n].cascade) {
-                bus->TMINT[n].ticks += 1;
-            } else {
-                bus->TMINT[n].ticks += cyc;
-            }
-
-            word clocks = bus->TMINT[n].ticks >> timer_shift[bus->TMCNT_H[n].frequency];
-            word remain = bus->TMINT[n].ticks & timer_mask[bus->TMCNT_H[n].frequency];
-            word new_value = bus->TMINT[n].value + clocks;
-
-            while (new_value > 0xFFFF) {
-                new_value = bus->TMCNT_L[n].timer_reload + (new_value - 0xFFFF);
-                overflow = true;
-                if (bus->TMCNT_H[n].timer_irq_enable) {
-                    switch (n) {
-                        case 0:
-                            request_interrupt(IRQ_TIMER0);
-                            break;
-                        case 1:
-                            request_interrupt(IRQ_TIMER1);
-                            break;
-                        case 2:
-                            request_interrupt(IRQ_TIMER2);
-                            break;
-                        case 3:
-                            request_interrupt(IRQ_TIMER3);
-                            break;
-                    }
-                }
-
-                if (n == 0 || n == 1) {
-                    sound_timer_overflow(apu, n);
-                }
-            }
-            bus->TMINT[n].value = new_value;
-            bus->TMINT[n].ticks = remain;
+        if (n != 3 && bus->TMCNT_H->cascade && bus->TMCNT_H->start) {
+            timer_inc(n + 1, 1, 0);
         }
 
-        previous_overflow = overflow;
+        if (bus->TMCNT_H[n].timer_irq_enable) {
+            switch (n) {
+                case 0:
+                    request_interrupt(IRQ_TIMER0);
+                    break;
+                case 1:
+                    request_interrupt(IRQ_TIMER1);
+                    break;
+                case 2:
+                    request_interrupt(IRQ_TIMER2);
+                    break;
+                case 3:
+                    request_interrupt(IRQ_TIMER3);
+                    break;
+            }
+        }
+
+        if (n == 0 || n == 1) {
+            sound_timer_overflow(apu, n);
+        }
+    }
+    bus->TMINT[n].value = new_value;
+    bus->TMINT[n].ticks = remainder;
+}
+
+void timer_tick(int cpu_cyc) {
+    for (int n = 0; n < 4; n++) {
+        if (bus->TMSTART[n] && !bus->TMCNT_H[n].cascade) {
+            bus->TMINT[n].ticks += cpu_cyc;
+            word clocks = bus->TMINT[n].ticks >> timer_shift[bus->TMCNT_H[n].frequency];
+            word remain = bus->TMINT[n].ticks & timer_mask[bus->TMCNT_H[n].frequency];
+            timer_inc(n, clocks, remain);
+        }
     }
 }
 
