@@ -8,8 +8,15 @@
 #include "../graphics/ppu.h"
 #include "../audio/audio.h"
 
-#define HALF_FROM_BYTE_ARRAY(arr, index) (((arr)[(index) + 1] << 8) | (arr[index]))
-#define WORD_FROM_BYTE_ARRAY(arr, index) ((HALF_FROM_BYTE_ARRAY(arr, (index) + 2) << 16) | HALF_FROM_BYTE_ARRAY(arr, index))
+INLINE word word_from_byte_array(byte* arr, int index) {
+    word* warr = (word*)arr;
+    return warr[index / sizeof(word)];
+}
+
+INLINE half half_from_byte_array(byte* arr, int index) {
+    half* warr = (half*)arr;
+    return warr[index / sizeof(half)];
+}
 
 typedef enum gba_interrupt {
     IRQ_VBLANK,

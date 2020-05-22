@@ -78,7 +78,7 @@ void render_line_mode3(gba_ppu_t* ppu) {
             offset *= 2;
 
             gba_color_t color;
-            color.raw = HALF_FROM_BYTE_ARRAY(ppu->vram, offset) & 0x7FFF;
+            color.raw = half_from_byte_array(ppu->vram, offset) & 0x7FFF;
 
             ppu->screen[ppu->y][x].a = 0xFF;
             ppu->screen[ppu->y][x].r = FIVEBIT_TO_EIGHTBIT_COLOR(color.r);
@@ -108,7 +108,7 @@ void render_line_mode4(gba_ppu_t* ppu) {
                 ppu->screen[ppu->y][x].b = 0;
             } else {
                 gba_color_t color;
-                color.raw = HALF_FROM_BYTE_ARRAY(ppu->pram, (0x20 * PALETTE_BANK_BACKGROUND + 2 * tile)) & 0x7FFF;
+                color.raw = half_from_byte_array(ppu->pram, (0x20 * PALETTE_BANK_BACKGROUND + 2 * tile)) & 0x7FFF;
 
                 ppu->screen[ppu->y][x].a = 0xFF;
                 ppu->screen[ppu->y][x].r = FIVEBIT_TO_EIGHTBIT_COLOR(color.r);
@@ -158,14 +158,14 @@ void render_obj(gba_ppu_t* ppu) {
     for (int x = 0; x < GBA_SCREEN_X; x++) {
         ppu->obj_priorities[x] = 0;
         ppu->obj_window[x] = false;
-        ppu->objbuf[x].raw = HALF_FROM_BYTE_ARRAY(ppu->pram, 0);
+        ppu->objbuf[x].raw = half_from_byte_array(ppu->pram, 0);
         ppu->objbuf[x].transparent = true;
     }
 
     for (int sprite = 0; sprite < 128; sprite++) {
-        attr0.raw = HALF_FROM_BYTE_ARRAY(ppu->oam, (sprite * 8) + 0);
-        attr1.raw = HALF_FROM_BYTE_ARRAY(ppu->oam, (sprite * 8) + 2);
-        attr2.raw = HALF_FROM_BYTE_ARRAY(ppu->oam, (sprite * 8) + 4);
+        attr0.raw = half_from_byte_array(ppu->oam, (sprite * 8) + 0);
+        attr1.raw = half_from_byte_array(ppu->oam, (sprite * 8) + 2);
+        attr2.raw = half_from_byte_array(ppu->oam, (sprite * 8) + 4);
 
         int height = sprite_heights[attr0.shape][attr1.size];
         int width = sprite_widths[attr0.shape][attr1.size];
@@ -206,10 +206,10 @@ void render_obj(gba_ppu_t* ppu) {
 
         obj_affine_t affine;
         if (is_affine) {
-            affine.pa = HALF_FROM_BYTE_ARRAY(ppu->oam, attr1.affine_index * 32 + 6);
-            affine.pb = HALF_FROM_BYTE_ARRAY(ppu->oam, attr1.affine_index * 32 + 14);
-            affine.pc = HALF_FROM_BYTE_ARRAY(ppu->oam, attr1.affine_index * 32 + 22);
-            affine.pd = HALF_FROM_BYTE_ARRAY(ppu->oam, attr1.affine_index * 32 + 30);
+            affine.pa = half_from_byte_array(ppu->oam, attr1.affine_index * 32 + 6);
+            affine.pb = half_from_byte_array(ppu->oam, attr1.affine_index * 32 + 14);
+            affine.pc = half_from_byte_array(ppu->oam, attr1.affine_index * 32 + 22);
+            affine.pd = half_from_byte_array(ppu->oam, attr1.affine_index * 32 + 30);
             if (is_double_affine) { // double rendering area
                 screen_min_y -= hheight;
                 screen_max_y += hheight;
@@ -312,7 +312,7 @@ void render_obj(gba_ppu_t* ppu) {
                                 if (should_render_pixel_window(ppu, screen_x, ppu->y, ppu->WININ.win0_obj_enable, ppu->WININ.win1_obj_enable, ppu->WINOUT.outside_obj_enable, ppu->WINOUT.obj_obj_enable)) {
                                     ppu->obj_priorities[screen_x] = attr2.priority;
                                     ppu->obj_alpha[screen_x] = attr0.graphics_mode == OBJ_MODE_ALPHA;
-                                    ppu->objbuf[screen_x].raw = HALF_FROM_BYTE_ARRAY(ppu->pram, palette_address);
+                                    ppu->objbuf[screen_x].raw = half_from_byte_array(ppu->pram, palette_address);
                                     ppu->objbuf[screen_x].transparent = false;
                                 }
                             }
@@ -349,7 +349,7 @@ INLINE void render_tile(gba_ppu_t* ppu, int tid, int pb, gba_color_t (*line)[GBA
     }
 
     word palette_address = is_256color ? 2 * tile : (0x20 * pb + 2 * tile);
-    (*line)[screen_x].raw = HALF_FROM_BYTE_ARRAY(ppu->pram, palette_address);
+    (*line)[screen_x].raw = half_from_byte_array(ppu->pram, palette_address);
     (*line)[screen_x].transparent = tile == 0; // This color should only be drawn if we need transparency
 }
 
@@ -408,10 +408,11 @@ INLINE void render_bg_regular(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X],
             int tilemap_y = (ppu->y + vofs) % 256;
 
             int se_number = (tilemap_x / 8) + (tilemap_y / 8) * 32;
-            se.raw = HALF_FROM_BYTE_ARRAY(ppu->vram, (screen_base_addr + screenblock_number * SCREENBLOCK_SIZE + se_number * 2));
+            se.raw = half_from_byte_array(ppu->vram,
+                                          (screen_base_addr + screenblock_number * SCREENBLOCK_SIZE + se_number * 2));
             render_screenentry(ppu, line, x, se, bgcnt->is_256color, character_base_addr, tilemap_x, tilemap_y);
         } else {
-            (*line)[x].raw = HALF_FROM_BYTE_ARRAY(ppu->pram, 0);
+            (*line)[x].raw = half_from_byte_array(ppu->pram, 0);
             (*line)[x].transparent = true;
         }
     }
@@ -470,7 +471,7 @@ void render_bg_affine(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X], BGCNT_t
             byte tid = ppu->vram[screen_base_addr + se_number];
             render_tile(ppu, tid, 0, line, screen_x, true, character_base_addr, adjusted_x % 8, adjusted_y % 8);
         } else {
-            (*line)[screen_x].raw = HALF_FROM_BYTE_ARRAY(ppu->pram, 0);
+            (*line)[screen_x].raw = half_from_byte_array(ppu->pram, 0);
             (*line)[screen_x].transparent = true;
         }
     }
@@ -559,7 +560,7 @@ INLINE void merge_bgs(gba_ppu_t* ppu) {
     for (int x = 0; x < GBA_SCREEN_X; x++) {
         bool non_transparent_drawn = false;
         gba_color_t last;
-        last.raw = HALF_FROM_BYTE_ARRAY(ppu->pram, 0);
+        last.raw = half_from_byte_array(ppu->pram, 0);
         int last_layer_drawn = BG_BD;
         gba_color_t draw = last;
 

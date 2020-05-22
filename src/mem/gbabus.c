@@ -744,11 +744,11 @@ INLINE half inline_gba_read_half(word address) {
         }
         case REGION_EWRAM: {
             word index = (address - 0x02000000) % 0x40000;
-            return HALF_FROM_BYTE_ARRAY(mem->ewram, index);
+            return half_from_byte_array(mem->ewram, index);
         }
         case REGION_IWRAM: {
             word index = (address - 0x03000000) % 0x8000;
-            return HALF_FROM_BYTE_ARRAY(mem->iwram, index);
+            return half_from_byte_array(mem->iwram, index);
         }
         case REGION_IOREG: {
             if (address < 0x04000400) {
@@ -771,15 +771,15 @@ INLINE half inline_gba_read_half(word address) {
         }
         case REGION_PRAM: {
             word index = (address - 0x5000000) % 0x400;
-            return HALF_FROM_BYTE_ARRAY(ppu->pram, index);
+            return half_from_byte_array(ppu->pram, index);
         }
         case REGION_VRAM: {
             word index = (address - 0x06000000) % VRAM_SIZE;
-            return HALF_FROM_BYTE_ARRAY(ppu->vram, index);
+            return half_from_byte_array(ppu->vram, index);
         }
         case REGION_OAM: {
             word index = (address - 0x07000000) % OAM_SIZE;
-            return HALF_FROM_BYTE_ARRAY(ppu->oam, index);
+            return half_from_byte_array(ppu->oam, index);
         }
         case REGION_GAMEPAK0_L:
         case REGION_GAMEPAK0_H:
@@ -788,7 +788,7 @@ INLINE half inline_gba_read_half(word address) {
         case REGION_GAMEPAK2_L: {
             word index = address & 0x1FFFFFF;
             if (index < mem->rom_size) {
-                return HALF_FROM_BYTE_ARRAY(mem->rom, index);
+                return half_from_byte_array(mem->rom, index);
             } else {
                 return open_bus(address);
             }
@@ -802,7 +802,7 @@ INLINE half inline_gba_read_half(word address) {
             }
             word index = address & 0x1FFFFFF;
             if (index < mem->rom_size) {
-                return HALF_FROM_BYTE_ARRAY(mem->rom, index);
+                return half_from_byte_array(mem->rom, index);
             } else {
                 return open_bus(address);
             }
@@ -810,7 +810,7 @@ INLINE half inline_gba_read_half(word address) {
         case REGION_SRAM:
             switch (bus->backup_type) {
                 case SRAM:
-                    return HALF_FROM_BYTE_ARRAY(mem->backup, address & 0x7FFF);
+                    return half_from_byte_array(mem->backup, address & 0x7FFF);
                 case FLASH64K:
                 case FLASH128K:
                     logfatal("gba_read_half from FLASH!")
@@ -820,7 +820,7 @@ INLINE half inline_gba_read_half(word address) {
 
         case REGION_SRAM_MIRR:
             if (bus->backup_type == SRAM) {
-                return HALF_FROM_BYTE_ARRAY(mem->backup, address & 0x7FFF);
+                return half_from_byte_array(mem->backup, address & 0x7FFF);
             }
             return 0;
     }
@@ -927,11 +927,11 @@ word gba_read_word(word address) {
 
         case REGION_EWRAM: {
             word index = (address - 0x02000000) % 0x40000;
-            return WORD_FROM_BYTE_ARRAY(mem->ewram, index);
+            return word_from_byte_array(mem->ewram, index);
         }
         case REGION_IWRAM: {
             word index = (address - 0x03000000) % 0x8000;
-            return WORD_FROM_BYTE_ARRAY(mem->iwram, index);
+            return word_from_byte_array(mem->iwram, index);
         }
         case REGION_IOREG: {
             if (address < 0x04000400) {
@@ -957,15 +957,15 @@ word gba_read_word(word address) {
         }
         case REGION_PRAM: {
             word index = (address - 0x5000000) % 0x400;
-            return WORD_FROM_BYTE_ARRAY(ppu->pram, index);
+            return word_from_byte_array(ppu->pram, index);
         }
         case REGION_VRAM: {
             word index = (address - 0x06000000) % VRAM_SIZE;
-            return WORD_FROM_BYTE_ARRAY(ppu->vram, index);
+            return word_from_byte_array(ppu->vram, index);
         }
         case REGION_OAM: {
             word index = (address - 0x07000000) % OAM_SIZE;
-            return WORD_FROM_BYTE_ARRAY(ppu->oam, index);
+            return word_from_byte_array(ppu->oam, index);
         }
         case REGION_GAMEPAK0_L:
         case REGION_GAMEPAK0_H:
@@ -974,7 +974,7 @@ word gba_read_word(word address) {
         case REGION_GAMEPAK2_L: {
             word index = address & 0x1FFFFFF;
             if (index < mem->rom_size) {
-                return WORD_FROM_BYTE_ARRAY(mem->rom, index);
+                return word_from_byte_array(mem->rom, index);
             } else {
                 return open_bus(address);
             }
@@ -988,7 +988,7 @@ word gba_read_word(word address) {
             }
             word index = address & 0x1FFFFFF;
             if (index < mem->rom_size) {
-                return WORD_FROM_BYTE_ARRAY(mem->rom, index);
+                return word_from_byte_array(mem->rom, index);
             } else {
                 return open_bus(address);
             }
@@ -996,7 +996,7 @@ word gba_read_word(word address) {
         case REGION_SRAM:
             switch (bus->backup_type) {
                 case SRAM:
-                    return WORD_FROM_BYTE_ARRAY(mem->backup, address & 0x7FFF);
+                    return word_from_byte_array(mem->backup, address & 0x7FFF);
                 case FLASH64K:
                 case FLASH128K:
                     logfatal("gba_read_word from FLASH!")
@@ -1006,7 +1006,7 @@ word gba_read_word(word address) {
 
         case REGION_SRAM_MIRR:
             if (bus->backup_type == SRAM) {
-                return WORD_FROM_BYTE_ARRAY(mem->backup, address & 0x7FFF);
+                return word_from_byte_array(mem->backup, address & 0x7FFF);
             }
             return 0;
     }
