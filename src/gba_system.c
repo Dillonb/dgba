@@ -89,16 +89,9 @@ void timer_tick(int cyc) {
     for (int n = 0; n < 4; n++) {
         bool overflow = false;
 
-        if (bus->TMCNT_H[n].start) {
-            //unimplemented(bus->TMCNT_H[n].cascade, "Timer cascade")
+        if (bus->TMSTART[n]) {
             if (bus->TMCNT_H[n].cascade && !previous_overflow) {
                 continue;
-            }
-
-            if (!bus->TMINT[n].previously_enabled) {
-                bus->TMINT[n].previously_enabled = true;
-                bus->TMINT[n].ticks = 0;
-                bus->TMINT[n].value = bus->TMCNT_L[n].timer_reload;
             }
 
             if (bus->TMCNT_H[n].cascade && !previous_overflow) {
@@ -142,8 +135,6 @@ void timer_tick(int cyc) {
             }
             bus->TMINT[n].value = new_value;
             bus->TMINT[n].ticks = remain;
-        } else {
-            bus->TMINT[n].previously_enabled = false;
         }
 
         previous_overflow = overflow;
