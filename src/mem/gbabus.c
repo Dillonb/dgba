@@ -376,6 +376,13 @@ void tmcnth_write(int n, half old_value) {
         bus->TMINT[n].ticks = 0;
         bus->TMINT[n].value = bus->TMCNT_L[n].timer_reload;
     }
+
+    bus->num_active_timers = 0;
+    for (int i = 0; i < 4; i++) {
+        if (bus->TMCNT_H[i].start && !bus->TMCNT_H[i].cascade) {
+            bus->TMACTIVE[bus->num_active_timers++] = i;
+        }
+    }
 }
 
 INLINE void write_half_ioreg_masked(word addr, half value, half mask) {

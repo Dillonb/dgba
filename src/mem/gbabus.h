@@ -225,6 +225,8 @@ typedef struct gbabus {
     SOUNDBIAS_t SOUNDBIAS;
 
     bool TMSTART[4];
+    byte TMACTIVE[4];
+    byte num_active_timers;
     TMCNT_L_t TMCNT_L[4];
     TMCNT_H_t TMCNT_H[4];
     TMINT_t TMINT[4];

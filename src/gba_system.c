@@ -120,7 +120,8 @@ void timer_inc(int n, word clocks, word remainder) {
 }
 
 void timer_tick(int cpu_cyc) {
-    for (int n = 0; n < 4; n++) {
+    for (int i = 0; i < bus->num_active_timers; i++) {
+        int n = bus->TMACTIVE[i];
         if (bus->TMSTART[n] && !bus->TMCNT_H[n].cascade) {
             bus->TMINT[n].ticks += cpu_cyc;
             word clocks = bus->TMINT[n].ticks >> timer_shift[bus->TMCNT_H[n].frequency];
