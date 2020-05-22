@@ -77,9 +77,14 @@ void init_gbasystem(const char* romfile, const char* bios_file) {
 }
 
 
-int timer_freq[4] = {1, 64, 256, 1024};
+// Unused, since everything relies on shifts and masks for faster mods and divides, but kept here for posterity.
+// int timer_freq[4] = {1, 64, 256, 1024};
+// Optimizing division
+int timer_shift[4] = {0, 6, 8, 10};
+// Optimizing modulus
+int timer_mask[4] = {0, 0x3F, 0xFF, 0x3FF};
 
-INLINE void timer_tick(int cyc) {
+void timer_tick(int cyc) {
     bool previous_overflow = false;
     for (int n = 0; n < 4; n++) {
         bool overflow = false;
@@ -107,35 +112,36 @@ INLINE void timer_tick(int cyc) {
                 bus->TMINT[n].ticks += cyc;
             }
 
-            while (bus->TMINT[n].ticks >= timer_freq[bus->TMCNT_H[n].frequency]) {
-                bus->TMINT[n].ticks -= timer_freq[bus->TMCNT_H[n].frequency];
-                if (bus->TMINT[n].value == 0xFFFF) {
-                    bus->TMINT[n].value = bus->TMCNT_L[n].timer_reload;
-                    overflow = true;
-                    if (bus->TMCNT_H[n].timer_irq_enable) {
-                        switch (n) {
-                            case 0:
-                                request_interrupt(IRQ_TIMER0);
-                                break;
-                            case 1:
-                                request_interrupt(IRQ_TIMER1);
-                                break;
-                            case 2:
-                                request_interrupt(IRQ_TIMER2);
-                                break;
-                            case 3:
-                                request_interrupt(IRQ_TIMER3);
-                                break;
-                        }
-                    }
+            word clocks = bus->TMINT[n].ticks >> timer_shift[bus->TMCNT_H[n].frequency];
+            word remain = bus->TMINT[n].ticks & timer_mask[bus->TMCNT_H[n].frequency];
+            word new_value = bus->TMINT[n].value + clocks;
 
-                    if (n == 0 || n == 1) {
-                        sound_timer_overflow(apu, n);
+            while (new_value > 0xFFFF) {
+                new_value = bus->TMCNT_L[n].timer_reload + (new_value - 0xFFFF);
+                overflow = true;
+                if (bus->TMCNT_H[n].timer_irq_enable) {
+                    switch (n) {
+                        case 0:
+                            request_interrupt(IRQ_TIMER0);
+                            break;
+                        case 1:
+                            request_interrupt(IRQ_TIMER1);
+                            break;
+                        case 2:
+                            request_interrupt(IRQ_TIMER2);
+                            break;
+                        case 3:
+                            request_interrupt(IRQ_TIMER3);
+                            break;
                     }
-                } else {
-                    bus->TMINT[n].value++;
+                }
+
+                if (n == 0 || n == 1) {
+                    sound_timer_overflow(apu, n);
                 }
             }
+            bus->TMINT[n].value = new_value;
+            bus->TMINT[n].ticks = remain;
         } else {
             bus->TMINT[n].previously_enabled = false;
         }
