@@ -170,18 +170,12 @@ INLINE int run_system(int for_cycles) {
 }
 
 INLINE void inline_gba_system_step() {
-    cycles += inline_gba_cpu_step();
-    while (cycles > 4) {
-        timer_tick(1);
-        timer_tick(1);
-        timer_tick(1);
-        timer_tick(1);
+    int this_step_cycles = inline_gba_cpu_step();
+    timer_tick(this_step_cycles);
+    cycles += this_step_cycles;
+    while (cycles > 0) {
         apu_tick(apu);
-        apu_tick(apu);
-        apu_tick(apu);
-        apu_tick(apu);
-
-        cycles -= 4;
+        cycles--;
     }
 }
 
