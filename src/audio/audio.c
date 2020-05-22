@@ -1,6 +1,7 @@
 #include <SDL.h>
 #include "audio.h"
 #include "../common/log.h"
+#include "../mem/dma.h"
 
 
 SDL_AudioSpec audio_spec;
@@ -103,5 +104,6 @@ void sound_timer_overflow(gba_apu_t* apu, int n) {
     if (apu->SOUNDCNT_H.dmasound_b_timer_select == n) {
         dmasound_tick(apu, 1);
     }
+    gba_dma();
 #endif
 }

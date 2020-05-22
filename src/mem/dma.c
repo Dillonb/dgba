@@ -13,6 +13,7 @@ static const char* dma_triggers[] = {
 
 void dma_start_trigger(dma_start_time_t trigger) {
     dma_trigger = trigger;
+    gba_dma();
 }
 
 INLINE int dma(int n, DMACNTH_t* cnth, DMAINT_t* dmaint, word sad, word dad, word wc, word max_wc) {

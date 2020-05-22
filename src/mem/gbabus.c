@@ -392,21 +392,31 @@ INLINE void write_half_ioreg_masked(word addr, half value, half mask) {
                 if (!bus->DMA0CNT_H.dma_enable) {
                     bus->DMA0INT.previously_enabled = false;
                 }
+                gba_dma();
                 break;
             case IO_DMA1CNT_H:
                 if (!bus->DMA1CNT_H.dma_enable) {
                     bus->DMA1INT.previously_enabled = false;
                 }
+                gba_dma();
                 break;
             case IO_DMA2CNT_H:
                 if (!bus->DMA2CNT_H.dma_enable) {
                     bus->DMA2INT.previously_enabled = false;
                 }
+                gba_dma();
                 break;
             case IO_DMA3CNT_H:
                 if (!bus->DMA3CNT_H.dma_enable) {
                     bus->DMA3INT.previously_enabled = false;
                 }
+                gba_dma();
+                break;
+            case IO_DMA0CNT_L:
+            case IO_DMA1CNT_L:
+            case IO_DMA2CNT_L:
+            case IO_DMA3CNT_L:
+                gba_dma();
                 break;
         }
     } else {

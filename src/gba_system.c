@@ -148,17 +148,12 @@ bool cpu_stepped = false;
 
 INLINE int inline_gba_cpu_step() {
     cpu_stepped = false;
-    int dma_cycles = gba_dma();
     cpu->irq = (bus->interrupt_enable.raw & bus->IF.raw) != 0;
-    if (dma_cycles > 0) {
-        return dma_cycles;
+    if (cpu->halt && !cpu->irq) {
+        return 1;
     } else {
-        if (cpu->halt && !cpu->irq) {
-            return 1;
-        } else {
-            cpu_stepped = true;
-            return arm7tdmi_step(cpu);
-        }
+        cpu_stepped = true;
+        return arm7tdmi_step(cpu);
     }
 }
 
