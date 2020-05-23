@@ -558,7 +558,6 @@ INLINE void merge_bgs(gba_ppu_t* ppu) {
     };
 
     for (int x = 0; x < GBA_SCREEN_X; x++) {
-        bool non_transparent_drawn = false;
         gba_color_t last;
         last.raw = half_from_byte_array(ppu->pram, 0);
         int last_layer_drawn = BG_BD;
@@ -624,18 +623,11 @@ INLINE void merge_bgs(gba_ppu_t* ppu) {
                         break;
                     }
                 }
-                if (!pixel.transparent) {
-                    non_transparent_drawn = true;
-                }
                 last_layer_drawn = bg;
                 last = pixel;
             } else if (should_draw) {
                 last = pixel;
                 draw = pixel;
-
-                if (!pixel.transparent) {
-                    non_transparent_drawn = true;
-                }
                 last_layer_drawn = bg;
             }
             // If the OBJ pixel here has the same priority as the BG, draw it instead.
@@ -664,7 +656,6 @@ INLINE void merge_bgs(gba_ppu_t* ppu) {
                     draw = pixel;
                 }
                 last = pixel;
-                non_transparent_drawn = true;
                 last_layer_drawn = BG_OBJ;
             }
         }
