@@ -251,6 +251,8 @@ typedef struct gbabus {
     WAITCNT_t WAITCNT;
 
     backup_type_t backup_type;
+    byte gpio_port_direction;
+    bool allow_gpio_read;
 } gbabus_t;
 
 KEYINPUT_t* get_keyinput();

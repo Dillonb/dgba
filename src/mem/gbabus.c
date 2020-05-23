@@ -6,6 +6,7 @@
 #include "gbabios.h"
 #include "../gba_system.h"
 #include "backup/flash.h"
+#include "gpio/gpio.h"
 
 
 INLINE word open_bus(word addr);
@@ -782,6 +783,9 @@ INLINE half inline_gba_read_half(word address) {
             return half_from_byte_array(ppu->oam, index);
         }
         case REGION_GAMEPAK0_L:
+            if (address >= 0x080000C4 && address <= 0x080000C8) {
+                return gpio_read(address);
+            }
         case REGION_GAMEPAK0_H:
         case REGION_GAMEPAK1_L:
         case REGION_GAMEPAK1_H:
@@ -973,6 +977,10 @@ void gba_write_half(word addr, half value) {
             break;
         }
         case REGION_GAMEPAK0_L:
+            if (addr >= 0x080000C4 && addr <= 0x080000C8) {
+                gpio_write(addr, value);
+                return;
+            }
         case REGION_GAMEPAK0_H:
         case REGION_GAMEPAK1_L:
         case REGION_GAMEPAK1_H:
@@ -1062,6 +1070,14 @@ word gba_read_word(word address) {
             return word_from_byte_array(ppu->oam, index);
         }
         case REGION_GAMEPAK0_L:
+            switch (address) {
+                case 0x080000C4:
+                    return gpio_read(0x080000C4) | (gpio_read(0x080000C6) << 16);
+                case 0x080000C8:
+                    return gpio_read(0x080000C8);
+                default:
+                    break;
+            }
         case REGION_GAMEPAK0_H:
         case REGION_GAMEPAK1_L:
         case REGION_GAMEPAK1_H:
@@ -1165,6 +1181,17 @@ void gba_write_word(word addr, word value) {
             break;
         }
         case REGION_GAMEPAK0_L:
+            switch (addr) {
+                case 0x080000C4:
+                    gpio_write(0x080000C4, value & 0xFFFF);
+                    gpio_write(0x080000C6, (value >> 16) & 0xFFFF);
+                    return;
+                case 0x080000C8:
+                    gpio_write(0x080000C8, value & 0xFFFF);
+                    return;
+                default:
+                    break;
+            }
         case REGION_GAMEPAK0_H:
         case REGION_GAMEPAK1_L:
         case REGION_GAMEPAK1_H:
