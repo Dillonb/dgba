@@ -95,37 +95,6 @@ void render_line_mode3(gba_ppu_t* ppu) {
     }
 }
 
-void render_line_mode4(gba_ppu_t* ppu) {
-    if (ppu->DISPCNT.screen_display_bg2) {
-        for (int x = 0; x < GBA_SCREEN_X; x++) {
-            int offset = x + (ppu->y * GBA_SCREEN_X);
-            int index = ppu->DISPCNT.display_frame_select * 0xA000 + offset;
-            int tile = ppu->vram[index];
-            if (tile == 0) {
-                ppu->screen[ppu->y][x].a = 0;
-                ppu->screen[ppu->y][x].r = 0;
-                ppu->screen[ppu->y][x].g = 0;
-                ppu->screen[ppu->y][x].b = 0;
-            } else {
-                gba_color_t color;
-                color.raw = half_from_byte_array(ppu->pram, (0x20 * PALETTE_BANK_BACKGROUND + 2 * tile)) & 0x7FFF;
-
-                ppu->screen[ppu->y][x].a = 0xFF;
-                ppu->screen[ppu->y][x].r = FIVEBIT_TO_EIGHTBIT_COLOR(color.r);
-                ppu->screen[ppu->y][x].g = FIVEBIT_TO_EIGHTBIT_COLOR(color.g);
-                ppu->screen[ppu->y][x].b = FIVEBIT_TO_EIGHTBIT_COLOR(color.b);
-            }
-        }
-    } else {
-        for (int x = 0; x < GBA_SCREEN_X; x++) {
-            ppu->screen[ppu->y][x].a = 0;
-            ppu->screen[ppu->y][x].r = 0;
-            ppu->screen[ppu->y][x].g = 0;
-            ppu->screen[ppu->y][x].b = 0;
-        }
-    }
-}
-
 // [shape][size]
 int sprite_heights[3][4] = {
         {8,16,32,64},
@@ -736,6 +705,32 @@ INLINE void render_line_mode2(gba_ppu_t* ppu) {
 
     merge_bgs(ppu);
 }
+
+void render_line_mode4(gba_ppu_t* ppu) {
+    render_obj(ppu);
+    if (ppu->DISPCNT.screen_display_bg2) {
+        for (int x = 0; x < GBA_SCREEN_X; x++) {
+            int offset = x + (ppu->y * GBA_SCREEN_X);
+            int index = ppu->DISPCNT.display_frame_select * 0xA000 + offset;
+            int tile = ppu->vram[index];
+            if (tile == 0) {
+                ppu->bgbuf[2][x].raw = half_from_byte_array(ppu->pram, 0);
+                ppu->bgbuf[2][x].transparent = true;
+            } else {
+                ppu->bgbuf[2][x].raw = half_from_byte_array(ppu->pram, (0x20 * PALETTE_BANK_BACKGROUND + 2 * tile)) & 0x7FFF;
+                ppu->bgbuf[2][x].transparent = false;
+            }
+        }
+    } else {
+        for (int x = 0; x < GBA_SCREEN_X; x++) {
+            ppu->bgbuf[2][x].raw = half_from_byte_array(ppu->pram, 0);
+            ppu->bgbuf[2][x].transparent = true;
+        }
+    }
+    refresh_background_priorities(ppu);
+    merge_bgs(ppu);
+}
+
 
 INLINE void render_line(gba_ppu_t* ppu) {
     // Draw a pixel
