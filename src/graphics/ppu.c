@@ -20,6 +20,13 @@ gba_ppu_t* init_ppu() {
     gba_ppu_t* ppu = malloc(sizeof(gba_ppu_t));
     memset(ppu, 0, sizeof(gba_ppu_t));
 
+    for (int x = 0; x < GBA_SCREEN_X; x++) {
+        ppu->bgbuf[0][x].transparent = true;
+        ppu->bgbuf[1][x].transparent = true;
+        ppu->bgbuf[2][x].transparent = true;
+        ppu->bgbuf[3][x].transparent = true;
+    }
+
     ppu->BG2PA.raw = 0x0100;
     ppu->BG2PB.raw = 0x0000;
     ppu->BG2PC.raw = 0x0000;
@@ -70,30 +77,6 @@ INLINE bool should_render_pixel_window(gba_ppu_t* ppu, int x, int y, bool win0in
 }
 
 #define PALETTE_BANK_BACKGROUND 0
-
-void render_line_mode3(gba_ppu_t* ppu) {
-    if (ppu->DISPCNT.screen_display_bg2) {
-        for (int x = 0; x < GBA_SCREEN_X; x++) {
-            int offset = x + (ppu->y * GBA_SCREEN_X);
-            offset *= 2;
-
-            gba_color_t color;
-            color.raw = half_from_byte_array(ppu->vram, offset) & 0x7FFF;
-
-            ppu->screen[ppu->y][x].a = 0xFF;
-            ppu->screen[ppu->y][x].r = FIVEBIT_TO_EIGHTBIT_COLOR(color.r);
-            ppu->screen[ppu->y][x].g = FIVEBIT_TO_EIGHTBIT_COLOR(color.g);
-            ppu->screen[ppu->y][x].b = FIVEBIT_TO_EIGHTBIT_COLOR(color.b);
-        }
-    } else {
-        for (int x = 0; x < GBA_SCREEN_X; x++) {
-            ppu->screen[ppu->y][x].a = 0;
-            ppu->screen[ppu->y][x].r = 0;
-            ppu->screen[ppu->y][x].g = 0;
-            ppu->screen[ppu->y][x].b = 0;
-        }
-    }
-}
 
 // [shape][size]
 int sprite_heights[3][4] = {
@@ -703,6 +686,26 @@ INLINE void render_line_mode2(gba_ppu_t* ppu) {
 
     refresh_background_priorities(ppu);
 
+    merge_bgs(ppu);
+}
+
+void render_line_mode3(gba_ppu_t* ppu) {
+    render_obj(ppu);
+    if (ppu->DISPCNT.screen_display_bg2) {
+        for (int x = 0; x < GBA_SCREEN_X; x++) {
+            int offset = x + (ppu->y * GBA_SCREEN_X);
+            offset *= 2;
+
+            ppu->bgbuf[2][x].raw = half_from_byte_array(ppu->vram, offset) & 0x7FFF;
+            ppu->bgbuf[2][x].transparent = false;
+        }
+    } else {
+        for (int x = 0; x < GBA_SCREEN_X; x++) {
+            ppu->bgbuf[2][x].raw = half_from_byte_array(ppu->pram, 0);
+            ppu->bgbuf[2][x].transparent = true;
+        }
+    }
+    refresh_background_priorities(ppu);
     merge_bgs(ppu);
 }
 
