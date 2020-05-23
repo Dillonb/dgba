@@ -18,6 +18,16 @@ INLINE half half_from_byte_array(byte* arr, int index) {
     return warr[index / sizeof(half)];
 }
 
+INLINE void word_to_byte_array(byte* arr, int index, word value) {
+    word* warr = (word*)arr;
+    warr[index / sizeof(word)] = value;
+}
+
+INLINE void half_to_byte_array(byte* arr, int index, half value) {
+    half* warr = (half*)arr;
+    warr[index / sizeof(half)] = value;
+}
+
 typedef enum gba_interrupt {
     IRQ_VBLANK,
     IRQ_HBLANK,

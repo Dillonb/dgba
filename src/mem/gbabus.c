@@ -831,83 +831,158 @@ half gba_read_half(word address) {
     return inline_gba_read_half(address);
 }
 
-
 void gba_write_byte(word addr, byte value) {
     addr &= ~(sizeof(byte) - 1);
-    if (addr < GBA_BIOS_SIZE) {
-        logwarn("Tried to write to the BIOS!")
-    } else if (addr < 0x01FFFFFF) {
-        logwarn("Tried to write to unused section of RAM in between bios and WRAM")
-    } else if (addr < 0x03000000) { // EWRAM
-        word index = (addr - 0x02000000) % 0x40000;
-        mem->ewram[index] = value;
-    } else if (addr < 0x04000000) { // IWRAM
-        word index = (addr - 0x03000000) % 0x8000;
-        mem->iwram[index] = value;
-    } else if (addr < 0x04000400) {
-        write_byte_ioreg(addr, value);
-    } else if (addr < 0x05000000) {
-        logwarn("Tried to write to 0x%08X", addr)
-    } else if (addr < 0x06000000) { // Palette RAM
-        word index = (addr - 0x5000000) % 0x400;
-        ppu->pram[index] = value;
-    } else if (addr < 0x07000000) {
-        word index = addr & 0x1FFFF;
-        if (index > 0x17FFF) {
-            index -= 0x8000;
+    switch (addr >> 24) {
+        case REGION_BIOS: {
+            logwarn("Tried to write to the BIOS!")
+            break;
         }
-        ppu->vram[index] = value;
-    } else if (addr < 0x08000000) {
-        word index = addr - 0x07000000;
-        index %= OAM_SIZE;
-        ppu->oam[index] = value;
-    } else if (addr < 0x08000000 + mem->rom_size) {
-        logwarn("Ignoring write to valid cartridge address 0x%08X!", addr)
-    } else if ((addr >> 24) >= 0xE && addr < 0x10000000) {
-        // Backup space
-        switch (bus->backup_type) {
-            case SRAM:
-                mem->backup[addr & 0x7FFF] = value;
-                mem->backup_dirty = true;
-                break;
-            case UNKNOWN:
-                logwarn("Tried to access backup when backup type unknown!")
-                break;
-            case EEPROM:
-                logfatal("Backup type EEPROM unimplemented!")
-            case FLASH64K:
-            case FLASH128K:
-                write_byte_flash(mem, bus, addr, value);
-                break;
-            default:
-                logfatal("Unknown backup type index %d!", bus->backup_type)
+        case REGION_EWRAM: {
+            word index = (addr - 0x02000000) % 0x40000;
+            mem->ewram[index] = value;
+            break;
         }
+        case REGION_IWRAM: {
+            word index = (addr - 0x03000000) % 0x8000;
+            mem->iwram[index] = value;
+            break;
+        }
+        case REGION_IOREG: {
+            write_byte_ioreg(addr, value);
+            break;
+        }
+        case REGION_PRAM: {
+            word index = (addr - 0x5000000) % 0x400;
+            ppu->pram[index] = value;
+            break;
+        }
+        case REGION_VRAM: {
+            word index = addr - 0x06000000;
+            index %= VRAM_SIZE;
+            ppu->vram[index] = value;
+            break;
+        }
+        case REGION_OAM: {
+            word index = addr - 0x07000000;
+            index %= OAM_SIZE;
+            ppu->oam[index] = value;
+            break;
+        }
+        case REGION_GAMEPAK0_L:
+        case REGION_GAMEPAK0_H:
+        case REGION_GAMEPAK1_L:
+        case REGION_GAMEPAK1_H:
+        case REGION_GAMEPAK2_L:
+        case REGION_GAMEPAK2_H: {
+            logdebug("Ignoring write to cartridge space address 0x%08X", addr)
+            break;
+        }
+        case REGION_SRAM:
+        case REGION_SRAM_MIRR:
+            // Backup space
+            switch (bus->backup_type) {
+                case SRAM:
+                    mem->backup[addr & 0x7FFF] = value;
+                    mem->backup_dirty = true;
+                    break;
+                case UNKNOWN:
+                    logwarn("Tried to access backup when backup type unknown!")
+                    break;
+                case EEPROM:
+                    logfatal("Backup type EEPROM unimplemented!")
+                case FLASH64K:
+                case FLASH128K:
+                    write_byte_flash(mem, bus, addr, value);
+                    break;
+                default:
+                    logfatal("Unknown backup type index %d!", bus->backup_type)
+            }
     }
 }
 
-void gba_write_half(word address, half value) {
-    address &= ~(sizeof(half) - 1);
-    if (is_ioreg(address)) {
-        byte ioreg_size = get_ioreg_size_for_addr(address);
-        if (ioreg_size == sizeof(word)) {
-            word offset = (address % sizeof(word));
-            word shifted_value = value;
-            shifted_value <<= (offset * 8);
-            write_word_ioreg_masked(address - offset, shifted_value, 0xFFFF << (offset * 8));
-        } else if (ioreg_size == sizeof(half)) {
-            write_half_ioreg(address, value);
-            return;
-        } else if (ioreg_size == 0) {
-            // Unused io register
-            logwarn("Unused half size ioregister 0x%08X", address)
-            return;
+void gba_write_half(word addr, half value) {
+    addr &= ~(sizeof(half) - 1);
+    switch (addr >> 24) {
+        case REGION_BIOS: {
+            logwarn("Tried to write to the BIOS!")
+            break;
         }
+        case REGION_EWRAM: {
+            word index = (addr - 0x02000000) % 0x40000;
+            half_to_byte_array(mem->ewram, index, value);
+            break;
+        }
+        case REGION_IWRAM: {
+            word index = (addr - 0x03000000) % 0x8000;
+            half_to_byte_array(mem->iwram, index, value);
+            break;
+        }
+        case REGION_IOREG: {
+            byte ioreg_size = get_ioreg_size_for_addr(addr);
+            if (ioreg_size == sizeof(word)) {
+                word offset = (addr % sizeof(word));
+                word shifted_value = value;
+                shifted_value <<= (offset * 8);
+                write_word_ioreg_masked(addr - offset, shifted_value, 0xFFFF << (offset * 8));
+            } else if (ioreg_size == sizeof(half)) {
+                write_half_ioreg(addr, value);
+                return;
+            } else if (ioreg_size == 0) {
+                // Unused io register
+                logwarn("Unused half size ioregister 0x%08X", addr)
+                return;
+            }
+            break;
+        }
+        case REGION_PRAM: {
+            word index = (addr - 0x5000000) % 0x400;
+            half_to_byte_array(ppu->pram, index, value);
+            break;
+        }
+        case REGION_VRAM: {
+            word index = addr - 0x06000000;
+            index %= VRAM_SIZE;
+            half_to_byte_array(ppu->vram, index, value);
+            break;
+        }
+        case REGION_OAM: {
+            word index = addr - 0x07000000;
+            index %= OAM_SIZE;
+            ppu->oam[index] = value;
+            half_to_byte_array(ppu->oam, index, value);
+            break;
+        }
+        case REGION_GAMEPAK0_L:
+        case REGION_GAMEPAK0_H:
+        case REGION_GAMEPAK1_L:
+        case REGION_GAMEPAK1_H:
+        case REGION_GAMEPAK2_L:
+        case REGION_GAMEPAK2_H: {
+            logdebug("Ignoring write to cartridge space address 0x%08X", addr)
+            break;
+        }
+        case REGION_SRAM:
+        case REGION_SRAM_MIRR:
+            // Backup space
+            switch (bus->backup_type) {
+                case SRAM:
+                    half_to_byte_array(mem->backup, addr & 0x7FFF, value);
+                    mem->backup_dirty = true;
+                    break;
+                case UNKNOWN:
+                    logwarn("Tried to access backup when backup type unknown!")
+                    break;
+                case EEPROM:
+                    logfatal("Backup type EEPROM unimplemented!")
+                case FLASH64K:
+                case FLASH128K:
+                    logfatal("Writing half to flash unimplemented")
+                    break;
+                default:
+                    logfatal("Unknown backup type index %d!", bus->backup_type)
+            }
     }
-
-    byte lower = value & 0xFFu;
-    byte upper = (value & 0xFF00u) >> 8u;
-    gba_write_byte(address, lower);
-    gba_write_byte(address + 1, upper);
 }
 
 word gba_read_word(word address) {
@@ -1013,24 +1088,91 @@ word gba_read_word(word address) {
     return open_bus(address);
 }
 
-void gba_write_word(word address, word value) {
-    address &= ~(sizeof(word) - 1);
-    if (is_ioreg(address)) {
-        byte ioreg_size = get_ioreg_size_for_addr(address);
-        if(ioreg_size == sizeof(word)) {
-            write_word_ioreg(address, value);
-            return;
-        } else if (ioreg_size == 0) {
-            logwarn("Unused word size ioregister!")
-            // Unused io register
-            return;
+void gba_write_word(word addr, word value) {
+    addr &= ~(sizeof(word) - 1);
+    switch (addr >> 24) {
+        case REGION_BIOS: {
+            logwarn("Tried to write to the BIOS!")
+            break;
         }
-        // Otherwise, it'll be smaller than a word, and we'll write each part to the respective registers.
+        case REGION_EWRAM: {
+            word index = (addr - 0x02000000) % 0x40000;
+            word_to_byte_array(mem->ewram, index, value);
+            break;
+        }
+        case REGION_IWRAM: {
+            word index = (addr - 0x03000000) % 0x8000;
+            word_to_byte_array(mem->iwram, index, value);
+            break;
+        }
+        case REGION_IOREG: {
+            if (addr < 0x04000400) {
+                byte size = get_ioreg_size_for_addr(addr);
+                switch (size) {
+                    case 0:
+                        return;
+                    case sizeof(byte):
+                        write_byte_ioreg(addr, value & 0xFF);
+                        write_byte_ioreg(addr + 1, (value >> 8) & 0xFF);
+                        write_byte_ioreg(addr + 2, (value >> 16) & 0xFF);
+                        write_byte_ioreg(addr + 3, (value >> 24) & 0xFF);
+                        break;
+                    case sizeof(half):
+                        write_half_ioreg(addr, value & 0xFFFF);
+                        write_half_ioreg(addr + 2, (value >> 16) & 0xFFFF);
+                        break;
+                    case sizeof(word):
+                        write_word_ioreg(addr, value);
+                }
+            }
+            break;
+        }
+        case REGION_PRAM: {
+            word index = (addr - 0x5000000) % 0x400;
+            word_to_byte_array(ppu->pram, index, value);
+            break;
+        }
+        case REGION_VRAM: {
+            word index = addr - 0x06000000;
+            index %= VRAM_SIZE;
+            word_to_byte_array(ppu->vram, index, value);
+            break;
+        }
+        case REGION_OAM: {
+            word index = addr - 0x07000000;
+            index %= OAM_SIZE;
+            ppu->oam[index] = value;
+            word_to_byte_array(ppu->oam, index, value);
+            break;
+        }
+        case REGION_GAMEPAK0_L:
+        case REGION_GAMEPAK0_H:
+        case REGION_GAMEPAK1_L:
+        case REGION_GAMEPAK1_H:
+        case REGION_GAMEPAK2_L:
+        case REGION_GAMEPAK2_H: {
+            logdebug("Ignoring write to cartridge space address 0x%08X", addr)
+            break;
+        }
+        case REGION_SRAM:
+        case REGION_SRAM_MIRR:
+            // Backup space
+            switch (bus->backup_type) {
+                case SRAM:
+                    word_to_byte_array(mem->backup, addr & 0x7FFF, value);
+                    mem->backup_dirty = true;
+                    break;
+                case UNKNOWN:
+                    logwarn("Tried to access backup when backup type unknown!")
+                    break;
+                case EEPROM:
+                    logfatal("Backup type EEPROM unimplemented!")
+                case FLASH64K:
+                case FLASH128K:
+                    logfatal("Writing word to flash unimplemented")
+                    break;
+                default:
+                    logfatal("Unknown backup type index %d!", bus->backup_type)
+            }
     }
-
-    half lower = (value & 0xFFFFu);
-    half upper = (value & 0xFFFF0000u) >> 16u;
-
-    gba_write_half(address, lower);
-    gba_write_half(address + 2, upper);
 }
