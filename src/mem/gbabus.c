@@ -831,6 +831,19 @@ half gba_read_half(word address) {
     return inline_gba_read_half(address);
 }
 
+INLINE bool is_bitmap() {
+    int mode = ppu->DISPCNT.mode;
+    return mode >= 3 && mode < 6;
+}
+
+INLINE bool is_bg(word address) {
+    if (is_bitmap()) {
+        return address >= 0x6000000 && address <= 0x6013FFF;
+    } else {
+        return address >= 0x6000000 && address <= 0x600FFFF;
+    }
+}
+
 void gba_write_byte(word addr, byte value) {
     addr &= ~(sizeof(byte) - 1);
     switch (addr >> 24) {
@@ -854,20 +867,26 @@ void gba_write_byte(word addr, byte value) {
         }
         case REGION_PRAM: {
             word index = (addr - 0x5000000) % 0x400;
-            ppu->pram[index] = value;
+            word lower_index = index & 0xFFFFFFFE;
+            word upper_index = lower_index + 1;
+            ppu->pram[lower_index] = value;
+            ppu->pram[upper_index] = value;
             break;
         }
         case REGION_VRAM: {
             word index = addr - 0x06000000;
             index %= VRAM_SIZE;
-            ppu->vram[index] = value;
+            // Special case for single byte writes to VRAM, OBJ writes are ignored.
+            if (is_bg(addr)) {
+                word lower_index = index & 0xFFFFFFFE;
+                word upper_index = lower_index + 1;
+                ppu->vram[lower_index] = value;
+                ppu->vram[upper_index] = value;
+            }
             break;
         }
         case REGION_OAM: {
-            word index = addr - 0x07000000;
-            index %= OAM_SIZE;
-            ppu->oam[index] = value;
-            break;
+            break; // 8 bit writes to OAM are ignored
         }
         case REGION_GAMEPAK0_L:
         case REGION_GAMEPAK0_H:
