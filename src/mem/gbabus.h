@@ -232,11 +232,28 @@ typedef enum rtc_state {
     RTC_DATA_WRITE
 } rtc_state_t;
 
+typedef union rtc_control {
+    byte raw;
+    struct {
+        unsigned:1; // Unused
+        unsigned:1; // IRQ duty/hold related? (GBATek doesn't know)
+        unsigned:1; // Unused
+        bool per_minute_irq:1;
+        unsigned:1; // Unused
+        bool:1; // Unknown
+        bool mode_24h:1;
+        bool poweroff:1;
+    };
+} rtc_control_t;
+
 typedef struct rtc {
     rtc_state_t state;
     byte command_buffer;
     int current_command_bit;
-    uint64_t read_buffer;
+    uint64_t buffer;
+    uint64_t write_mask;
+    byte reg;
+    rtc_control_t control_reg;
 } rtc_t;
 
 typedef struct gbabus {
