@@ -81,6 +81,9 @@ gbabus_t* init_gbabus() {
         }
     }
 
+    bus_state->gpio_read_mask = 0;
+    bus_state->gpio_write_mask = 0xF;
+
     return bus_state;
 }
 

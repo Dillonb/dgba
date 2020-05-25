@@ -203,6 +203,44 @@ typedef enum backup_type {
     FLASH128K
 } backup_type_t;
 
+typedef enum gpio_device {
+    RTC
+} gpio_device_t;
+
+typedef union gpio_port {
+    byte raw;
+    struct {
+        bool bit_0:1;
+        bool bit_1:1;
+        bool bit_2:1;
+        bool bit_3:1;
+        byte:4;
+    };
+    struct {
+        bool rtc_sck:1;
+        bool rtc_sio:1;
+        bool rtc_cs:1;
+        byte:5;
+    };
+} gpio_port_t;
+
+typedef enum rtc_state {
+    RTC_READY,
+    RTC_COMMAND_MODE_1,
+    RTC_COMMAND_MODE_2,
+    RTC_DATA_READ,
+    RTC_DATA_WRITE
+} rtc_state_t;
+
+typedef struct rtc {
+    rtc_state_t state;
+    byte command_buffer;
+    int current_command_bit;
+    uint64_t read_buffer;
+    int read_buffer_size;
+    int current_buffer_bit;
+} rtc_t;
+
 typedef struct gbabus {
     interrupt_master_enable_t interrupt_master_enable;
     interrupt_master_enable_t ime_temp;
@@ -251,8 +289,12 @@ typedef struct gbabus {
     WAITCNT_t WAITCNT;
 
     backup_type_t backup_type;
-    byte gpio_port_direction;
+    byte gpio_read_mask;
+    byte gpio_write_mask;
     bool allow_gpio_read;
+    gpio_device_t gpio_device;
+    gpio_port_t port;
+    rtc_t rtc;
 } gbabus_t;
 
 KEYINPUT_t* get_keyinput();

@@ -3,16 +3,24 @@
 #include "gpio.h"
 #include "../../common/log.h"
 #include "../../gba_system.h"
+#include "rtc.h"
 
 half gpio_read(word address) {
     printf("gpio read from address 0x%08X\n", address);
     if (bus->allow_gpio_read) {
         switch (address & 0xF) {
             case 0x4: // Data
-                logfatal("Read from data port unimplemented")
+                switch (bus->gpio_device) {
+                    case RTC: {
+                        gpio_port_t port = gba_rtc_read();
+                        return bus->gpio_read_mask & port.raw;
+                    }
+                    default:
+                        logfatal("Read from data port for unimplemented device %d", bus->gpio_device)
+                }
                 break;
             case 0x6:
-                return bus->gpio_port_direction & 0b1111;
+                return bus->gpio_write_mask;
             case 0x8:
                 return bus->allow_gpio_read & 1;
         }
@@ -24,13 +32,29 @@ void gpio_write(word address, half value) {
     printf("gpio write 0x%04X to address 0x%08X\n", value, address);
     switch (address & 0xF) {
         case 0x4: // Data
-            //logfatal("Write to data port unimplemented")
+            switch (bus->gpio_device) {
+                case RTC: {
+                    gpio_port_t port;
+                    port.raw = value & bus->gpio_write_mask;
+                    gba_rtc_write(port, bus->gpio_write_mask);
+                    break;
+                }
+                default:
+                    logfatal("Write to data port for unimplemented device %d", bus->gpio_device)
+            }
             break;
         case 0x6:
-            bus->gpio_port_direction = value & 0b1111;
+            bus->gpio_write_mask = value    & 0b1111;
+            bus->gpio_read_mask  = (~value) & 0b1111;
+            printf("Set the read mask to 0x%X and the write mask to 0x%X\n", bus->gpio_read_mask, bus->gpio_write_mask);
             break;
         case 0x8:
             bus->allow_gpio_read = (value & 1) == 1;
+            if (bus->allow_gpio_read) {
+                printf("GPIO is now READABLE!\n");
+            } else {
+                printf("GPIO is now UNREADABLE!\n");
+            }
             break;
     }
 }
