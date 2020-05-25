@@ -237,8 +237,6 @@ typedef struct rtc {
     byte command_buffer;
     int current_command_bit;
     uint64_t read_buffer;
-    int read_buffer_size;
-    int current_buffer_bit;
 } rtc_t;
 
 typedef struct gbabus {

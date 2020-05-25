@@ -30,7 +30,7 @@ void run_command(byte command) {
     bool read = command >> 3;
     byte reg = command & 0x7;
 
-    printf("%sing register: 0x%X\n", read ? "Read" : "Write", reg);
+    logdebug("%sing register: 0x%X", read ? "Read" : "Write", reg);
 
     switch (reg) {
         case DATETIME_REG: {
@@ -58,15 +58,10 @@ void run_command(byte command) {
             rtc->read_buffer <<= 8;
 
             rtc->read_buffer |= to_bcd(timeinfo->tm_year - 100);
-
-            rtc->current_buffer_bit = 0;
-            rtc->read_buffer_size = 56;
             break;
         }
         case STATUS_REG_2:
             rtc->read_buffer = 0; // TODO
-            rtc->read_buffer_size = 8;
-            rtc->current_buffer_bit = 0;
             rtc->state = RTC_READY;
             break;
         default:
@@ -82,7 +77,7 @@ void run_command(byte command) {
 
 void gba_rtc_write(gpio_port_t value, byte mask) {
     rtc_t* rtc = &bus->rtc;
-    printf("state: %d SCK: %d SIO: %d CS: %d\n", rtc->state, value.rtc_sck, value.rtc_sio, value.rtc_cs);
+    loginfo("state: %d SCK: %d SIO: %d CS: %d", rtc->state, value.rtc_sck, value.rtc_sio, value.rtc_cs);
 
     switch (rtc->state) {
         case RTC_READY:
@@ -111,13 +106,12 @@ void gba_rtc_write(gpio_port_t value, byte mask) {
                 byte bit = value.rtc_sio & 1;
                 rtc->command_buffer &= ~(bit << rtc->current_command_bit);
                 rtc->command_buffer |= (bit << rtc->current_command_bit);
-                printf("Command is now 0x%02X\n", rtc->command_buffer);
                 if (++rtc->current_command_bit == 8) {
                     if ((rtc->command_buffer >> 4) == 6) {
                         rtc->command_buffer = reverse(rtc->command_buffer);
-                        printf("Need to reverse the command.\n");
+                        logdebug("Need to reverse the command.");
                     } else if ((rtc->command_buffer & 0xF) == 6) {
-                        printf("Already got the command in a good order.\n");
+                        logdebug("Already got the command in a good order.");
                     }
                     // Command passed validity check and is now in the correct order. Command is in the upper 4 bits,
                     // Lower 4 are always a 6.
@@ -133,14 +127,9 @@ void gba_rtc_write(gpio_port_t value, byte mask) {
                 if (bus->port.rtc_sck == 0) {
                     bus->port.rtc_sio = rtc->read_buffer & 1;
                     rtc->read_buffer >>= 1;
-                    printf("Read the bit %d\n", bus->port.rtc_sio);
-                    rtc->current_buffer_bit++;
-                    if (rtc->current_buffer_bit == rtc->read_buffer_size) {
-                        printf("!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-                    }
                 }
             } else if (value.rtc_cs == 1 && value.rtc_sck == 0) {
-                printf("Ignorin'!\n");
+                // Ignore
             } else if (value.rtc_cs == 0) {
                 rtc->state = RTC_READY;
             } else {

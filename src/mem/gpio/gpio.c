@@ -6,7 +6,7 @@
 #include "rtc.h"
 
 half gpio_read(word address) {
-    printf("gpio read from address 0x%08X\n", address);
+    logdebug("gpio read from address 0x%08X", address);
     if (bus->allow_gpio_read) {
         switch (address & 0xF) {
             case 0x4: // Data
@@ -29,7 +29,7 @@ half gpio_read(word address) {
 }
 
 void gpio_write(word address, half value) {
-    printf("gpio write 0x%04X to address 0x%08X\n", value, address);
+    logdebug("gpio write 0x%04X to address 0x%08X", value, address);
     switch (address & 0xF) {
         case 0x4: // Data
             switch (bus->gpio_device) {
@@ -46,14 +46,14 @@ void gpio_write(word address, half value) {
         case 0x6:
             bus->gpio_write_mask = value    & 0b1111;
             bus->gpio_read_mask  = (~value) & 0b1111;
-            printf("Set the read mask to 0x%X and the write mask to 0x%X\n", bus->gpio_read_mask, bus->gpio_write_mask);
+            logdebug("Set the read mask to 0x%X and the write mask to 0x%X", bus->gpio_read_mask, bus->gpio_write_mask);
             break;
         case 0x8:
             bus->allow_gpio_read = (value & 1) == 1;
             if (bus->allow_gpio_read) {
-                printf("GPIO is now READABLE!\n");
+                logdebug("GPIO is now READABLE!");
             } else {
-                printf("GPIO is now UNREADABLE!\n");
+                logdebug("GPIO is now UNREADABLE!");
             }
             break;
     }
