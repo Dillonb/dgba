@@ -22,7 +22,9 @@ add_library(core
         mem/dma.c mem/dma.h
         disassemble.c disassemble.h
         mem/ioreg_util.h mem/ioreg_names.h
-        mem/backup/flash.c mem/backup/flash.h)
+        mem/backup/flash.c mem/backup/flash.h
+        mem/gpio/gpio.c mem/gpio/gpio.h
+        mem/gpio/rtc.c mem/gpio/rtc.h)
 
 IF(Capstone_FOUND)
     TARGET_LINK_LIBRARIES(core Capstone::Capstone)
