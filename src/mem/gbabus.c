@@ -85,6 +85,7 @@ gbabus_t* init_gbabus() {
     bus_state->gpio_write_mask = 0xF;
 
     bus_state->rtc.control_reg.raw = 0x82;
+    bus_state->rtc.control_reg.mode_24h = true;
 
     return bus_state;
 }
