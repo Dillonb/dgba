@@ -1,4 +1,6 @@
 # gba
+![CI](https://github.com/Dillonb/gba/workflows/CI/badge.svg)
+
 It's a gba emulator. Things are _mostly working_.
 
 ## Notable stuff still TODO:
