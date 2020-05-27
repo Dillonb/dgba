@@ -32,6 +32,6 @@ It's a gba emulator. Things are _mostly working_.
 - L: Q
 - R: E
 - Start: Enter
-- Seleft: Right Shift
+- Select: Right Shift
 - Quick-save state: 1,2,3,4,5,6,7,8,9,0 - 10 save slots
 - Quick-load state: ctrl+(1,2,3,4,5,6,7,8,9,10) - Same 10 save slots
