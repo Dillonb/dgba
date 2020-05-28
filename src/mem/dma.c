@@ -147,7 +147,7 @@ INLINE int dma(int n, DMACNTH_t* cnth, DMAINT_t* dmaint, word sad, word dad, wor
                     break;
             }
         }
-        cnth->dma_enable = cnth->dma_repeat;
+        cnth->dma_enable = (cnth->dma_start_time != Immediately) && cnth->dma_repeat;
         dmaint->previously_enabled = cnth->dma_enable;
     }
     return dma_cycles;
