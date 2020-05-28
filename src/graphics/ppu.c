@@ -14,6 +14,15 @@ typedef struct obj_affine {
     int16_t pd;
 } obj_affine_t;
 
+INLINE void clear_obj(gba_ppu_t* ppu) {
+    for (int x = 0; x < GBA_SCREEN_X; x++) {
+        ppu->obj_priorities[x] = 0;
+        ppu->obj_window[x] = false;
+        ppu->objbuf[x].raw = half_from_byte_array(ppu->pram, 0);
+        ppu->objbuf[x].transparent = true;
+    }
+}
+
 gba_ppu_t* init_ppu() {
     assert(sizeof(float) == sizeof(word));
 
@@ -26,6 +35,8 @@ gba_ppu_t* init_ppu() {
         ppu->bgbuf[2][x].transparent = true;
         ppu->bgbuf[3][x].transparent = true;
     }
+
+    clear_obj(ppu);
 
     ppu->BG2PA.raw = 0x0100;
     ppu->BG2PB.raw = 0x0000;
@@ -107,12 +118,8 @@ void render_obj(gba_ppu_t* ppu) {
     obj_attr0_t attr0;
     obj_attr1_t attr1;
     obj_attr2_t attr2;
-    for (int x = 0; x < GBA_SCREEN_X; x++) {
-        ppu->obj_priorities[x] = 0;
-        ppu->obj_window[x] = false;
-        ppu->objbuf[x].raw = half_from_byte_array(ppu->pram, 0);
-        ppu->objbuf[x].transparent = true;
-    }
+
+    clear_obj(ppu);
 
     for (int sprite = 0; sprite < 128; sprite++) {
         attr0.raw = half_from_byte_array(ppu->oam, (sprite * 8) + 0);
@@ -619,7 +626,9 @@ INLINE void merge_bgs(gba_ppu_t* ppu) {
 }
 
 INLINE void render_line_mode0(gba_ppu_t* ppu) {
-    render_obj(ppu);
+    if (ppu->DISPCNT.screen_display_obj) {
+        render_obj(ppu);
+    }
     if (ppu->DISPCNT.screen_display_bg0) {
         render_bg_regular(ppu, &ppu->bgbuf[0], &ppu->BG0CNT, ppu->BG0HOFS.offset, ppu->BG0VOFS.offset,
                           ppu->WININ.win0_bg0_enable, ppu->WININ.win1_bg0_enable, ppu->WINOUT.outside_bg0_enable, ppu->WINOUT.obj_bg0_enable);
@@ -646,7 +655,9 @@ INLINE void render_line_mode0(gba_ppu_t* ppu) {
 }
 
 INLINE void render_line_mode1(gba_ppu_t* ppu) {
-    render_obj(ppu);
+    if (ppu->DISPCNT.screen_display_obj) {
+        render_obj(ppu);
+    }
 
     if (ppu->DISPCNT.screen_display_bg0) {
         render_bg_regular(ppu, &ppu->bgbuf[0], &ppu->BG0CNT, ppu->BG0HOFS.offset, ppu->BG0VOFS.offset,
@@ -670,7 +681,9 @@ INLINE void render_line_mode1(gba_ppu_t* ppu) {
 }
 
 INLINE void render_line_mode2(gba_ppu_t* ppu) {
-    render_obj(ppu);
+    if (ppu->DISPCNT.screen_display_obj) {
+        render_obj(ppu);
+    }
 
     if (ppu->DISPCNT.screen_display_bg2) {
         render_bg_affine(ppu, &ppu->bgbuf[2], &ppu->BG2CNT,
@@ -690,7 +703,9 @@ INLINE void render_line_mode2(gba_ppu_t* ppu) {
 }
 
 void render_line_mode3(gba_ppu_t* ppu) {
-    render_obj(ppu);
+    if (ppu->DISPCNT.screen_display_obj) {
+        render_obj(ppu);
+    }
     if (ppu->DISPCNT.screen_display_bg2) {
         for (int x = 0; x < GBA_SCREEN_X; x++) {
             int offset = x + (ppu->y * GBA_SCREEN_X);
@@ -710,7 +725,9 @@ void render_line_mode3(gba_ppu_t* ppu) {
 }
 
 void render_line_mode4(gba_ppu_t* ppu) {
-    render_obj(ppu);
+    if (ppu->DISPCNT.screen_display_obj) {
+        render_obj(ppu);
+    }
     if (ppu->DISPCNT.screen_display_bg2) {
         for (int x = 0; x < GBA_SCREEN_X; x++) {
             int offset = x + (ppu->y * GBA_SCREEN_X);
