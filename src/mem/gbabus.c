@@ -135,6 +135,7 @@ void request_interrupt(gba_interrupt_t interrupt) {
         switch (interrupt) {
             case IRQ_VBLANK:
                 if (bus->interrupt_enable.lcd_vblank) {
+                    logwarn("VBlank IRQ")
                     cpu->irq = true;
                     bus->IF.vblank = true;
                 } else {
@@ -143,6 +144,7 @@ void request_interrupt(gba_interrupt_t interrupt) {
                 break;
             case IRQ_HBLANK:
                 if (bus->interrupt_enable.lcd_hblank) {
+                    logwarn("HBlank IRQ")
                     cpu->irq = true;
                     bus->IF.hblank = true;
                 } else {
@@ -151,6 +153,7 @@ void request_interrupt(gba_interrupt_t interrupt) {
                 break;
             case IRQ_VCOUNT:
                 if (bus->interrupt_enable.lcd_vcounter_match) {
+                    logwarn("VCount IRQ")
                     cpu->irq = true;
                     bus->IF.vcount = true;
                 } else {
@@ -159,6 +162,7 @@ void request_interrupt(gba_interrupt_t interrupt) {
                 break;
             case IRQ_TIMER0:
                 if (bus->interrupt_enable.timer0_overflow) {
+                    logwarn("Timer0 IRQ")
                     cpu->irq = true;
                     bus->IF.timer0 = true;
                 } else {
@@ -167,6 +171,7 @@ void request_interrupt(gba_interrupt_t interrupt) {
                 break;
             case IRQ_TIMER1:
                 if (bus->interrupt_enable.timer1_overflow) {
+                    logwarn("Timer1 IRQ")
                     cpu->irq = true;
                     bus->IF.timer1 = true;
                 } else {
@@ -175,6 +180,7 @@ void request_interrupt(gba_interrupt_t interrupt) {
                 break;
             case IRQ_TIMER2:
                 if (bus->interrupt_enable.timer2_overflow) {
+                    logwarn("Timer2 IRQ")
                     cpu->irq = true;
                     bus->IF.timer2 = true;
                 } else {
@@ -183,6 +189,7 @@ void request_interrupt(gba_interrupt_t interrupt) {
                 break;
             case IRQ_TIMER3:
                 if (bus->interrupt_enable.timer3_overflow) {
+                    logwarn("Timer3 IRQ")
                     cpu->irq = true;
                     bus->IF.timer3 = true;
                 } else {
@@ -191,6 +198,7 @@ void request_interrupt(gba_interrupt_t interrupt) {
                 break;
             case IRQ_DMA0:
                 if (bus->interrupt_enable.dma_0) {
+                    logwarn("DMA0 IRQ")
                     cpu->irq = true;
                     bus->IF.dma0 = true;
                 } else {
@@ -201,12 +209,14 @@ void request_interrupt(gba_interrupt_t interrupt) {
                 if (bus->interrupt_enable.dma_1) {
                     cpu->irq = true;
                     bus->IF.dma1 = true;
+                    logwarn("DMA1 IRQ")
                 } else {
                     logwarn("DMA1 interrupt blocked by IE")
                 }
                 break;
             case IRQ_DMA2:
                 if (bus->interrupt_enable.dma_2) {
+                    logwarn("DMA2 IRQ")
                     cpu->irq = true;
                     bus->IF.dma2 = true;
                 } else {
@@ -215,6 +225,7 @@ void request_interrupt(gba_interrupt_t interrupt) {
                 break;
             case IRQ_DMA3:
                 if (bus->interrupt_enable.dma_3) {
+                    logwarn("DMA3 IRQ")
                     cpu->irq = true;
                     bus->IF.dma3 = true;
                 } else {
