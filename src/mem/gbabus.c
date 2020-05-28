@@ -663,10 +663,24 @@ INLINE word open_bus(word addr) {
     return result;
 }
 
+INLINE void tick_memory_waitstate(access_type_t access_type, size_t access_size, half region) {
+    if (access_type != ACCESS_UNKNOWN) {
+        switch (access_size) {
+            case sizeof(byte):
+            case sizeof(half):
+                cpu->this_step_ticks += byte_half_cycles[region];
+                break;
+            case sizeof(word):
+                cpu->this_step_ticks += word_cycles[region];
+                break;
+        }
+    }
+}
+
 INLINE byte inline_gba_read_byte(word addr, access_type_t access_type) {
     addr &= ~(sizeof(byte) - 1);
     half region = addr >> 24;
-    if (access_type != ACCESS_UNKNOWN) cpu->this_step_ticks += byte_half_cycles[region];
+    tick_memory_waitstate(access_type, sizeof(byte), region);
     switch (region) {
         case REGION_BIOS: {
             if (addr < GBA_BIOS_SIZE) { // BIOS
@@ -782,7 +796,7 @@ byte gba_read_byte(word addr, access_type_t access_type) {
 INLINE half inline_gba_read_half(word address, access_type_t access_type) {
     address &= ~(sizeof(half) - 1);
     half region = address >> 24;
-    if (access_type != ACCESS_UNKNOWN) cpu->this_step_ticks += byte_half_cycles[region];
+    tick_memory_waitstate(access_type, sizeof(half), region);
     switch (region) {
         case REGION_BIOS: {
             if (address < GBA_BIOS_SIZE) { // BIOS
@@ -901,7 +915,7 @@ INLINE bool is_bg(word address) {
 void gba_write_byte(word addr, byte value, access_type_t access_type) {
     addr &= ~(sizeof(byte) - 1);
     half region = addr >> 24;
-    if (access_type != ACCESS_UNKNOWN) cpu->this_step_ticks = byte_half_cycles[region];
+    tick_memory_waitstate(access_type, sizeof(byte), region);
     switch (region) {
         case REGION_BIOS: {
             logwarn("Tried to write to the BIOS!")
@@ -982,7 +996,7 @@ void gba_write_byte(word addr, byte value, access_type_t access_type) {
 void gba_write_half(word addr, half value, access_type_t access_type) {
     addr &= ~(sizeof(half) - 1);
     half region = addr >> 24;
-    if (access_type != ACCESS_UNKNOWN) cpu->this_step_ticks = byte_half_cycles[region];
+    tick_memory_waitstate(access_type, sizeof(half), region);
     switch (region) {
         case REGION_BIOS: {
             logwarn("Tried to write to the BIOS!")
@@ -1074,7 +1088,7 @@ void gba_write_half(word addr, half value, access_type_t access_type) {
 word gba_read_word(word address, access_type_t access_type) {
     address &= ~(sizeof(word) - 1);
     half region = address >> 24;
-    if (access_type != ACCESS_UNKNOWN) cpu->this_step_ticks += word_cycles[region];
+    tick_memory_waitstate(access_type, sizeof(word), region);
     switch (region) {
         case REGION_BIOS: {
             if (address < GBA_BIOS_SIZE) { // BIOS
@@ -1190,7 +1204,7 @@ word gba_read_word(word address, access_type_t access_type) {
 void gba_write_word(word addr, word value, access_type_t access_type) {
     addr &= ~(sizeof(word) - 1);
     half region = addr >> 24;
-    if (access_type != ACCESS_UNKNOWN) cpu->this_step_ticks += word_cycles[region];
+    tick_memory_waitstate(access_type, sizeof(word), region);
     switch (region) {
         case REGION_BIOS: {
             logwarn("Tried to write to the BIOS!")
