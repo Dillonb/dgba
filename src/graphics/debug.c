@@ -134,14 +134,14 @@ void print_dma(int d, DMACNTH_t *cnth, unsigned int wc, DMAINT_t *dmaint, unsign
 void ramdump(word base_address, word size) {
     bool allzeroes = true;
     for (int x = 0; x < size; x += 0x10) {
-        half a = gba_read_half(base_address + x);
-        half b = gba_read_half(base_address + x + 0x2);
-        half c = gba_read_half(base_address + x + 0x4);
-        half d = gba_read_half(base_address + x + 0x6);
-        half e = gba_read_half(base_address + x + 0x8);
-        half f = gba_read_half(base_address + x + 0xA);
-        half g = gba_read_half(base_address + x + 0xC);
-        half h = gba_read_half(base_address + x + 0xE);
+        half a = gba_read_half(base_address + x, ACCESS_UNKNOWN);
+        half b = gba_read_half(base_address + x + 0x2, ACCESS_UNKNOWN);
+        half c = gba_read_half(base_address + x + 0x4, ACCESS_UNKNOWN);
+        half d = gba_read_half(base_address + x + 0x6, ACCESS_UNKNOWN);
+        half e = gba_read_half(base_address + x + 0x8, ACCESS_UNKNOWN);
+        half f = gba_read_half(base_address + x + 0xA, ACCESS_UNKNOWN);
+        half g = gba_read_half(base_address + x + 0xC, ACCESS_UNKNOWN);
+        half h = gba_read_half(base_address + x + 0xE, ACCESS_UNKNOWN);
         if (a != 0 || b != 0 || c != 0 || d != 0 || e != 0 || f != 0 || g != 0 || h != 0) {
             allzeroes = false;
         }
@@ -356,9 +356,9 @@ void actual_dbg_tick() {
         }
 
         for (int sprite = 127; sprite >= 0; sprite--) {
-            attr0.raw = gba_read_half(0x07000000 + (sprite * 8) + 0);
-            attr1.raw = gba_read_half(0x07000000 + (sprite * 8) + 2);
-            attr2.raw = gba_read_half(0x07000000 + (sprite * 8) + 4);
+            attr0.raw = gba_read_half(0x07000000 + (sprite * 8) + 0, ACCESS_UNKNOWN);
+            attr1.raw = gba_read_half(0x07000000 + (sprite * 8) + 2, ACCESS_UNKNOWN);
+            attr2.raw = gba_read_half(0x07000000 + (sprite * 8) + 4, ACCESS_UNKNOWN);
 
             int height = sprite_heights[attr0.shape][attr1.size] / 8;
             int width = sprite_widths[attr0.shape][attr1.size] / 8;
@@ -404,7 +404,7 @@ void actual_dbg_tick() {
 
                 tile_address += in_tile_offset;
 
-                byte tile = gba_read_byte(tile_address);
+                byte tile = gba_read_byte(tile_address, ACCESS_UNKNOWN);
 
                 if (!attr0.is_256color) {
                     tile >>= (in_tile_offset % 2) * 4;
@@ -420,7 +420,7 @@ void actual_dbg_tick() {
                 }
 
                 gba_color_t color;
-                color.raw = gba_read_half(palette_address);
+                color.raw = gba_read_half(palette_address, ACCESS_UNKNOWN);
 
                 dbg_tilemap[y][x].a = 0xFF;
                 dbg_tilemap[y][x].r = FIVEBIT_TO_EIGHTBIT_COLOR(color.r);

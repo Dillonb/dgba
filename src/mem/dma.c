@@ -79,7 +79,7 @@ INLINE int dma(int n, DMACNTH_t* cnth, DMAINT_t* dmaint, word sad, word dad, wor
         while (dmaint->remaining > 0) {
             if (cnth->dma_transfer_type == 0) {// 16 bits
                 word source_address = dmaint->current_source_address;
-                half value = gba_read_half(source_address);
+                half value = gba_read_half(source_address, ACCESS_UNKNOWN);
                 //dma_cycles++; // TODO real mem access time
                 switch (cnth->source_addr_control) {
                     case 0: dmaint->current_source_address += sizeof(half); break;
@@ -89,7 +89,7 @@ INLINE int dma(int n, DMACNTH_t* cnth, DMAINT_t* dmaint, word sad, word dad, wor
                 }
 
                 word dest_address = dmaint->current_dest_address;
-                gba_write_half(dest_address, value);
+                gba_write_half(dest_address, value, ACCESS_UNKNOWN);
                 //dma_cycles++;
                 if (!is_sound_dma) {
                     switch (cnth->dest_addr_control) {
@@ -103,7 +103,7 @@ INLINE int dma(int n, DMACNTH_t* cnth, DMAINT_t* dmaint, word sad, word dad, wor
                 logwarn("DMA%d: transferred 0x%04X from 0x%08X to 0x%08X", n, value, source_address, dest_address)
             } else { // 32 bits
                 word source_address = dmaint->current_source_address;
-                word value = gba_read_word(source_address);
+                word value = gba_read_word(source_address, ACCESS_UNKNOWN);
                 //dma_cycles++; // TODO real mem access time
                 switch (cnth->source_addr_control) {
                     case 0: dmaint->current_source_address += sizeof(word); break;
@@ -114,7 +114,7 @@ INLINE int dma(int n, DMACNTH_t* cnth, DMAINT_t* dmaint, word sad, word dad, wor
                 }
 
                 word dest_address = dmaint->current_dest_address;
-                gba_write_word(dest_address, value);
+                gba_write_word(dest_address, value, ACCESS_UNKNOWN);
                 //dma_cycles++; // TODO real mem access time
                 if (!is_sound_dma) { // Only inc when not a sound DMA
                     switch (cnth->dest_addr_control) {

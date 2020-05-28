@@ -7,9 +7,9 @@ void multiple_load_store(arm7tdmi_t* state, thumbinstr_t* thminstr) {
     bool writeback = true;
     if (instr->rlist == 0) { // When rlist 0, save and load the program counter instead
         if (instr->l) {
-            set_register(state, REG_PC, state->read_word(address) | 1);
+            set_register(state, REG_PC, state->read_word(address, ACCESS_UNKNOWN) | 1);
         } else {
-            state->write_word(address, state->pc + 2);
+            state->write_word(address, state->pc + 2, ACCESS_UNKNOWN);
         }
         address += 0x40;
     }
@@ -19,7 +19,7 @@ void multiple_load_store(arm7tdmi_t* state, thumbinstr_t* thminstr) {
         }
         for (int i = 0; i <= 8; i++) {
             if ((instr->rlist >> i) & 1) {
-                set_register(state, i, state->read_word(address));
+                set_register(state, i, state->read_word(address, ACCESS_UNKNOWN));
                 address += 4;
             }
         }
@@ -38,7 +38,7 @@ void multiple_load_store(arm7tdmi_t* state, thumbinstr_t* thminstr) {
                     value = get_register(state, i);
                 }
 
-                state->write_word(address, value);
+                state->write_word(address, value, ACCESS_UNKNOWN);
                 first = false;
                 address += 4;
             }

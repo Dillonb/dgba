@@ -17,7 +17,7 @@ void push_pop_registers(arm7tdmi_t* state, thumbinstr_t* thminstr) {
         for (int i = 0; i <= 15; i++) {
             if ((rlist >> i) & 1) {
                 word sp = get_register(state, REG_SP);
-                word value = state->read_word(sp);
+                word value = state->read_word(sp, ACCESS_UNKNOWN);
                 if (i == REG_PC) {
                     value |= 1;
                 }
@@ -31,7 +31,7 @@ void push_pop_registers(arm7tdmi_t* state, thumbinstr_t* thminstr) {
 
         for (int i = 0; i <= 15; i++) {
             if ((rlist >> i) & 1) {
-                state->write_word(addr, get_register(state, i));
+                state->write_word(addr, get_register(state, i), ACCESS_UNKNOWN);
                 addr += sizeof(word);
             }
         }

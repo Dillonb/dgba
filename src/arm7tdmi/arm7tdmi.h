@@ -19,6 +19,12 @@
 #define REG_LR 14
 #define REG_PC 15
 
+typedef enum {
+    ACCESS_UNKNOWN,
+    ACCESS_SEQUENTIAL,
+    ACCESS_NONSEQUENTIAL
+} access_type_t;
+
 typedef union status_register {
     word raw;
     struct {
@@ -40,12 +46,12 @@ typedef union status_register {
 
 typedef struct arm7tdmi {
     // Connections to the bus
-    byte (*read_byte)(word);
-    half (*read_half)(word);
-    word (*read_word)(word);
-    void (*write_byte)(word, byte);
-    void (*write_half)(word, half);
-    void (*write_word)(word, word);
+    byte (*read_byte)(word, access_type_t);
+    half (*read_half)(word, access_type_t);
+    word (*read_word)(word, access_type_t);
+    void (*write_byte)(word, byte, access_type_t);
+    void (*write_half)(word, half, access_type_t);
+    void (*write_word)(word, word, access_type_t);
 
     // Registers
     // http://problemkaputt.de/gbatek.htm#armcpuflagsconditionfieldcond
@@ -94,12 +100,12 @@ typedef struct arm7tdmi {
     char disassembled[50];
 } arm7tdmi_t;
 
-arm7tdmi_t* init_arm7tdmi(byte (*read_byte)(word),
-                          half (*read_half)(word),
-                          word (*read_word)(word),
-                          void (*write_byte)(word, byte),
-                          void (*write_half)(word, half),
-                          void (*write_word)(word, word));
+arm7tdmi_t* init_arm7tdmi(byte (*read_byte)(word, access_type_t),
+                          half (*read_half)(word, access_type_t),
+                          word (*read_word)(word, access_type_t),
+                          void (*write_byte)(word, byte, access_type_t),
+                          void (*write_half)(word, half, access_type_t),
+                          void (*write_word)(word, word, access_type_t));
 
 int arm7tdmi_step(arm7tdmi_t* state);
 

@@ -48,9 +48,9 @@ const char MODE_NAMES[32][11] = {
 
 void fill_pipe(arm7tdmi_t* state) {
     if (state->cpsr.thumb) {
-        state->pipeline[0] = state->read_half(state->pc);
+        state->pipeline[0] = state->read_half(state->pc, ACCESS_NONSEQUENTIAL);
         state->pc += 2;
-        state->pipeline[1] = state->read_half(state->pc);
+        state->pipeline[1] = state->read_half(state->pc, ACCESS_SEQUENTIAL);
 
         logdebug("[THM] Filling the instruction pipeline: 0x%08X = 0x%04X / 0x%08X = 0x%04X",
                  state->pc - 2,
@@ -58,9 +58,9 @@ void fill_pipe(arm7tdmi_t* state) {
                  state->pc,
                  state->pipeline[1])
     } else {
-        state->pipeline[0] = state->read_word(state->pc);
+        state->pipeline[0] = state->read_word(state->pc, ACCESS_NONSEQUENTIAL);
         state->pc += 4;
-        state->pipeline[1] = state->read_word(state->pc);
+        state->pipeline[1] = state->read_word(state->pc, ACCESS_SEQUENTIAL);
 
         logdebug("[ARM] Filling the instruction pipeline: 0x%08X = 0x%08X / 0x%08X = 0x%08X",
                  state->pc - 4,
@@ -90,12 +90,12 @@ void set_pc(arm7tdmi_t* state, word new_pc) {
     fill_pipe(state);
 }
 
-arm7tdmi_t* init_arm7tdmi(byte (*read_byte)(word),
-                          half (*read_half)(word),
-                          word (*read_word)(word),
-                          void (*write_byte)(word, byte),
-                          void (*write_half)(word, half),
-                          void (*write_word)(word, word)) {
+arm7tdmi_t* init_arm7tdmi(byte (*read_byte)(word, access_type_t),
+                          half (*read_half)(word, access_type_t),
+                          word (*read_word)(word, access_type_t),
+                          void (*write_byte)(word, byte, access_type_t),
+                          void (*write_half)(word, half, access_type_t),
+                          void (*write_word)(word, word, access_type_t)) {
     fill_arm_lut(&arm_lut);
     fill_thm_lut(&thm_lut);
     arm7tdmi_t* state = malloc(sizeof(arm7tdmi_t));
@@ -209,7 +209,7 @@ INLINE arminstr_t next_arm_instr(arm7tdmi_t* state) {
     instr.raw = state->pipeline[0];
     state->pipeline[0] = state->pipeline[1];
     state->pc += 4;
-    state->pipeline[1] = state->read_word(state->pc);
+    state->pipeline[1] = state->read_word(state->pc, ACCESS_UNKNOWN);
 
     return instr;
 }
@@ -219,7 +219,7 @@ INLINE thumbinstr_t next_thumb_instr(arm7tdmi_t* state) {
     instr.raw = state->pipeline[0];
     state->pipeline[0] = state->pipeline[1];
     state->pc += 2;
-    state->pipeline[1] = state->read_half(state->pc);
+    state->pipeline[1] = state->read_half(state->pc, ACCESS_UNKNOWN);
 
     return instr;
 }

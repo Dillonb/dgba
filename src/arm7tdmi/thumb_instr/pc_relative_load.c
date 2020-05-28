@@ -7,5 +7,5 @@ void pc_relative_load(arm7tdmi_t *state, thumbinstr_t* thminstr) {
 
     word address = maskedpc + offset;
 
-    set_register(state, instr->rd, state->read_word(address));
+    set_register(state, instr->rd, state->read_word(address, ACCESS_UNKNOWN));
 }

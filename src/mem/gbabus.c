@@ -627,7 +627,7 @@ INLINE word open_bus(word addr) {
     return result;
 }
 
-INLINE byte inline_gba_read_byte(word addr) {
+INLINE byte inline_gba_read_byte(word addr, access_type_t access_type) {
     addr &= ~(sizeof(byte) - 1);
     switch (addr >> 24) {
         case REGION_BIOS: {
@@ -735,11 +735,11 @@ INLINE byte inline_gba_read_byte(word addr) {
     return open_bus(addr);
 }
 
-byte gba_read_byte(word addr) {
-    return inline_gba_read_byte(addr);
+byte gba_read_byte(word addr, access_type_t access_type) {
+    return inline_gba_read_byte(addr, access_type);
 }
 
-INLINE half inline_gba_read_half(word address) {
+INLINE half inline_gba_read_half(word address, access_type_t access_type) {
     address &= ~(sizeof(half) - 1);
     switch (address >> 24) {
         case REGION_BIOS: {
@@ -837,8 +837,8 @@ INLINE half inline_gba_read_half(word address) {
     return open_bus(address);
 }
 
-half gba_read_half(word address) {
-    return inline_gba_read_half(address);
+half gba_read_half(word address, access_type_t access_type) {
+    return inline_gba_read_half(address, access_type);
 }
 
 INLINE bool is_bitmap() {
@@ -854,7 +854,7 @@ INLINE bool is_bg(word address) {
     }
 }
 
-void gba_write_byte(word addr, byte value) {
+void gba_write_byte(word addr, byte value, access_type_t access_type) {
     addr &= ~(sizeof(byte) - 1);
     switch (addr >> 24) {
         case REGION_BIOS: {
@@ -930,7 +930,7 @@ void gba_write_byte(word addr, byte value) {
     }
 }
 
-void gba_write_half(word addr, half value) {
+void gba_write_half(word addr, half value, access_type_t access_type) {
     addr &= ~(sizeof(half) - 1);
     switch (addr >> 24) {
         case REGION_BIOS: {
@@ -1018,7 +1018,7 @@ void gba_write_half(word addr, half value) {
     }
 }
 
-word gba_read_word(word address) {
+word gba_read_word(word address, access_type_t access_type) {
     address &= ~(sizeof(word) - 1);
 
     switch (address >> 24) {
@@ -1129,7 +1129,7 @@ word gba_read_word(word address) {
     return open_bus(address);
 }
 
-void gba_write_word(word addr, word value) {
+void gba_write_word(word addr, word value, access_type_t access_type) {
     addr &= ~(sizeof(word) - 1);
     switch (addr >> 24) {
         case REGION_BIOS: {

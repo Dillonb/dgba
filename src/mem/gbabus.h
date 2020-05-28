@@ -315,12 +315,12 @@ typedef struct gbabus {
 KEYINPUT_t* get_keyinput();
 
 gbabus_t* init_gbabus();
-byte gba_read_byte(word addr);
-half gba_read_half(word address);
-void gba_write_byte(word addr, byte value);
-void gba_write_half(word address, half value);
-word gba_read_word(word address);
-void gba_write_word(word address, word value);
+byte gba_read_byte(word addr, access_type_t access_type);
+half gba_read_half(word address, access_type_t access_type);
+void gba_write_byte(word addr, byte value, access_type_t access_type);
+void gba_write_half(word address, half value, access_type_t access_type);
+word gba_read_word(word address, access_type_t access_type);
+void gba_write_word(word address, word value, access_type_t access_type);
 int gba_dma();
 
 void request_interrupt(gba_interrupt_t interrupt);

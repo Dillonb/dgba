@@ -19,23 +19,23 @@ void block_data_transfer(arm7tdmi_t* state, arminstr_t * arminstr) {
     if (instr->rlist == 0u) {
         // Weird stuff happens when you don't specify any registers to transfer
         if (instr->l) {
-            set_pc(state, state->read_word(address));
+            set_pc(state, state->read_word(address, ACCESS_UNKNOWN));
         } else {
             if (instr->u) {
                 if (p) {
                     // 11 => STMIB
-                    state->write_word(base + 4, get_register(state, REG_PC) + 4);
+                    state->write_word(base + 4, get_register(state, REG_PC) + 4, ACCESS_UNKNOWN);
                 } else {
                     // 10 => STMIA
-                    state->write_word(base, get_register(state, REG_PC) + 4);
+                    state->write_word(base, get_register(state, REG_PC) + 4, ACCESS_UNKNOWN);
                 }
             } else {
                 if (p) {
                     // 01 => STMDB
-                    state->write_word(base - 0x40, get_register(state, REG_PC) + 4);
+                    state->write_word(base - 0x40, get_register(state, REG_PC) + 4, ACCESS_UNKNOWN);
                 } else {
                     // 00 => STMDA
-                    state->write_word(base - 0x3C, get_register(state, REG_PC) + 4);
+                    state->write_word(base - 0x3C, get_register(state, REG_PC) + 4, ACCESS_UNKNOWN);
                 }
             }
         }
@@ -80,7 +80,7 @@ void block_data_transfer(arm7tdmi_t* state, arminstr_t * arminstr) {
                     logdebug("Will transfer r%d\n", rt);
                     address += before_inc;
                     logdebug("Transferring 0x%08X to r%d", address, rt)
-                    set_register(state, rt, state->read_word(address));
+                    set_register(state, rt, state->read_word(address, ACCESS_UNKNOWN));
                     address += after_inc;
                 }
             }
@@ -106,7 +106,7 @@ void block_data_transfer(arm7tdmi_t* state, arminstr_t * arminstr) {
                             value += 4;
                         }
                     }
-                    state->write_word(address, value);
+                    state->write_word(address, value, ACCESS_UNKNOWN);
                     first = false;
                     address += after_inc;
                 }
