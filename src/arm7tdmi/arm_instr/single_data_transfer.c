@@ -77,15 +77,16 @@ void single_data_transfer(arm7tdmi_t* state, arminstr_t* arminstr) {
         word source;
         if (b) { // Read a byte
             logdebug("I'm gonna load r%d with a byte from 0x%08X", rd, address)
-            source = state->read_byte(address, ACCESS_UNKNOWN);
+            source = state->read_byte(address, ACCESS_NONSEQUENTIAL);
         }
         else { // Read a word
             logdebug("I'm gonna load r%d with a word from 0x%08X", rd, address)
-            source = state->read_word(address, ACCESS_UNKNOWN);
+            source = state->read_word(address, ACCESS_NONSEQUENTIAL);
             source = arm_ror(NULL, source, (address & 3u) << 3);
         }
         logdebug("And that value is 0x%08X", source)
         set_register(state, rd, source);
+        state->cpu_idle(1);
     } else { // STR
         logdebug("I'm gonna save r%d to 0x%08X", rd, address)
         word rddata = get_register(state, rd);
@@ -93,9 +94,9 @@ void single_data_transfer(arm7tdmi_t* state, arminstr_t* arminstr) {
             rddata += 4;
         }
         if (b) {
-            state->write_byte(address, rddata, ACCESS_UNKNOWN);
+            state->write_byte(address, rddata, ACCESS_NONSEQUENTIAL);
         } else {
-            state->write_word(address, rddata, ACCESS_UNKNOWN);
+            state->write_word(address, rddata, ACCESS_NONSEQUENTIAL);
         }
     }
 

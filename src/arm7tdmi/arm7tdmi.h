@@ -52,6 +52,7 @@ typedef struct arm7tdmi {
     void (*write_byte)(word, byte, access_type_t);
     void (*write_half)(word, half, access_type_t);
     void (*write_word)(word, word, access_type_t);
+    void (*cpu_idle)(int);
 
     // Registers
     // http://problemkaputt.de/gbatek.htm#armcpuflagsconditionfieldcond

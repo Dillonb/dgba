@@ -90,6 +90,9 @@ void set_pc(arm7tdmi_t* state, word new_pc) {
     fill_pipe(state);
 }
 
+// Replace me with actual idle cycle handling
+void temp_noop(int cycles) { }
+
 arm7tdmi_t* init_arm7tdmi(byte (*read_byte)(word, access_type_t),
                           half (*read_half)(word, access_type_t),
                           word (*read_word)(word, access_type_t),
@@ -106,6 +109,8 @@ arm7tdmi_t* init_arm7tdmi(byte (*read_byte)(word, access_type_t),
     state->write_byte = write_byte;
     state->write_half = write_half;
     state->write_word = write_word;
+
+    state->cpu_idle = &temp_noop;
 
     state->pc       = 0x00000000;
     state->sp       = 0x03007F00;
