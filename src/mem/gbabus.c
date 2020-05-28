@@ -784,9 +784,8 @@ INLINE byte inline_gba_read_byte(word addr, access_type_t access_type) {
             }
             return 0;
         default:
-            logfatal("Access to unknown memory region for address: 0x%08X", addr)
+            return open_bus(addr);
     }
-    return open_bus(addr);
 }
 
 byte gba_read_byte(word addr, access_type_t access_type) {
@@ -890,9 +889,8 @@ INLINE half inline_gba_read_half(word address, access_type_t access_type) {
             }
             return 0;
         default:
-            logfatal("Access to unknown memory region for address: 0x%08X", address)
+            return open_bus(address);
     }
-    return open_bus(address);
 }
 
 half gba_read_half(word address, access_type_t access_type) {
@@ -989,7 +987,7 @@ void gba_write_byte(word addr, byte value, access_type_t access_type) {
             }
             break;
         default:
-            logfatal("Access to unknown memory region for address: 0x%08X", addr)
+            return;
     }
 }
 
@@ -1081,7 +1079,7 @@ void gba_write_half(word addr, half value, access_type_t access_type) {
                     logfatal("Unknown backup type index %d!", bus->backup_type)
             }
         default:
-            logfatal("Access to unknown memory region for address: 0x%08X", addr)
+            return;
     }
 }
 
@@ -1196,9 +1194,8 @@ word gba_read_word(word address, access_type_t access_type) {
             }
             return 0;
         default:
-            logfatal("Access to unknown memory region for address: 0x%08X", address)
+            return open_bus(address);
     }
-    return open_bus(address);
 }
 
 void gba_write_word(word addr, word value, access_type_t access_type) {
@@ -1301,6 +1298,6 @@ void gba_write_word(word addr, word value, access_type_t access_type) {
                     logfatal("Unknown backup type index %d!", bus->backup_type)
             }
         default:
-            logfatal("Access to unknown memory region for address: 0x%08X", addr)
+            return;
     }
 }
