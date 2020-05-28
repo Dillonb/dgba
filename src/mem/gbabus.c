@@ -27,6 +27,42 @@ INLINE word open_bus(word addr);
 #define REGION_SRAM       0x0E
 #define REGION_SRAM_MIRR  0x0F
 
+const int byte_half_cycles[] = {
+        [REGION_BIOS]       = 1,
+        [REGION_EWRAM]      = 3,
+        [REGION_IWRAM]      = 1,
+        [REGION_IOREG]      = 1,
+        [REGION_PRAM]       = 1,
+        [REGION_VRAM]       = 1,
+        [REGION_OAM]        = 1,
+        [REGION_GAMEPAK0_L] = 5,
+        [REGION_GAMEPAK0_H] = 5,
+        [REGION_GAMEPAK1_L] = 5,
+        [REGION_GAMEPAK1_H] = 5,
+        [REGION_GAMEPAK2_L] = 5,
+        [REGION_GAMEPAK2_H] = 5,
+        [REGION_SRAM]       = 5,
+        [REGION_SRAM_MIRR]  = 5
+};
+
+const int word_cycles[] = {
+        [REGION_BIOS]       = 1,
+        [REGION_EWRAM]      = 6,
+        [REGION_IWRAM]      = 1,
+        [REGION_IOREG]      = 1,
+        [REGION_PRAM]       = 1,
+        [REGION_VRAM]       = 1,
+        [REGION_OAM]        = 1,
+        [REGION_GAMEPAK0_L] = 8,
+        [REGION_GAMEPAK0_H] = 8,
+        [REGION_GAMEPAK1_L] = 8,
+        [REGION_GAMEPAK1_H] = 8,
+        [REGION_GAMEPAK2_L] = 8,
+        [REGION_GAMEPAK2_H] = 8,
+        [REGION_SRAM]       = 8,
+        [REGION_SRAM_MIRR]  = 8
+};
+
 gbabus_t* init_gbabus() {
     gbabus_t* bus_state = malloc(sizeof(gbabus_t));
     memset(bus_state, 0, sizeof(gbabus_t));
@@ -629,7 +665,9 @@ INLINE word open_bus(word addr) {
 
 INLINE byte inline_gba_read_byte(word addr, access_type_t access_type) {
     addr &= ~(sizeof(byte) - 1);
-    switch (addr >> 24) {
+    half region = addr >> 24;
+    if (access_type != ACCESS_UNKNOWN) cpu->this_step_ticks += byte_half_cycles[region];
+    switch (region) {
         case REGION_BIOS: {
             if (addr < GBA_BIOS_SIZE) { // BIOS
                 return gbabios_read_byte(addr);
@@ -731,6 +769,8 @@ INLINE byte inline_gba_read_byte(word addr, access_type_t access_type) {
                 return mem->backup[addr & 0x7FFF];
             }
             return 0;
+        default:
+            logfatal("Access to unknown memory region for address: 0x%08X", addr)
     }
     return open_bus(addr);
 }
@@ -741,7 +781,9 @@ byte gba_read_byte(word addr, access_type_t access_type) {
 
 INLINE half inline_gba_read_half(word address, access_type_t access_type) {
     address &= ~(sizeof(half) - 1);
-    switch (address >> 24) {
+    half region = address >> 24;
+    if (access_type != ACCESS_UNKNOWN) cpu->this_step_ticks += byte_half_cycles[region];
+    switch (region) {
         case REGION_BIOS: {
             if (address < GBA_BIOS_SIZE) { // BIOS
                 return gbabios_read_byte(address) | (gbabios_read_byte(address + 1) << 8);
@@ -833,6 +875,8 @@ INLINE half inline_gba_read_half(word address, access_type_t access_type) {
                 return half_from_byte_array(mem->backup, address & 0x7FFF);
             }
             return 0;
+        default:
+            logfatal("Access to unknown memory region for address: 0x%08X", address)
     }
     return open_bus(address);
 }
@@ -856,7 +900,9 @@ INLINE bool is_bg(word address) {
 
 void gba_write_byte(word addr, byte value, access_type_t access_type) {
     addr &= ~(sizeof(byte) - 1);
-    switch (addr >> 24) {
+    half region = addr >> 24;
+    if (access_type != ACCESS_UNKNOWN) cpu->this_step_ticks = byte_half_cycles[region];
+    switch (region) {
         case REGION_BIOS: {
             logwarn("Tried to write to the BIOS!")
             break;
@@ -927,12 +973,17 @@ void gba_write_byte(word addr, byte value, access_type_t access_type) {
                 default:
                     logfatal("Unknown backup type index %d!", bus->backup_type)
             }
+            break;
+        default:
+            logfatal("Access to unknown memory region for address: 0x%08X", addr)
     }
 }
 
 void gba_write_half(word addr, half value, access_type_t access_type) {
     addr &= ~(sizeof(half) - 1);
-    switch (addr >> 24) {
+    half region = addr >> 24;
+    if (access_type != ACCESS_UNKNOWN) cpu->this_step_ticks = byte_half_cycles[region];
+    switch (region) {
         case REGION_BIOS: {
             logwarn("Tried to write to the BIOS!")
             break;
@@ -1015,13 +1066,16 @@ void gba_write_half(word addr, half value, access_type_t access_type) {
                 default:
                     logfatal("Unknown backup type index %d!", bus->backup_type)
             }
+        default:
+            logfatal("Access to unknown memory region for address: 0x%08X", addr)
     }
 }
 
 word gba_read_word(word address, access_type_t access_type) {
     address &= ~(sizeof(word) - 1);
-
-    switch (address >> 24) {
+    half region = address >> 24;
+    if (access_type != ACCESS_UNKNOWN) cpu->this_step_ticks += word_cycles[region];
+    switch (region) {
         case REGION_BIOS: {
             if (address < GBA_BIOS_SIZE) { // BIOS
                 return gbabios_read_byte(address)
@@ -1125,13 +1179,17 @@ word gba_read_word(word address, access_type_t access_type) {
                 return word_from_byte_array(mem->backup, address & 0x7FFF);
             }
             return 0;
+        default:
+            logfatal("Access to unknown memory region for address: 0x%08X", address)
     }
     return open_bus(address);
 }
 
 void gba_write_word(word addr, word value, access_type_t access_type) {
     addr &= ~(sizeof(word) - 1);
-    switch (addr >> 24) {
+    half region = addr >> 24;
+    if (access_type != ACCESS_UNKNOWN) cpu->this_step_ticks += word_cycles[region];
+    switch (region) {
         case REGION_BIOS: {
             logwarn("Tried to write to the BIOS!")
             break;
@@ -1226,5 +1284,7 @@ void gba_write_word(word addr, word value, access_type_t access_type) {
                 default:
                     logfatal("Unknown backup type index %d!", bus->backup_type)
             }
+        default:
+            logfatal("Access to unknown memory region for address: 0x%08X", addr)
     }
 }

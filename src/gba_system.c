@@ -70,6 +70,7 @@ void init_gbasystem(const char* romfile, const char* bios_file) {
                         gba_write_byte,
                         gba_write_half,
                         gba_write_word);
+    fill_pipe(cpu);
 
     ppu = init_ppu();
     bus = init_gbabus();

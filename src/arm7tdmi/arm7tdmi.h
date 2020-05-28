@@ -101,6 +101,8 @@ typedef struct arm7tdmi {
     char disassembled[50];
 } arm7tdmi_t;
 
+void fill_pipe(arm7tdmi_t* state);
+
 arm7tdmi_t* init_arm7tdmi(byte (*read_byte)(word, access_type_t),
                           half (*read_half)(word, access_type_t),
                           word (*read_word)(word, access_type_t),

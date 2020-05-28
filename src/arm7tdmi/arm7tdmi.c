@@ -142,7 +142,6 @@ arm7tdmi_t* init_arm7tdmi(byte (*read_byte)(word, access_type_t),
     state->irq = false;
     state->halt = false;
 
-    fill_pipe(state);
     return state;
 }
 
@@ -204,11 +203,6 @@ INLINE bool check_cond(arm7tdmi_t* state, arminstr_t* instr) {
     return passed;
 }
 
-
-void tick(arm7tdmi_t* state, int ticks) {
-    state->this_step_ticks += ticks;
-}
-
 INLINE arminstr_t next_arm_instr(arm7tdmi_t* state) {
     arminstr_t instr;
     instr.raw = state->pipeline[0];
@@ -238,7 +232,7 @@ INLINE int arm_mode_step(arm7tdmi_t* state, arminstr_t* instr) {
     }
     else { // Cond told us not to execute this instruction
         logdebug("Skipping instr because cond %d was not met.", instr->parsed.cond)
-        tick(state, 1);
+        state->this_step_ticks += 1;
     }
     return state->this_step_ticks;
 }
