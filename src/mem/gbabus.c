@@ -707,7 +707,7 @@ INLINE byte inline_gba_read_byte(word addr, access_type_t access_type) {
                     int ofs = addr % 2;
                     half* ioreg = get_half_ioreg_ptr(addr - ofs, false);
                     if (ioreg) {
-                        return (*ioreg >> ofs) & 0xFF;
+                        return (*ioreg >> (ofs * 8)) & 0xFF;
                     } else {
                         logwarn("Ignoring read from half ioreg 0x%08X", addr - ofs)
                         return 0;
