@@ -831,7 +831,7 @@ INLINE half inline_gba_read_half(word address, access_type_t access_type) {
             return half_from_byte_array(ppu->oam, index);
         }
         case REGION_GAMEPAK0_L:
-            if (address >= 0x080000C4 && address <= 0x080000C8) {
+            if (address >= 0x080000C4 && address <= 0x080000C8 && bus->allow_gpio_read) {
                 return gpio_read(address);
             }
         case REGION_GAMEPAK0_H:
@@ -1130,13 +1130,15 @@ word gba_read_word(word address, access_type_t access_type) {
             return word_from_byte_array(ppu->oam, index);
         }
         case REGION_GAMEPAK0_L:
-            switch (address) {
-                case 0x080000C4:
-                    return gpio_read(0x080000C4) | (gpio_read(0x080000C6) << 16);
-                case 0x080000C8:
-                    return gpio_read(0x080000C8);
-                default:
-                    break;
+            if (bus->allow_gpio_read) {
+                switch (address) {
+                    case 0x080000C4:
+                        return gpio_read(0x080000C4) | (gpio_read(0x080000C6) << 16);
+                    case 0x080000C8:
+                        return gpio_read(0x080000C8);
+                    default:
+                        break;
+                }
             }
         case REGION_GAMEPAK0_H:
         case REGION_GAMEPAK1_L:
