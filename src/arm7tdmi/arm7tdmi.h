@@ -252,6 +252,12 @@ INLINE void set_flags_add(arm7tdmi_t* state, uint64_t op1, uint64_t op2) {
     state->cpsr.V = ((op1 ^ result) & (~op1 ^ op2)) >> 31u;
 }
 
+INLINE void set_flags_adc(arm7tdmi_t* state, uint64_t op1, uint64_t op2, byte carry) {
+    uint32_t result = op1 + op2 + carry;
+    state->cpsr.C = op1 + op2 + carry > 0xFFFFFFFF;
+    state->cpsr.V = ((op1 ^ result) & (~op1 ^ op2)) >> 31u;
+}
+
 INLINE void set_flags_sub(arm7tdmi_t* state, word op1, word op2, word result) {
     state->cpsr.C = op2 <= op1;
     state->cpsr.V = ((op1 ^ op2) & (~op2 ^ result)) >> 31u;

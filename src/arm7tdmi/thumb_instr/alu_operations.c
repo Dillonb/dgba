@@ -44,7 +44,7 @@ void alu_operations(arm7tdmi_t* state, thumbinstr_t* thminstr) {
             uint64_t rddata = get_register(state, instr->rd);
             uint64_t rsdata = get_register(state, instr->rs) + state->cpsr.C;
             word result = rddata + rsdata;
-            set_flags_add(state, rddata, rsdata);
+            set_flags_adc(state, rddata, rsdata, state->cpsr.C);
             set_flags_nz(state, result);
             set_register(state, instr->rd, result);
             break;

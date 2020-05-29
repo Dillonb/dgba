@@ -26,6 +26,7 @@ void data_processing(arm7tdmi_t* state, arminstr_t* arminstr) {
     bool s = instr->s;
     byte rn = instr->rn;
     byte rd = instr->rd;
+    byte carry = state->cpsr.C;
 
 
     if (instr->rd == 15) {
@@ -144,11 +145,11 @@ void data_processing(arm7tdmi_t* state, arminstr_t* arminstr) {
             break;
         }
         case 0x5: { // ADC: Rd = Rn+Op2+C
-            uint64_t op2c = operand2 + state->cpsr.C;
+            uint64_t op2c = operand2 + carry;
             uint64_t newvalue64 = rndata + op2c;
             if (s) {
                 set_flags_nz(state, newvalue64);
-                set_flags_add(state, op2c, rndata);
+                set_flags_adc(state, operand2, rndata, carry);
             }
             newvalue = newvalue64;
             to_set = &newvalue;
@@ -156,7 +157,7 @@ void data_processing(arm7tdmi_t* state, arminstr_t* arminstr) {
         }
         case 0x6: { // SBC: Rd = Rn-Op2+C-1
             uint64_t tmp = operand2;
-            tmp -= state->cpsr.C;
+            tmp -= carry;
             tmp += 1;
             newvalue = rndata - tmp;
             if (s) {
@@ -168,7 +169,7 @@ void data_processing(arm7tdmi_t* state, arminstr_t* arminstr) {
         }
         case 0x7: { // RSC: RD = Op2-Rn+C-1
             uint64_t tmp = rndata;
-            tmp -= state->cpsr.C;
+            tmp -= carry;
             tmp += 1;
             newvalue = operand2 - tmp;
             if (s) {
