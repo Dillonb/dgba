@@ -28,7 +28,7 @@ INLINE word open_bus(word addr);
 #define REGION_SRAM       0x0E
 #define REGION_SRAM_MIRR  0x0F
 
-const int byte_half_cycles[] = {
+int nonsequential_byte_half_cycles[] = {
         [REGION_BIOS]       = 1,
         [REGION_EWRAM]      = 3,
         [REGION_IWRAM]      = 1,
@@ -46,7 +46,43 @@ const int byte_half_cycles[] = {
         [REGION_SRAM_MIRR]  = 5
 };
 
-const int word_cycles[] = {
+int sequential_byte_half_cycles[] = {
+        [REGION_BIOS]       = 1,
+        [REGION_EWRAM]      = 3,
+        [REGION_IWRAM]      = 1,
+        [REGION_IOREG]      = 1,
+        [REGION_PRAM]       = 1,
+        [REGION_VRAM]       = 1,
+        [REGION_OAM]        = 1,
+        [REGION_GAMEPAK0_L] = 5,
+        [REGION_GAMEPAK0_H] = 5,
+        [REGION_GAMEPAK1_L] = 5,
+        [REGION_GAMEPAK1_H] = 5,
+        [REGION_GAMEPAK2_L] = 5,
+        [REGION_GAMEPAK2_H] = 5,
+        [REGION_SRAM]       = 5,
+        [REGION_SRAM_MIRR]  = 5
+};
+
+int nonsequential_word_cycles[] = {
+        [REGION_BIOS]       = 1,
+        [REGION_EWRAM]      = 6,
+        [REGION_IWRAM]      = 1,
+        [REGION_IOREG]      = 1,
+        [REGION_PRAM]       = 1,
+        [REGION_VRAM]       = 1,
+        [REGION_OAM]        = 1,
+        [REGION_GAMEPAK0_L] = 8,
+        [REGION_GAMEPAK0_H] = 8,
+        [REGION_GAMEPAK1_L] = 8,
+        [REGION_GAMEPAK1_H] = 8,
+        [REGION_GAMEPAK2_L] = 8,
+        [REGION_GAMEPAK2_H] = 8,
+        [REGION_SRAM]       = 8,
+        [REGION_SRAM_MIRR]  = 8
+};
+
+int sequential_word_cycles[] = {
         [REGION_BIOS]       = 1,
         [REGION_EWRAM]      = 6,
         [REGION_IWRAM]      = 1,
@@ -440,6 +476,39 @@ void tmcnth_write(int n, half old_value) {
     }
 }
 
+INLINE int nonsequential_waitstates(int x) {
+    switch (bus->WAITCNT.wait_state_0_nonsequential) {
+        case 0: return 4;
+        case 1: return 3;
+        case 2: return 2;
+        case 3: return 8;
+        default: logfatal("Invalid nonsequential WAITCNT setting: %d!", x)
+    }
+}
+
+void on_waitcnt_updated() {
+    nonsequential_byte_half_cycles[REGION_GAMEPAK0_L] = nonsequential_waitstates(bus->WAITCNT.wait_state_0_nonsequential);
+    nonsequential_byte_half_cycles[REGION_GAMEPAK0_H] = nonsequential_byte_half_cycles[REGION_GAMEPAK0_L];
+    sequential_byte_half_cycles[REGION_GAMEPAK0_L] = bus->WAITCNT.wait_state_0_sequential ? 1 : 2;
+    sequential_byte_half_cycles[REGION_GAMEPAK0_H] = bus->WAITCNT.wait_state_0_sequential ? 1 : 2;
+    nonsequential_word_cycles[REGION_GAMEPAK0_L] = nonsequential_byte_half_cycles[REGION_GAMEPAK0_L] + sequential_byte_half_cycles[REGION_GAMEPAK0_L];
+    sequential_word_cycles[REGION_GAMEPAK0_H] = sequential_byte_half_cycles[REGION_GAMEPAK0_L] * 2;
+
+    nonsequential_byte_half_cycles[REGION_GAMEPAK1_L] = nonsequential_waitstates(bus->WAITCNT.wait_state_1_nonsequential);
+    nonsequential_byte_half_cycles[REGION_GAMEPAK1_H] = nonsequential_byte_half_cycles[REGION_GAMEPAK1_L];
+    sequential_byte_half_cycles[REGION_GAMEPAK1_L] = bus->WAITCNT.wait_state_1_sequential ? 1 : 4;
+    sequential_byte_half_cycles[REGION_GAMEPAK1_H] = bus->WAITCNT.wait_state_1_sequential ? 1 : 4;
+    nonsequential_word_cycles[REGION_GAMEPAK1_L] = nonsequential_byte_half_cycles[REGION_GAMEPAK1_L] + sequential_byte_half_cycles[REGION_GAMEPAK1_L];
+    sequential_word_cycles[REGION_GAMEPAK1_H] = sequential_byte_half_cycles[REGION_GAMEPAK1_L] * 2;
+
+    nonsequential_byte_half_cycles[REGION_GAMEPAK2_L] = nonsequential_waitstates(bus->WAITCNT.wait_state_2_nonsequential);
+    nonsequential_byte_half_cycles[REGION_GAMEPAK2_H] = nonsequential_byte_half_cycles[REGION_GAMEPAK2_L];
+    sequential_byte_half_cycles[REGION_GAMEPAK2_L] = bus->WAITCNT.wait_state_2_sequential ? 1 : 8;
+    sequential_byte_half_cycles[REGION_GAMEPAK2_H] = bus->WAITCNT.wait_state_2_sequential ? 1 : 8;
+    nonsequential_word_cycles[REGION_GAMEPAK2_L] = nonsequential_byte_half_cycles[REGION_GAMEPAK2_L] + sequential_byte_half_cycles[REGION_GAMEPAK2_L];
+    sequential_word_cycles[REGION_GAMEPAK2_H] = sequential_byte_half_cycles[REGION_GAMEPAK2_L] * 2;
+}
+
 INLINE void write_half_ioreg_masked(word addr, half value, half mask) {
     half* ioreg = get_half_ioreg_ptr(addr, true);
     if (ioreg) {
@@ -502,6 +571,9 @@ INLINE void write_half_ioreg_masked(word addr, half value, half mask) {
                 break;
             case IO_TM3CNT_H:
                 tmcnth_write(3, old_value);
+                break;
+            case IO_WAITCNT:
+                on_waitcnt_updated();
                 break;
         }
     } else {
@@ -676,16 +748,31 @@ INLINE word open_bus(word addr) {
 }
 
 INLINE void tick_memory_waitstate(access_type_t access_type, size_t access_size, half region) {
-    if (access_type != ACCESS_UNKNOWN) {
-        switch (access_size) {
-            case sizeof(byte):
-            case sizeof(half):
-                cpu->this_step_ticks += byte_half_cycles[region];
-                break;
-            case sizeof(word):
-                cpu->this_step_ticks += word_cycles[region];
-                break;
-        }
+    switch (access_type) {
+        case ACCESS_NONSEQUENTIAL:
+            switch (access_size) {
+                case sizeof(byte):
+                case sizeof(half):
+                    cpu->this_step_ticks += nonsequential_byte_half_cycles[region];
+                    break;
+                case sizeof(word):
+                    cpu->this_step_ticks += nonsequential_word_cycles[region];
+                    break;
+            }
+            break;
+        case ACCESS_SEQUENTIAL:
+            switch (access_size) {
+                case sizeof(byte):
+                case sizeof(half):
+                    cpu->this_step_ticks += sequential_byte_half_cycles[region];
+                    break;
+                case sizeof(word):
+                    cpu->this_step_ticks += sequential_word_cycles[region];
+                    break;
+            }
+            break;
+        case ACCESS_UNKNOWN:
+            break;
     }
 }
 
@@ -717,13 +804,8 @@ INLINE byte inline_gba_read_byte(word addr, access_type_t access_type) {
                     return open_bus(addr);
                 } else if (size == sizeof(half)) {
                     int ofs = addr % 2;
-                    half* ioreg = get_half_ioreg_ptr(addr - ofs, false);
-                    if (ioreg) {
-                        return (*ioreg >> (ofs * 8)) & 0xFF;
-                    } else {
-                        logwarn("Ignoring read from half ioreg 0x%08X", addr - ofs)
-                        return 0;
-                    }
+                    half value = read_half_ioreg(addr - ofs);
+                    return (value >> (ofs * 8)) & 0xFF;
                 }
                 else if (size > sizeof(byte)) {
                     logfatal("Reading from too-large ioreg (%d) as byte at 0x%08X", size, addr)

@@ -171,6 +171,19 @@ typedef union TMCNT_H {
 } TMCNT_H_t;
 
 typedef union WAITCNT {
+    struct {
+        byte sram_wait:2;
+        byte wait_state_0_nonsequential:2;
+        byte wait_state_0_sequential:1;
+        byte wait_state_1_nonsequential:2;
+        byte wait_state_1_sequential:1;
+        byte wait_state_2_nonsequential:2;
+        byte wait_state_2_sequential:1;
+        byte phi_terminal:2;
+        byte:1;
+        bool prefetch_buffer_enable:1;
+        bool is_cgb_gamepak:1;
+    };
     half raw;
 } WAITCNT_t;
 
