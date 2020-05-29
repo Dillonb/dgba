@@ -955,7 +955,7 @@ void gba_write_byte(word addr, byte value, access_type_t access_type) {
                 if (addr == 0x4FFF700 || addr == 0x4FFF780 || (addr >= 0x4FFF600 && addr < 0x4FFF700)) {
                     mgba_debug_write_byte(addr, value);
                 } else {
-                    logfatal("Write 0x%02X to 0x%08X\n", value, addr)
+                    logwarn("Write 0x%02X to 0x%08X\n", value, addr)
                 }
             }
 #endif
