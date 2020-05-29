@@ -7,6 +7,7 @@
 #include "../gba_system.h"
 #include "backup/flash.h"
 #include "gpio/gpio.h"
+#include "mgba_debug.h"
 
 
 INLINE word open_bus(word addr);
@@ -838,6 +839,11 @@ INLINE half inline_gba_read_half(word address, access_type_t access_type) {
                         logfatal("Reading word ioreg from gba_read_half()")
                 }
             } else {
+#ifdef ENABLE_MGBA_DEBUG
+                if (address == 0x4FFF700 || address == 0x4FFF780 || address == 0x4FFF600) {
+                    return mgba_debug_read_half(address);
+                }
+#endif
                 logwarn("Tried to read from 0x%08X", address)
                 return open_bus(address);
             }
@@ -941,7 +947,18 @@ void gba_write_byte(word addr, byte value, access_type_t access_type) {
             break;
         }
         case REGION_IOREG: {
-            write_byte_ioreg(addr, value);
+            if (addr < 0x04000400) {
+                write_byte_ioreg(addr, value);
+            }
+#ifdef ENABLE_MGBA_DEBUG
+            else {
+                if (addr == 0x4FFF700 || addr == 0x4FFF780 || (addr >= 0x4FFF600 && addr < 0x4FFF700)) {
+                    mgba_debug_write_byte(addr, value);
+                } else {
+                    logfatal("Write 0x%02X to 0x%08X\n", value, addr)
+                }
+            }
+#endif
             break;
         }
         case REGION_PRAM: {
@@ -1022,20 +1039,31 @@ void gba_write_half(word addr, half value, access_type_t access_type) {
             break;
         }
         case REGION_IOREG: {
-            byte ioreg_size = get_ioreg_size_for_addr(addr);
-            if (ioreg_size == sizeof(word)) {
-                word offset = (addr % sizeof(word));
-                word shifted_value = value;
-                shifted_value <<= (offset * 8);
-                write_word_ioreg_masked(addr - offset, shifted_value, 0xFFFF << (offset * 8));
-            } else if (ioreg_size == sizeof(half)) {
-                write_half_ioreg(addr, value);
-                return;
-            } else if (ioreg_size == 0) {
-                // Unused io register
-                logwarn("Unused half size ioregister 0x%08X", addr)
-                return;
+            if (addr < 0x04000400) {
+                byte ioreg_size = get_ioreg_size_for_addr(addr);
+                if (ioreg_size == sizeof(word)) {
+                    word offset = (addr % sizeof(word));
+                    word shifted_value = value;
+                    shifted_value <<= (offset * 8);
+                    write_word_ioreg_masked(addr - offset, shifted_value, 0xFFFF << (offset * 8));
+                } else if (ioreg_size == sizeof(half)) {
+                    write_half_ioreg(addr, value);
+                    return;
+                } else if (ioreg_size == 0) {
+                    // Unused io register
+                    logwarn("Unused half size ioregister 0x%08X", addr)
+                    return;
+                }
             }
+#ifdef ENABLE_MGBA_DEBUG
+            else {
+                if (addr == 0x4FFF700 || addr == 0x4FFF780 || addr == 0x4FFF600) {
+                    mgba_debug_write_half(addr, value);
+                } else {
+                    logfatal("Writing 0x%04X to 0x%08X", value, addr)
+                }
+            }
+#endif
             break;
         }
         case REGION_PRAM: {
@@ -1248,6 +1276,19 @@ void gba_write_word(word addr, word value, access_type_t access_type) {
                         write_word_ioreg(addr, value);
                 }
             }
+
+#ifdef ENABLE_MGBA_DEBUG
+            else {
+                if (addr >= 0x4FFF600 && addr < 0x4FFF700) {
+                    mgba_debug_write_byte(addr, value & 0xFF);
+                    mgba_debug_write_byte(addr + 1, (value >> 8) & 0xFF);
+                    mgba_debug_write_byte(addr + 2, (value >> 16) & 0xFF);
+                    mgba_debug_write_byte(addr + 3, (value >> 24) & 0xFF);
+                } else {
+                    logfatal("Writing 0x%08X to 0x%08X\n", value, addr);
+                }
+            }
+#endif
             break;
         }
         case REGION_PRAM: {
