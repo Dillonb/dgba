@@ -507,6 +507,15 @@ void on_waitcnt_updated() {
     sequential_byte_half_cycles[REGION_GAMEPAK2_H] = bus->WAITCNT.wait_state_2_sequential ? 1 : 8;
     nonsequential_word_cycles[REGION_GAMEPAK2_L] = nonsequential_byte_half_cycles[REGION_GAMEPAK2_L] + sequential_byte_half_cycles[REGION_GAMEPAK2_L];
     sequential_word_cycles[REGION_GAMEPAK2_H] = sequential_byte_half_cycles[REGION_GAMEPAK2_L] * 2;
+
+    nonsequential_byte_half_cycles[REGION_SRAM] = nonsequential_waitstates(bus->WAITCNT.sram_wait);
+    nonsequential_byte_half_cycles[REGION_SRAM_MIRR] = nonsequential_byte_half_cycles[REGION_SRAM];
+    sequential_byte_half_cycles[REGION_SRAM] = nonsequential_byte_half_cycles[REGION_SRAM];
+    sequential_byte_half_cycles[REGION_SRAM_MIRR] = nonsequential_byte_half_cycles[REGION_SRAM];
+    nonsequential_word_cycles[REGION_SRAM] = nonsequential_byte_half_cycles[REGION_SRAM] + sequential_byte_half_cycles[REGION_SRAM];
+    sequential_word_cycles[REGION_SRAM] = sequential_byte_half_cycles[REGION_SRAM] + sequential_byte_half_cycles[REGION_SRAM];
+    nonsequential_word_cycles[REGION_SRAM_MIRR] = nonsequential_word_cycles[REGION_SRAM];
+    sequential_word_cycles[REGION_SRAM_MIRR] = sequential_word_cycles[REGION_SRAM];
 }
 
 INLINE void write_half_ioreg_masked(word addr, half value, half mask) {
