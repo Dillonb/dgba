@@ -208,7 +208,7 @@ INLINE arminstr_t next_arm_instr(arm7tdmi_t* state) {
     instr.raw = state->pipeline[0];
     state->pipeline[0] = state->pipeline[1];
     state->pc += 4;
-    state->pipeline[1] = state->read_word(state->pc, ACCESS_UNKNOWN);
+    state->pipeline[1] = state->read_word(state->pc, ACCESS_NONSEQUENTIAL);
 
     return instr;
 }
@@ -218,7 +218,7 @@ INLINE thumbinstr_t next_thumb_instr(arm7tdmi_t* state) {
     instr.raw = state->pipeline[0];
     state->pipeline[0] = state->pipeline[1];
     state->pc += 2;
-    state->pipeline[1] = state->read_half(state->pc, ACCESS_UNKNOWN);
+    state->pipeline[1] = state->read_half(state->pc, ACCESS_NONSEQUENTIAL);
 
     return instr;
 }
