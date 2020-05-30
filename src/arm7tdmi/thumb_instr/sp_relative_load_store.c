@@ -7,10 +7,10 @@ void sp_relative_load_store(arm7tdmi_t* state, thumbinstr_t* thminstr) {
     word offset = instr->word8 << 2;
     word address = get_register(state, REG_SP) + offset;
     if (instr->l) {
-        word value = state->read_word(address, ACCESS_UNKNOWN);
+        word value = state->read_word(address, ACCESS_NONSEQUENTIAL);
         value = arm_ror(NULL, value, (address & 3u) << 3);
         set_register(state, instr->rd, value);
     } else {
-        state->write_word(address, get_register(state, instr->rd), ACCESS_UNKNOWN);
+        state->write_word(address, get_register(state, instr->rd), ACCESS_NONSEQUENTIAL);
     }
 }

@@ -19,23 +19,23 @@ void block_data_transfer(arm7tdmi_t* state, arminstr_t * arminstr) {
     if (instr->rlist == 0u) {
         // Weird stuff happens when you don't specify any registers to transfer
         if (instr->l) {
-            set_pc(state, state->read_word(address, ACCESS_UNKNOWN));
+            set_pc(state, state->read_word(address, ACCESS_NONSEQUENTIAL));
         } else {
             if (instr->u) {
                 if (p) {
                     // 11 => STMIB
-                    state->write_word(base + 4, get_register(state, REG_PC) + 4, ACCESS_UNKNOWN);
+                    state->write_word(base + 4, get_register(state, REG_PC) + 4, ACCESS_NONSEQUENTIAL);
                 } else {
                     // 10 => STMIA
-                    state->write_word(base, get_register(state, REG_PC) + 4, ACCESS_UNKNOWN);
+                    state->write_word(base, get_register(state, REG_PC) + 4, ACCESS_NONSEQUENTIAL);
                 }
             } else {
                 if (p) {
                     // 01 => STMDB
-                    state->write_word(base - 0x40, get_register(state, REG_PC) + 4, ACCESS_UNKNOWN);
+                    state->write_word(base - 0x40, get_register(state, REG_PC) + 4, ACCESS_NONSEQUENTIAL);
                 } else {
                     // 00 => STMDA
-                    state->write_word(base - 0x3C, get_register(state, REG_PC) + 4, ACCESS_UNKNOWN);
+                    state->write_word(base - 0x3C, get_register(state, REG_PC) + 4, ACCESS_NONSEQUENTIAL);
                 }
             }
         }
@@ -71,6 +71,8 @@ void block_data_transfer(arm7tdmi_t* state, arminstr_t * arminstr) {
             after_inc = 4;
         }
 
+        access_type_t access = ACCESS_NONSEQUENTIAL;
+
         if (instr->l) {
             for (unsigned int rt = 0; rt <= REG_PC; rt++) {
                 if ((instr->rlist >> rt & 1) == 1) {
@@ -80,7 +82,8 @@ void block_data_transfer(arm7tdmi_t* state, arminstr_t * arminstr) {
                     logdebug("Will transfer r%d\n", rt);
                     address += before_inc;
                     logdebug("Transferring 0x%08X to r%d", address, rt)
-                    set_register(state, rt, state->read_word(address, ACCESS_UNKNOWN));
+                    set_register(state, rt, state->read_word(address, access));
+                    access = ACCESS_SEQUENTIAL;
                     address += after_inc;
                 }
             }
@@ -106,7 +109,8 @@ void block_data_transfer(arm7tdmi_t* state, arminstr_t * arminstr) {
                             value += 4;
                         }
                     }
-                    state->write_word(address, value, ACCESS_UNKNOWN);
+                    state->write_word(address, value, access);
+                    access = ACCESS_SEQUENTIAL;
                     first = false;
                     address += after_inc;
                 }

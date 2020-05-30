@@ -13,11 +13,14 @@ void push_pop_registers(arm7tdmi_t* state, thumbinstr_t* thminstr) {
 
     int num_registers = popcount(rlist);
 
+    access_type_t access = ACCESS_NONSEQUENTIAL;
+
     if (instr->l) { // Pop
         for (int i = 0; i <= 15; i++) {
             if ((rlist >> i) & 1) {
                 word sp = get_register(state, REG_SP);
-                word value = state->read_word(sp, ACCESS_UNKNOWN);
+                word value = state->read_word(sp, access);
+                access = ACCESS_SEQUENTIAL;
                 if (i == REG_PC) {
                     value |= 1;
                 }
@@ -31,7 +34,8 @@ void push_pop_registers(arm7tdmi_t* state, thumbinstr_t* thminstr) {
 
         for (int i = 0; i <= 15; i++) {
             if ((rlist >> i) & 1) {
-                state->write_word(addr, get_register(state, i), ACCESS_UNKNOWN);
+                state->write_word(addr, get_register(state, i), access);
+                access = ACCESS_SEQUENTIAL;
                 addr += sizeof(word);
             }
         }

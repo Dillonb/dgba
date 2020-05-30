@@ -5,11 +5,12 @@ void multiple_load_store(arm7tdmi_t* state, thumbinstr_t* thminstr) {
     word address = get_register(state, instr->rb);
     word base = address;
     bool writeback = true;
+    access_type_t access = ACCESS_NONSEQUENTIAL;
     if (instr->rlist == 0) { // When rlist 0, save and load the program counter instead
         if (instr->l) {
-            set_register(state, REG_PC, state->read_word(address, ACCESS_UNKNOWN) | 1);
+            set_register(state, REG_PC, state->read_word(address, ACCESS_NONSEQUENTIAL) | 1);
         } else {
-            state->write_word(address, state->pc + 2, ACCESS_UNKNOWN);
+            state->write_word(address, state->pc + 2, ACCESS_NONSEQUENTIAL);
         }
         address += 0x40;
     }
@@ -19,7 +20,8 @@ void multiple_load_store(arm7tdmi_t* state, thumbinstr_t* thminstr) {
         }
         for (int i = 0; i <= 8; i++) {
             if ((instr->rlist >> i) & 1) {
-                set_register(state, i, state->read_word(address, ACCESS_UNKNOWN));
+                set_register(state, i, state->read_word(address, access));
+                access = ACCESS_SEQUENTIAL;
                 address += 4;
             }
         }
@@ -38,7 +40,8 @@ void multiple_load_store(arm7tdmi_t* state, thumbinstr_t* thminstr) {
                     value = get_register(state, i);
                 }
 
-                state->write_word(address, value, ACCESS_UNKNOWN);
+                state->write_word(address, value, access);
+                access = ACCESS_SEQUENTIAL;
                 first = false;
                 address += 4;
             }
