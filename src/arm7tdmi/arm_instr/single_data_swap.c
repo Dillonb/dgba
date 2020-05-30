@@ -15,14 +15,15 @@ void single_data_swap(arm7tdmi_t* state, arminstr_t* arminstr) {
     word rmdata = get_register(state, instr->rm);
 
     if (instr->b) {
-        set_register(state, instr->rd, state->read_byte(address, ACCESS_UNKNOWN));
+        set_register(state, instr->rd, state->read_byte(address, ACCESS_NONSEQUENTIAL));
         logdebug("Saving the value of r%d [0x%08X] to 0x%08X", instr->rm, rmdata, address);
-        state->write_byte(address, rmdata, ACCESS_UNKNOWN);
+        state->write_byte(address, rmdata, ACCESS_NONSEQUENTIAL);
     } else {
-        word temp = state->read_word(address, ACCESS_UNKNOWN);
+        word temp = state->read_word(address, ACCESS_NONSEQUENTIAL);
         temp = arm_ror(NULL, temp, (address & 3u) << 3);
         set_register(state, instr->rd, temp);
         logdebug("Saving the value of r%d [0x%08X] to 0x%08X", instr->rm, rmdata, address);
-        state->write_word(address, rmdata, ACCESS_UNKNOWN);
+        state->write_word(address, rmdata, ACCESS_NONSEQUENTIAL);
     }
+    state->cpu_idle(1);
 }

@@ -22,27 +22,28 @@ INLINE void halfword_dt(arm7tdmi_t* state, bool p, bool u, bool w, bool l, byte 
 
     if (l) {
         if (!s && h) { // LDRH: Load unsigned halfword (zero extended)
-            half value = state->read_half(addr, ACCESS_UNKNOWN);
+            half value = state->read_half(addr, ACCESS_NONSEQUENTIAL);
             set_register(state, rd, rotate_right(value, (addr & 1u) << 3u));
         } else if (s && !h) { //LDRSB: Load signed byte (sign extended)
-            word value = state->read_byte(addr, ACCESS_UNKNOWN);
+            word value = state->read_byte(addr, ACCESS_NONSEQUENTIAL);
             set_register(state, rd, sign_extend_word(value, 8, 32));
         } else if (s && h) { // LDRSH: Load signed halfword (sign extended)
             word value;
             if (addr & 1) {
-                value = state->read_byte(addr, ACCESS_UNKNOWN);
+                value = state->read_byte(addr, ACCESS_NONSEQUENTIAL);
                 value = sign_extend_word(value, 8, 32);
             } else {
-                value = state->read_half(addr, ACCESS_UNKNOWN);
+                value = state->read_half(addr, ACCESS_NONSEQUENTIAL);
                 value = sign_extend_word(value, 16, 32);
             }
             set_register(state, rd, value);
         }
+        state->cpu_idle(1);
     } else {
         logdebug("p: %d, u: %d, w: %d, l: %d, rn: %d, rd: %d, offset: %d, s: %d, h: %d", p, u, w, l, rn, rd, offset, s, h)
         if (!s && h) { // Store halfword
             unimplemented(rd == 15, "Special case for R15: PC")
-            state->write_half(addr, get_register(state, rd), ACCESS_UNKNOWN);
+            state->write_half(addr, get_register(state, rd), ACCESS_NONSEQUENTIAL);
         } else if (s && !h) { // Load doubleword
             logfatal("ldrd unimplemented (is this caught by LDR?)")
         } else if (s && h) { // Load halfword
