@@ -11,7 +11,7 @@
 #include "backup/eeprom.h"
 
 
-INLINE word open_bus(word addr);
+INLINE word open_bus(word pc);
 
 #define REGION_BIOS       0x00
 #define REGION_EWRAM      0x02
@@ -730,33 +730,41 @@ INLINE half read_half_ioreg(word addr) {
     }
 }
 
-INLINE word open_bus(word addr) {
+INLINE word open_bus(word pc) {
     word result;
 
     if (cpu->cpsr.thumb)
     {
+        pc -= 4;
         word low = cpu->pipeline[1];
         word high = cpu->pipeline[1];
 
-        byte region = addr >> 24;
+        byte region = pc >> 24;
 
-        if (region == 0 || region == 7) {
-            low = cpu->pipeline[0];
-        } else if (region == 3) {
-            if (addr & 3) {
+        if (region == REGION_BIOS || region == REGION_OAM) {
+            if (pc & 3) {
+                low = cpu->pipeline[0];
+                result = (high << 16) | low;
+            } else {
+                result = cpu->pipeline[1] * 65537;
+            }
+        } else if (region == REGION_IWRAM) {
+            if (pc & 3) {
                 low = cpu->pipeline[0];
             } else {
                 high = cpu->pipeline[0];
             }
+            result = (high << 16) | low;
+        } else {
+            result = cpu->pipeline[1] * 65537;
         }
 
-        result = (high << 16) | low;
     } else {
         result = cpu->pipeline[1];
     }
-    result >>= ((addr & 0b11u) << 3u);
+    result >>= ((pc & 0b11) << 3);
 
-    logwarn("RETURNING FROM OPEN BUS AT ADDRESS 0x%08X: 0x%08X", addr, result)
+    logwarn("RETURNING FROM OPEN BUS AT ADDRESS 0x%08X: 0x%08X", pc, result)
     return result;
 }
 
@@ -798,7 +806,7 @@ INLINE byte inline_gba_read_byte(word addr, access_type_t access_type) {
             if (addr < GBA_BIOS_SIZE) { // BIOS
                 return gbabios_read_byte(addr);
             } else {
-                return open_bus(addr);
+                return open_bus(cpu->pc);
             }
         }
         case REGION_EWRAM: {
@@ -814,7 +822,7 @@ INLINE byte inline_gba_read_byte(word addr, access_type_t access_type) {
                 byte size = get_ioreg_size_for_addr(addr);
                 if (size == 0) {
                     logwarn("Returning open bus (UNUSED BYTE IOREG 0x%08X)", addr)
-                    return open_bus(addr);
+                    return open_bus(cpu->pc);
                 } else if (size == sizeof(half)) {
                     int ofs = addr % 2;
                     half value = read_half_ioreg(addr - ofs);
@@ -830,7 +838,7 @@ INLINE byte inline_gba_read_byte(word addr, access_type_t access_type) {
                 return read_byte_ioreg(addr);
             } else {
                 logwarn("Tried to read from 0x%08X", addr)
-                return open_bus(addr);
+                return open_bus(cpu->pc);
             }
         }
         case REGION_PRAM: {
@@ -856,7 +864,7 @@ INLINE byte inline_gba_read_byte(word addr, access_type_t access_type) {
             if (index < mem->rom_size) {
                 return mem->rom[index];
             } else {
-                return open_bus(addr);
+                return open_bus(cpu->pc);
             }
 
         }
@@ -872,7 +880,7 @@ INLINE byte inline_gba_read_byte(word addr, access_type_t access_type) {
             if (index < mem->rom_size) {
                 return mem->rom[index];
             } else {
-                return open_bus(addr);
+                return open_bus(cpu->pc);
             }
 
         case REGION_SRAM:
@@ -892,7 +900,7 @@ INLINE byte inline_gba_read_byte(word addr, access_type_t access_type) {
             }
             return 0;
         default:
-            return open_bus(addr);
+            return open_bus(cpu->pc);
     }
 }
 
@@ -909,7 +917,7 @@ INLINE half inline_gba_read_half(word address, access_type_t access_type) {
             if (address < GBA_BIOS_SIZE) { // BIOS
                 return gbabios_read_byte(address) | (gbabios_read_byte(address + 1) << 8);
             } else {
-                return open_bus(address);
+                return open_bus(cpu->pc);
             }
         }
         case REGION_EWRAM: {
@@ -926,7 +934,7 @@ INLINE half inline_gba_read_half(word address, access_type_t access_type) {
                 switch (size) {
                     case 0:
                         logwarn("Returning open bus (UNUSED HALF IOREG 0x%08X)", address)
-                        return open_bus(address);
+                        return open_bus(cpu->pc);
                     case sizeof(byte):
                         return read_byte_ioreg(address) | (read_byte_ioreg(address + 1) << 8);
                     case sizeof(half):
@@ -941,7 +949,7 @@ INLINE half inline_gba_read_half(word address, access_type_t access_type) {
                 }
 #endif
                 logwarn("Tried to read from 0x%08X", address)
-                return open_bus(address);
+                return open_bus(cpu->pc);
             }
         }
         case REGION_PRAM: {
@@ -968,7 +976,7 @@ INLINE half inline_gba_read_half(word address, access_type_t access_type) {
             if (index < mem->rom_size) {
                 return half_from_byte_array(mem->rom, index);
             } else {
-                return open_bus(address);
+                return open_bus(cpu->pc);
             }
         }
 
@@ -982,7 +990,7 @@ INLINE half inline_gba_read_half(word address, access_type_t access_type) {
             if (index < mem->rom_size) {
                 return half_from_byte_array(mem->rom, index);
             } else {
-                return open_bus(address);
+                return open_bus(cpu->pc);
             }
 
         case REGION_SRAM:
@@ -1002,7 +1010,7 @@ INLINE half inline_gba_read_half(word address, access_type_t access_type) {
             }
             return 0;
         default:
-            return open_bus(address);
+            return open_bus(cpu->pc);
     }
 }
 
@@ -1240,7 +1248,7 @@ word gba_read_word(word address, access_type_t access_type) {
                        | (gbabios_read_byte(address + 2) << 16)
                        | (gbabios_read_byte(address + 3) << 24);
             } else {
-                return open_bus(address);
+                return open_bus(cpu->pc);
             }
         }
 
@@ -1258,7 +1266,7 @@ word gba_read_word(word address, access_type_t access_type) {
                 switch (size) {
                     case 0:
                         logwarn("Returning open bus (UNUSED WORD IOREG 0x%08X)", address)
-                        return open_bus(address);
+                        return open_bus(cpu->pc);
                     case sizeof(byte):
                         return read_byte_ioreg(address)
                                | (read_byte_ioreg(address + 1) << 8)
@@ -1271,7 +1279,7 @@ word gba_read_word(word address, access_type_t access_type) {
                 }
             } else {
                 logwarn("Tried to read from 0x%08X", address)
-                return open_bus(address);
+                return open_bus(cpu->pc);
             }
         }
         case REGION_PRAM: {
@@ -1305,7 +1313,7 @@ word gba_read_word(word address, access_type_t access_type) {
             if (index < mem->rom_size) {
                 return word_from_byte_array(mem->rom, index);
             } else {
-                return open_bus(address);
+                return open_bus(cpu->pc);
             }
         }
 
@@ -1320,7 +1328,7 @@ word gba_read_word(word address, access_type_t access_type) {
             if (index < mem->rom_size) {
                 return word_from_byte_array(mem->rom, index);
             } else {
-                return open_bus(address);
+                return open_bus(cpu->pc);
             }
 
         case REGION_SRAM:
@@ -1340,7 +1348,7 @@ word gba_read_word(word address, access_type_t access_type) {
             }
             return 0;
         default:
-            return open_bus(address);
+            return open_bus(cpu->pc);
     }
 }
 
