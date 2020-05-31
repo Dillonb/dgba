@@ -273,14 +273,25 @@ void load_state(const char* path) {
     fread(&header, sizeof(savestate_header_t), 1, fp);
 
     // Restore CPU. Need to restore function pointers.
-    fread(cpu, header.cpu_size, 1, fp);
-    cpu->read_byte = &gba_read_byte;
-    cpu->read_half = &gba_read_half;
-    cpu->read_word = &gba_read_word;
 
-    cpu->write_byte = &gba_write_byte;
-    cpu->write_half = &gba_write_half;
-    cpu->write_word = &gba_write_word;
+    byte (*read_byte)(word, access_type_t) = cpu->read_byte;
+    half (*read_half)(word, access_type_t) = cpu->read_half;
+    word (*read_word)(word, access_type_t) = cpu->read_word;
+    void (*write_byte)(word, byte, access_type_t) = cpu->write_byte;
+    void (*write_half)(word, half, access_type_t) = cpu->write_half;
+    void (*write_word)(word, word, access_type_t) = cpu->write_word;
+    void (*cpu_idle)(int) = cpu->cpu_idle;
+
+    fread(cpu, header.cpu_size, 1, fp);
+    cpu->read_byte = read_byte;
+    cpu->read_half = read_half;
+    cpu->read_word = read_word;
+
+    cpu->write_byte = write_byte;
+    cpu->write_half = write_half;
+    cpu->write_word = write_word;
+
+    cpu->cpu_idle = cpu_idle;
 
     // Restore PPU. No pointers need to be restored.
     fread(ppu, header.ppu_size, 1, fp);
