@@ -277,6 +277,7 @@ typedef struct gbabus {
     KEYINPUT_t KEYINPUT;
 
     // DMA
+    int current_active_dma;
     addr_27b_t DMA0SAD;
     addr_27b_t DMA0DAD;
     wc_14b_t   DMA0CNT_L;

@@ -25,7 +25,8 @@ add_library(core
         mem/backup/flash.c mem/backup/flash.h
         mem/gpio/gpio.c mem/gpio/gpio.h
         mem/gpio/rtc.c mem/gpio/rtc.h
-        mem/mgba_debug.c mem/mgba_debug.h)
+        mem/mgba_debug.c mem/mgba_debug.h
+        mem/backup/eeprom.c mem/backup/eeprom.h)
 
 IF(Capstone_FOUND)
     TARGET_LINK_LIBRARIES(core Capstone::Capstone)

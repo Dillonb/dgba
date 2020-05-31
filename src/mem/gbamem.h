@@ -27,6 +27,16 @@ typedef enum flash_state {
     FLASH_BANKSWITCH
 } flash_state_t;
 
+typedef enum eeprom_state {
+    EEPROM_READY,
+    EEPROM_CMD_1,
+    EEPROM_READ,
+    EEPROM_WRITE,
+    EEPROM_POST_WRITE,
+    EEPROM_ACCEPT_READ_ADDRESS,
+    EEPROM_ACCEPT_WRITE_ADDRESS
+} eeprom_state_t;
+
 typedef struct gbamem {
     byte* rom;
     size_t rom_size;
@@ -44,6 +54,13 @@ typedef struct gbamem {
     byte flash_bank;
     word flash_erase_write_sector_first_address;
     int backup_persist_countdown;
+
+    // EEPROM state
+    eeprom_state_t eeprom_state;
+    byte eeprom_command;
+    int eeprom_bits_remaining;
+    bool eeprom_initialized;
+    half eeprom_address;
 } gbamem_t;
 
 gbamem_t* init_mem();

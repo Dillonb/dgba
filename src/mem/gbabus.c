@@ -8,6 +8,7 @@
 #include "backup/flash.h"
 #include "gpio/gpio.h"
 #include "mgba_debug.h"
+#include "backup/eeprom.h"
 
 
 INLINE word open_bus(word addr);
@@ -126,7 +127,6 @@ gbabus_t* init_gbabus() {
         }
         if (memcmp("EEPROM", &mem->rom[addr], 6) == 0) {
             bus_state->backup_type = EEPROM;
-            logfatal("Determined backup type: EEPROM")
             break;
         }
         if (memcmp("FLASH_", &mem->rom[addr], 6) == 0) {
@@ -860,6 +860,7 @@ INLINE byte inline_gba_read_byte(word addr, access_type_t access_type) {
         case REGION_GAMEPAK2_H:
             if (bus->backup_type == EEPROM) {
                 if (mem->rom_size <= 0x1000000 || addr >= 0xDFFFF00) {
+                    logfatal("Read from EEPROM at addr 0x%08X", addr)
                     return 1;
                 }
             }
@@ -970,7 +971,7 @@ INLINE half inline_gba_read_half(word address, access_type_t access_type) {
         case REGION_GAMEPAK2_H:
             if (bus->backup_type == EEPROM) {
                 if (mem->rom_size <= 0x1000000 || address >= 0xDFFFF00) {
-                    return 1;
+                    return read_half_eeprom(bus, mem, address);
                 }
             }
             word index = address & 0x1FFFFFF;
@@ -1081,6 +1082,11 @@ void gba_write_byte(word addr, byte value, access_type_t access_type) {
         case REGION_GAMEPAK1_H:
         case REGION_GAMEPAK2_L:
         case REGION_GAMEPAK2_H: {
+            if (bus->backup_type == EEPROM) {
+                if (mem->rom_size <= 0x1000000 || addr >= 0xDFFFF00) {
+                    logfatal("Write byte 0x%02X to EEPROM at addr 0x%08X", value, addr)
+                }
+            }
             logdebug("Ignoring write to cartridge space address 0x%08X", addr)
             break;
         }
@@ -1180,14 +1186,19 @@ void gba_write_half(word addr, half value, access_type_t access_type) {
                 gpio_write(addr, value);
                 return;
             }
+        case REGION_GAMEPAK2_H: {
+            if (bus->backup_type == EEPROM) {
+                if (mem->rom_size <= 0x1000000 || addr >= 0xDFFFF00) {
+                    write_half_eeprom(bus->current_active_dma, bus, mem, addr, value);
+                }
+            }
+            logdebug("Ignoring write to cartridge space address 0x%08X", addr)
+            break;
+        }
         case REGION_GAMEPAK0_H:
         case REGION_GAMEPAK1_L:
         case REGION_GAMEPAK1_H:
         case REGION_GAMEPAK2_L:
-        case REGION_GAMEPAK2_H: {
-            logdebug("Ignoring write to cartridge space address 0x%08X", addr)
-            break;
-        }
         case REGION_SRAM:
         case REGION_SRAM_MIRR:
             // Backup space
@@ -1297,6 +1308,7 @@ word gba_read_word(word address, access_type_t access_type) {
         case REGION_GAMEPAK2_H:
             if (bus->backup_type == EEPROM) {
                 if (mem->rom_size <= 0x1000000 || address >= 0xDFFFF00) {
+                    logfatal("Read from EEPROM at addr 0x%08X", address)
                     return 1;
                 }
             }
@@ -1412,14 +1424,19 @@ void gba_write_word(word addr, word value, access_type_t access_type) {
                 default:
                     break;
             }
+        case REGION_GAMEPAK2_H: {
+            if (bus->backup_type == EEPROM) {
+                if (mem->rom_size <= 0x1000000 || addr >= 0xDFFFF00) {
+                    logfatal("Write word 0x%08X to EEPROM at addr 0x%08X", value, addr)
+                }
+            }
+            logdebug("Ignoring write to cartridge space address 0x%08X", addr)
+            break;
+        }
         case REGION_GAMEPAK0_H:
         case REGION_GAMEPAK1_L:
         case REGION_GAMEPAK1_H:
         case REGION_GAMEPAK2_L:
-        case REGION_GAMEPAK2_H: {
-            logdebug("Ignoring write to cartridge space address 0x%08X", addr)
-            break;
-        }
         case REGION_SRAM:
         case REGION_SRAM_MIRR:
             // Backup space

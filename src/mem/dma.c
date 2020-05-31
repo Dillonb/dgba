@@ -78,6 +78,7 @@ INLINE int dma(int n, DMACNTH_t* cnth, DMAINT_t* dmaint, word sad, word dad, wor
         logwarn("DMA%dCNT_H set to 0x%08X", n, cnth->raw);
 
         while (dmaint->remaining > 0) {
+            bus->current_active_dma = n;
             if (cnth->dma_transfer_type == 0) {// 16 bits
                 word source_address = dmaint->current_source_address;
                 half value = gba_read_half(source_address, access);
@@ -118,7 +119,6 @@ INLINE int dma(int n, DMACNTH_t* cnth, DMAINT_t* dmaint, word sad, word dad, wor
                 word dest_address = dmaint->current_dest_address;
                 gba_write_word(dest_address, value, access);
                 access = ACCESS_SEQUENTIAL;
-                //dma_cycles++; // TODO real mem access time
                 if (!is_sound_dma) { // Only inc when not a sound DMA
                     switch (cnth->dest_addr_control) {
                         case 0: dmaint->current_dest_address += sizeof(word); break;
