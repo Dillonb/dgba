@@ -16,7 +16,7 @@ extern gbamem_t* mem;
 extern gba_apu_t* apu;
 extern bool should_quit;
 
-void init_gbasystem(const char* romfile, const char* bios_file);
+void init_gbasystem(const char* romfile, const char* bios_file, bool enable_frontend);
 void gba_system_step();
 void gba_system_loop();
 

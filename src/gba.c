@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
     set_screen_scale(scale);
 
 
-    init_gbasystem(flags->argv[0], bios_file);
+    init_gbasystem(flags->argv[0], bios_file, true);
 
     loginfo("ROM loaded: %lu bytes", mem->rom_size)
     if (should_skip_bios) {

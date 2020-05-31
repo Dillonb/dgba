@@ -65,7 +65,7 @@ void load_log(const char* filename, int lines, cpu_log_t* buffer) {
 
 int test_loop(const char* rom_filename, int num_log_lines, const char* log_filename, word test_failed_address, int watch_reg) {
     log_set_verbosity(4);
-    init_gbasystem(rom_filename, NULL);
+    init_gbasystem(rom_filename, NULL, false);
 
     skip_bios(cpu);
 

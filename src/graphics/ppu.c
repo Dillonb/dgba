@@ -23,11 +23,13 @@ INLINE void clear_obj(gba_ppu_t* ppu) {
     }
 }
 
-gba_ppu_t* init_ppu() {
+gba_ppu_t* init_ppu(bool enable_graphics) {
     assert(sizeof(float) == sizeof(word));
 
     gba_ppu_t* ppu = malloc(sizeof(gba_ppu_t));
     memset(ppu, 0, sizeof(gba_ppu_t));
+
+    ppu->enable_graphics = enable_graphics;
 
     for (int x = 0; x < GBA_SCREEN_X; x++) {
         ppu->bgbuf[0][x].transparent = true;

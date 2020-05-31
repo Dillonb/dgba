@@ -50,7 +50,7 @@ const char* get_savestate_path(const char* romfile, int number) {
     return savestate_path;
 }
 
-void init_gbasystem(const char* romfile, const char* bios_file) {
+void init_gbasystem(const char* romfile, const char* bios_file, bool enable_frontend) {
     mem = init_mem();
 
     load_gbarom(romfile);
@@ -72,9 +72,9 @@ void init_gbasystem(const char* romfile, const char* bios_file) {
                         gba_write_word);
     fill_pipe(cpu);
 
-    ppu = init_ppu();
+    ppu = init_ppu(enable_frontend);
     bus = init_gbabus();
-    apu = init_apu();
+    apu = init_apu(enable_frontend);
 }
 
 

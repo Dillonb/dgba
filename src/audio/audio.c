@@ -39,36 +39,42 @@ void apu_push_sample(gba_apu_t* apu) {
 }
 
 #endif
-gba_apu_t* init_apu() {
+gba_apu_t* init_apu(bool enable_audio) {
     gba_apu_t* apu = malloc(sizeof(gba_apu_t));
     memset(apu, 0, sizeof(gba_apu_t));
+    apu->enable_audio = enable_audio;
 #ifdef ENABLE_AUDIO
-    if (SDL_Init(SDL_INIT_AUDIO) < 0) {
-        logfatal("SDL couldn't initialize! %s", SDL_GetError())
+    if (apu->enable_audio) {
+        if (SDL_Init(SDL_INIT_AUDIO) < 0) {
+            logfatal("SDL couldn't initialize! %s", SDL_GetError())
+        }
+
+        memset(&request, 0, sizeof(request));
+
+        request.freq = AUDIO_SAMPLE_RATE;
+        request.format = AUDIO_F32SYS;
+        request.channels = 1;
+        request.samples = 1024;
+        request.callback = audio_callback;
+        request.userdata = apu;
+        audio_dev = SDL_OpenAudioDevice(NULL, 0, &request, &audio_spec, 0);
+        unimplemented(request.format != audio_spec.format, "Request != got")
+
+        if (audio_dev == 0) {
+            logfatal("Failed to initialize SDL audio: %s", SDL_GetError());
+        }
+
+        SDL_PauseAudioDevice(audio_dev, false);
     }
-
-    memset(&request, 0, sizeof(request));
-
-    request.freq = AUDIO_SAMPLE_RATE;
-    request.format = AUDIO_F32SYS;
-    request.channels = 1;
-    request.samples = 1024;
-    request.callback = audio_callback;
-    request.userdata = apu;
-    audio_dev = SDL_OpenAudioDevice(NULL, 0, &request, &audio_spec, 0);
-    unimplemented(request.format != audio_spec.format, "Request != got")
-
-    if (audio_dev == 0) {
-        logfatal("Failed to initialize SDL audio: %s", SDL_GetError());
-    }
-
-    SDL_PauseAudioDevice(audio_dev, false);
 #endif
     return apu;
 }
 
 void write_fifo(gba_apu_t* apu, int channel, word value) {
 #ifdef ENABLE_AUDIO
+    if (!apu->enable_audio) {
+        return;
+    }
     unimplemented(channel > 1, "tried to fill FIFO >1")
     int size = apu->fifo[channel].write_index - apu->fifo[channel].read_index;
     if (size <= 28) {
@@ -95,6 +101,9 @@ INLINE void dmasound_tick(gba_apu_t* apu, int channel) {
 #endif
 void sound_timer_overflow(gba_apu_t* apu, int n) {
 #ifdef ENABLE_AUDIO
+    if (!apu->enable_audio) {
+        return;
+    }
     unimplemented(n > 1, "DMA sound from timer >1")
 
     if (apu->SOUNDCNT_H.dmasound_a_timer_select == n) {

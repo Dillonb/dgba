@@ -311,6 +311,8 @@ typedef struct gba_ppu {
     bg_referencepoint_container_t BG3Y;
 
     DISPSTAT_t DISPSTAT;
+
+    bool enable_graphics;
 } gba_ppu_t;
 
 typedef union obj_attr0 {
@@ -353,7 +355,7 @@ extern int sprite_heights[3][4];
 extern int sprite_widths[3][4];
 
 
-gba_ppu_t* init_ppu();
+gba_ppu_t* init_ppu(bool enable_graphics);
 void ppu_hblank(gba_ppu_t* ppu);
 void ppu_vblank(gba_ppu_t* ppu);
 void ppu_end_hblank(gba_ppu_t* ppu);

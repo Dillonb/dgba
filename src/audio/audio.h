@@ -56,9 +56,10 @@ typedef struct gba_apu {
     SOUNDCNT_L_t SOUNDCNT_L;
     word apu_cycle_counter;
     float apu_last_sample;
+    bool enable_audio;
 } gba_apu_t;
 
-gba_apu_t* init_apu();
+gba_apu_t* init_apu(bool enable_audio);
 void sound_timer_overflow(gba_apu_t* apu, int n);
 void write_fifo(gba_apu_t* apu, int channel, word value);
 void apu_push_sample(gba_apu_t* apu);

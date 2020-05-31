@@ -167,6 +167,9 @@ uint32_t sdl_fps = 0;
 char sdl_wintitle[16] = "dgb gba 00 FPS";
 
 void render_screen(color_t (*screen)[GBA_SCREEN_Y][GBA_SCREEN_X]) {
+    if (!ppu->enable_graphics) {
+        return;
+    }
     if (!initialized) {
         initialize();
     }

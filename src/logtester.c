@@ -83,7 +83,7 @@ int main(int argc, char** argv) {
 
     log_set_verbosity(0);
 
-    init_gbasystem(rom, NULL);
+    init_gbasystem(rom, NULL, false);
 
     set_register(cpu, 0, 0x00000000);
     set_register(cpu, 1, 0x00000000);
