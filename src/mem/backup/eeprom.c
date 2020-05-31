@@ -134,6 +134,7 @@ void write_half_eeprom(int active_dma, gbabus_t* bus, gbamem_t* mem, word addres
                 if ((value & 1) != 0) {
                     logwarn("Expected a value with an LSB of 0 here, got %d (0x%04X)", value & 1, value)
                 }
+                mem->eeprom_address <<= 3; // Addresses are in 8 bit blocks
                 logwarn("Reading 64 bits from EEPROM starting at address: 0x%04X", mem->eeprom_address)
                 mem->eeprom_state = EEPROM_READ;
                 mem->eeprom_bits_remaining = 64 + 4; // Plus 4 garbage bits
@@ -144,6 +145,7 @@ void write_half_eeprom(int active_dma, gbabus_t* bus, gbamem_t* mem, word addres
                 mem->eeprom_address <<= 1;
                 mem->eeprom_address |= (value & 1);
                 if (--mem->eeprom_bits_remaining == 0) {
+                    mem->eeprom_address <<= 3; // Addresses are in 8-byte blocks
                     logwarn("Writing 64 bits to EEPROM starting at address: 0x%04X", mem->eeprom_address)
                     mem->eeprom_state = EEPROM_WRITE;
                     mem->eeprom_bits_remaining = 64;
