@@ -101,6 +101,14 @@ int sequential_word_cycles[] = {
         [REGION_SRAM_MIRR]  = 8
 };
 
+void read_persisted_backup() {
+    FILE *fp = fopen(mem->backup_path, "rb");
+    if (fp != NULL) {
+        fread(mem->backup, mem->backup_size, 1, fp);
+        fclose(fp);
+    }
+}
+
 gbabus_t* init_gbabus() {
     gbabus_t* bus_state = malloc(sizeof(gbabus_t));
     memset(bus_state, 0, sizeof(gbabus_t));
@@ -146,12 +154,8 @@ gbabus_t* init_gbabus() {
         }
     }
 
-    if (bus_state->backup_type != UNKNOWN) {
-        FILE *fp = fopen(mem->backup_path, "rb");
-        if (fp != NULL) {
-            fread(mem->backup, mem->backup_size, 1, fp);
-            fclose(fp);
-        }
+    if (bus_state->backup_type != UNKNOWN && bus_state->backup_type != EEPROM) {
+        read_persisted_backup();
     }
 
     bus_state->gpio_read_mask = 0;

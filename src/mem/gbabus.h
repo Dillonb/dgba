@@ -326,6 +326,8 @@ typedef struct gbabus {
     rtc_t rtc;
 } gbabus_t;
 
+void read_persisted_backup();
+
 KEYINPUT_t* get_keyinput();
 
 gbabus_t* init_gbabus();

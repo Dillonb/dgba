@@ -24,16 +24,19 @@ void init_eeprom(gbamem_t* mem, eeprom_size_t size) {
     memset(mem->backup, 0xFF, malloc_size);
     mem->backup_size = malloc_size;
     mem->eeprom_initialized = true;
+    read_persisted_backup();
 }
 
 void handle_eeprom_command(gbamem_t* mem, byte command) {
     switch (command) {
         case EEPROM_COMMAND_READ:
             mem->eeprom_state = EEPROM_ACCEPT_READ_ADDRESS;
+            mem->eeprom_address = 0;
             mem->eeprom_bits_remaining = mem->backup_size == EEPROM8K_SIZE ? 14 : 6;
             break;
         case EEPROM_COMMAND_WRITE:
             mem->eeprom_state = EEPROM_ACCEPT_WRITE_ADDRESS;
+            mem->eeprom_address = 0;
             mem->eeprom_bits_remaining = mem->backup_size == EEPROM8K_SIZE ? 14 : 6;
             break;
         default:
@@ -128,6 +131,9 @@ void write_half_eeprom(int active_dma, gbabus_t* bus, gbamem_t* mem, word addres
                 mem->eeprom_address |= (value & 1);
                 mem->eeprom_bits_remaining--;
             } else {
+                if ((value & 1) != 0) {
+                    logwarn("Expected a value with an LSB of 0 here, got %d (0x%04X)", value & 1, value)
+                }
                 logwarn("Reading 64 bits from EEPROM starting at address: 0x%04X", mem->eeprom_address)
                 mem->eeprom_state = EEPROM_READ;
                 mem->eeprom_bits_remaining = 64 + 4; // Plus 4 garbage bits
