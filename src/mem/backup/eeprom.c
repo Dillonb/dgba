@@ -169,6 +169,7 @@ void write_half_eeprom(int active_dma, gbabus_t* bus, gbamem_t* mem, word addres
                     logfatal("Access to EEPROM outside backup space! Index: %d Backup size: %zu", index, mem->backup_size)
                 }
                 mem->backup[index] = eeprom_value;
+                mem->backup_dirty = true;
                 logwarn("Wrote bit %d to bit number %d in byte offset: %d. Old value: 0x%02X New value: 0x%02X",
                         value & 1, bit_in_byte, byte_offset, old_value, eeprom_value);
             } else if (mem->eeprom_bits_remaining == 0) {
