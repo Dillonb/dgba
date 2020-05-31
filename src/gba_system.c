@@ -269,6 +269,9 @@ void save_state(const char* path) {
 // TODO: make sure we don't read more bytes than we have space for
 void load_state(const char* path) {
     FILE* fp = fopen(path, "rb");
+    if (!fp) {
+        return;
+    }
     savestate_header_t header;
     fread(&header, sizeof(savestate_header_t), 1, fp);
 
