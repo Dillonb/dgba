@@ -827,9 +827,10 @@ INLINE byte inline_gba_read_byte(word addr, access_type_t access_type) {
                     int ofs = addr % 2;
                     half value = read_half_ioreg(addr - ofs);
                     return (value >> (ofs * 8)) & 0xFF;
-                }
-                else if (size > sizeof(byte)) {
-                    logfatal("Reading from too-large ioreg (%d) as byte at 0x%08X", size, addr)
+                } else if (size == sizeof(word)) {
+                    int ofs = addr % 4;
+                    half value = read_word_ioreg(addr - ofs);
+                    return (value >> (ofs * 8)) & 0xFF;
                 }
                 if (!is_ioreg_readable(addr)) {
                     logwarn("Returning 0 (UNREADABLE BUT VALID BYTE IOREG 0x%08X)", addr)
@@ -939,8 +940,12 @@ INLINE half inline_gba_read_half(word address, access_type_t access_type) {
                         return read_byte_ioreg(address) | (read_byte_ioreg(address + 1) << 8);
                     case sizeof(half):
                         return read_half_ioreg(address);
-                    case sizeof(word):
-                        logfatal("Reading word ioreg from gba_read_half()")
+                    case sizeof(word): {
+                        byte ofs = address % 4;
+                        return (read_word_ioreg(address) >> (ofs * 8)) & 0xFFFF;
+                        default:
+                            logfatal("Unrecognized size in read_half_ioreg!")
+                    }
                 }
             } else {
 #ifdef ENABLE_MGBA_DEBUG
