@@ -731,30 +731,29 @@ INLINE half read_half_ioreg(word addr) {
 }
 
 INLINE word open_bus(word pc) {
-    word result;
+    word result = 0;
 
-    if (cpu->cpsr.thumb)
-    {
-        pc -= 4;
-        word low = cpu->pipeline[1];
-        word high = cpu->pipeline[1];
-
+    if (cpu->cpsr.thumb) {
         byte region = pc >> 24;
 
         if (region == REGION_BIOS || region == REGION_OAM) {
             if (pc & 3) {
-                low = cpu->pipeline[0];
+                word high = cpu->pipeline[1];
+                word low = cpu->pipeline[0];
                 result = (high << 16) | low;
             } else {
                 result = cpu->pipeline[1] * 65537;
             }
         } else if (region == REGION_IWRAM) {
+            word low, high;
             if (pc & 3) {
                 low = cpu->pipeline[0];
+                high = cpu->pipeline[1];
             } else {
+                low = cpu->pipeline[1];
                 high = cpu->pipeline[0];
             }
-            result = (high << 16) | low;
+            result = low | (high << 16);
         } else {
             result = cpu->pipeline[1] * 65537;
         }
@@ -762,7 +761,6 @@ INLINE word open_bus(word pc) {
     } else {
         result = cpu->pipeline[1];
     }
-    result >>= ((pc & 0b11) << 3);
 
     logwarn("RETURNING FROM OPEN BUS AT ADDRESS 0x%08X: 0x%08X", pc, result)
     return result;
