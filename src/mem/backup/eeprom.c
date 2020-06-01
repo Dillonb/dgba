@@ -2,6 +2,7 @@
 #include "eeprom.h"
 
 #define EEPROM8K_SIZE 0x2000
+#define EEPROM512_SIZE 0x0200
 
 #define EEPROM_COMMAND_READ 0b11
 #define EEPROM_COMMAND_WRITE 0b10
@@ -13,8 +14,7 @@ void init_eeprom(gbamem_t* mem, eeprom_size_t size) {
     size_t malloc_size;
     switch (size) {
         case EEPROM_512:
-            logfatal("EEPROM 512 unimplemented")
-            //malloc_size = EEPROM512_SIZE;
+            malloc_size = EEPROM512_SIZE;
             break;
         case EEPROM_8K:
             malloc_size = EEPROM8K_SIZE;
@@ -105,7 +105,10 @@ void write_half_eeprom(int active_dma, gbabus_t* bus, gbamem_t* mem, word addres
 
         switch (wc) {
             case 9: // 9 bits = 2 for command, 6 for address, 1 to end command
-                logfatal("EEPROM_512 unimplemented")
+                if (!mem->eeprom_initialized) {
+                    init_eeprom(mem, EEPROM_512);
+                }
+                break;
             case 17: // 17 bits = 2 for command, 14 for address, 1 to end command
                 if (!mem->eeprom_initialized) {
                     init_eeprom(mem, EEPROM_8K);
