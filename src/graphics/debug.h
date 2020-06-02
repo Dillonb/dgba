@@ -16,4 +16,5 @@ void debug_handle_event(SDL_Event* event);
 void actual_dbg_tick();
 #define dbg_tick(tick_time) if (dbg_window_visible && tick_time == tick_on) { actual_dbg_tick(); }
 void set_dbg_window_visibility(bool visible);
+void dbg_line_drawn();
 #endif //GBA_DEBUG_H

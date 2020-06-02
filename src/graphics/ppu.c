@@ -651,6 +651,8 @@ INLINE void render_line_mode0(gba_ppu_t* ppu) {
                           ppu->WININ.win0_bg3_enable, ppu->WININ.win1_bg3_enable, ppu->WINOUT.outside_bg3_enable, ppu->WINOUT.obj_bg3_enable);
     }
 
+    dbg_line_drawn();
+
     refresh_background_priorities(ppu);
 
     merge_bgs(ppu);
@@ -677,6 +679,8 @@ INLINE void render_line_mode1(gba_ppu_t* ppu) {
                          &ppu->BG2X, &ppu->BG2Y, &ppu->BG2PA, &ppu->BG2PB, &ppu->BG2PC, &ppu->BG2PD);
     }
 
+    dbg_line_drawn();
+
     refresh_background_priorities(ppu);
 
     merge_bgs(ppu);
@@ -698,6 +702,8 @@ INLINE void render_line_mode2(gba_ppu_t* ppu) {
                          ppu->WININ.win0_bg3_enable, ppu->WININ.win1_bg3_enable, ppu->WINOUT.outside_bg3_enable, ppu->WINOUT.obj_bg3_enable,
                          &ppu->BG3X, &ppu->BG3Y, &ppu->BG3PA, &ppu->BG3PB, &ppu->BG3PC, &ppu->BG3PD);
     }
+
+    dbg_line_drawn();
 
     refresh_background_priorities(ppu);
 
@@ -722,6 +728,8 @@ void render_line_mode3(gba_ppu_t* ppu) {
             ppu->bgbuf[2][x].transparent = true;
         }
     }
+
+    dbg_line_drawn();
     refresh_background_priorities(ppu);
     merge_bgs(ppu);
 }
@@ -749,6 +757,8 @@ void render_line_mode4(gba_ppu_t* ppu) {
             ppu->bgbuf[2][x].transparent = true;
         }
     }
+
+    dbg_line_drawn();
     refresh_background_priorities(ppu);
     merge_bgs(ppu);
 }

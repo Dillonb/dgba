@@ -17,12 +17,20 @@ static SDL_Renderer* renderer = NULL;
 static int dbg_window_id;
 
 static SDL_Texture* dbg_tilemap_texture = NULL;
-static color_t dbg_tilemap[256][256];
-static int dbg_tilemap_pb = -1;
+static color_t dbg_tilemap[5][GBA_SCREEN_Y][GBA_SCREEN_X];
 
 bool dbg_window_visible = false;
 
-dbg_tick_t tick_on = INSTRUCTION;
+typedef enum dbg_layer {
+    BG0,
+    BG1,
+    BG2,
+    BG3,
+    OBJ
+} dbg_layer_t;
+
+dbg_tick_t tick_on = FRAME;
+dbg_layer_t display_layer = BG0;
 
 void setup_dbg_sdl_window() {
     window = SDL_CreateWindow("dgb gba dbg",
@@ -37,7 +45,7 @@ void setup_dbg_sdl_window() {
 
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
-    dbg_tilemap_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB32, SDL_TEXTUREACCESS_STREAMING, 256, 256);
+    dbg_tilemap_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB32, SDL_TEXTUREACCESS_STREAMING, GBA_SCREEN_X, GBA_SCREEN_Y);
 
     SDL_RenderSetScale(renderer, SCREEN_SCALE, SCREEN_SCALE);
 
@@ -217,6 +225,23 @@ void actual_dbg_tick() {
             DUI_Println("r%02d:  %08Xh", r, get_register(cpu, r));
         }
 
+        DUI_Println("\n--- Interrupts ---");
+        DUI_Println("                      IE IF");
+        DUI_Println("lcd_vblank:           %d  %d", bus->interrupt_enable.lcd_vblank, bus->IF.vblank);
+        DUI_Println("lcd_hblank:           %d  %d", bus->interrupt_enable.lcd_hblank, bus->IF.hblank);
+        DUI_Println("lcd_vcounter_match:   %d  %d", bus->interrupt_enable.lcd_vcounter_match, bus->IF.vcount);
+        DUI_Println("timer0_overflow:      %d  %d", bus->interrupt_enable.timer0_overflow, bus->IF.timer0);
+        DUI_Println("timer1_overflow:      %d  %d", bus->interrupt_enable.timer1_overflow, bus->IF.timer1);
+        DUI_Println("timer2_overflow:      %d  %d", bus->interrupt_enable.timer2_overflow, bus->IF.timer2);
+        DUI_Println("timer3_overflow:      %d  %d", bus->interrupt_enable.timer3_overflow, bus->IF.timer3);
+        DUI_Println("serial_communication: %d  %d", bus->interrupt_enable.serial_communication, bus->IF.sio);
+        DUI_Println("dma_0:                %d  %d", bus->interrupt_enable.dma_0, bus->IF.dma0);
+        DUI_Println("dma_1:                %d  %d", bus->interrupt_enable.dma_1, bus->IF.dma1);
+        DUI_Println("dma_2:                %d  %d", bus->interrupt_enable.dma_2, bus->IF.dma2);
+        DUI_Println("dma_3:                %d  %d", bus->interrupt_enable.dma_3, bus->IF.dma3);
+        DUI_Println("keypad:               %d  %d", bus->interrupt_enable.keypad, bus->IF.keypad);
+        DUI_Println("gamepak:              %d  %d", bus->interrupt_enable.gamepak, bus->IF.gamepak);
+
         DUI_Println("\n--- Timers ---");
 
         for (int t = 0; t < 4; t++) {
@@ -328,112 +353,31 @@ void actual_dbg_tick() {
 
     if (DUI_Tab("Tile Map", TAB_TILE_MAP, &tab_index)) {
         DUI_MoveCursor(8, 40);
+
+        DUI_Print("Display: ");
+        if (DUI_Radio("BG0", BG0, (int*) &display_layer)) {
+            display_layer = BG0;
+        }
+        if (DUI_Radio("BG1", BG1, (int*) &display_layer)) {
+            display_layer = BG1;
+        }
+        if (DUI_Radio("BG2", BG2, (int*) &display_layer)) {
+            display_layer = BG2;
+        }
+        if (DUI_Radio("BG3", BG3, (int*) &display_layer)) {
+            display_layer = BG3;
+        }
+        if (DUI_Radio("OBJ", OBJ, (int*) &display_layer)) {
+            display_layer = OBJ;
+        }
+        DUI_MoveCursor(8, 80);
         DUI_Panel(WINDOW_WIDTH - 16, WINDOW_HEIGHT - 48);
-        if (dbg_tilemap_pb < 0) {
-            dbg_tilemap_pb = -1;
-            DUI_Println("OBJ Tilemap PB: AUTO");
-        } else {
-            DUI_Println("OBJ Tilemap PB: %d", dbg_tilemap_pb);
-        }
 
-        if (DUI_Button("PB -1")) {
-            dbg_tilemap_pb--;
-        }
-
-        if (DUI_Button("PB +1")) {
-            dbg_tilemap_pb++;
-        }
-        obj_attr0_t attr0;
-        obj_attr1_t attr1;
-        obj_attr2_t attr2;
-
-        int tile_pbs[32][32];
-
-        for (int x = 0; x < 32; x++) {
-            for (int y = 0; y < 32; y++) {
-                tile_pbs[y][x] = 0;
-            }
-        }
-
-        for (int sprite = 127; sprite >= 0; sprite--) {
-            attr0.raw = gba_read_half(0x07000000 + (sprite * 8) + 0, ACCESS_UNKNOWN);
-            attr1.raw = gba_read_half(0x07000000 + (sprite * 8) + 2, ACCESS_UNKNOWN);
-            attr2.raw = gba_read_half(0x07000000 + (sprite * 8) + 4, ACCESS_UNKNOWN);
-
-            int height = sprite_heights[attr0.shape][attr1.size] / 8;
-            int width = sprite_widths[attr0.shape][attr1.size] / 8;
-
-            int base_tid = attr2.tid;
-            int base_tid_x = base_tid % 32;
-            int base_tid_y = base_tid / 32;
-
-            if (ppu->DISPCNT.obj_character_vram_mapping) { // 2D
-                for (int sprite_x = 0; sprite_x < width; sprite_x++) {
-                    for (int sprite_y = 0; sprite_y < height; sprite_y++) {
-                        int ofs = base_tid + sprite_x + sprite_y * width;
-                        int x = ofs % 32;
-                        int y = ofs / 32;
-                        tile_pbs[x][y] = attr2.pb;
-                    }
-                }
-            } else {
-                for (int x = base_tid_x; x < base_tid_x + width; x++) {
-                    for (int y = base_tid_y; y < base_tid_y + height; y++) {
-                        tile_pbs[x][y] = attr2.pb;
-                    }
-                }
-
-            }
-        }
-
-        for (int y = 0; y < 256; y++) {
-            int tile_y = y / 8;
-            int in_tile_y = y % 8;
-            int tile_y_offset = tile_y * 32;
-            for (int x = 0; x < 256; x++) {
-                int tile_x = x / 8;
-                int in_tile_x = x % 8;
-
-                int tid = tile_y_offset + tile_x;
-
-                word tile_address = 0x06010000 + tid * 0x20; // 0x20 = obj tile size
-                int in_tile_offset = in_tile_x + in_tile_y * 8;
-                if (!attr0.is_256color) {
-                    in_tile_offset /= 2;
-                }
-
-                tile_address += in_tile_offset;
-
-                byte tile = gba_read_byte(tile_address, ACCESS_UNKNOWN);
-
-                if (!attr0.is_256color) {
-                    tile >>= (in_tile_offset % 2) * 4;
-                    tile &= 0xF;
-                }
-
-                word palette_address = 0x05000200; // OBJ palette base
-                if (attr0.is_256color) {
-                    palette_address += 2 * tile;
-                } else {
-                    int pb = dbg_tilemap_pb >= 0 ? dbg_tilemap_pb : tile_pbs[tile_x][tile_y];
-                    palette_address += (0x20 * pb + 2 * tile);
-                }
-
-                gba_color_t color;
-                color.raw = gba_read_half(palette_address, ACCESS_UNKNOWN);
-
-                dbg_tilemap[y][x].a = 0xFF;
-                dbg_tilemap[y][x].r = FIVEBIT_TO_EIGHTBIT_COLOR(color.r);
-                dbg_tilemap[y][x].g = FIVEBIT_TO_EIGHTBIT_COLOR(color.g);
-                dbg_tilemap[y][x].b = FIVEBIT_TO_EIGHTBIT_COLOR(color.b);
-            }
-        }
-
-        SDL_UpdateTexture(dbg_tilemap_texture, NULL, dbg_tilemap, 256 * 4);
+        SDL_UpdateTexture(dbg_tilemap_texture, NULL, dbg_tilemap[display_layer], GBA_SCREEN_X * 4);
         SDL_Rect destRect;
         DUI_GetCursor(&destRect.x, &destRect.y);
-        destRect.w = 768;
-        destRect.h = 768;
+        destRect.w = GBA_SCREEN_X * 4;
+        destRect.h = GBA_SCREEN_Y * 4;
         DUI_MoveCursorRelative(0, 1024);
         SDL_RenderCopy(renderer, dbg_tilemap_texture, NULL, &destRect);
     }
@@ -488,5 +432,33 @@ void debug_handle_event(SDL_Event* event) {
             }
         default:
             break;
+    }
+}
+
+void copy_texture_line(dbg_layer_t layer) {
+    if (layer == OBJ) {
+        for (int x = 0; x < GBA_SCREEN_X; x++) {
+            dbg_tilemap[layer][ppu->y][x].r = FIVEBIT_TO_EIGHTBIT_COLOR(ppu->objbuf[x].r);
+            dbg_tilemap[layer][ppu->y][x].g = FIVEBIT_TO_EIGHTBIT_COLOR(ppu->objbuf[x].g);
+            dbg_tilemap[layer][ppu->y][x].b = FIVEBIT_TO_EIGHTBIT_COLOR(ppu->objbuf[x].b);
+            dbg_tilemap[layer][ppu->y][x].a = 0xFF;
+        }
+    } else {
+        for (int x = 0; x < GBA_SCREEN_X; x++) {
+            dbg_tilemap[layer][ppu->y][x].r = FIVEBIT_TO_EIGHTBIT_COLOR(ppu->bgbuf[layer][x].r);
+            dbg_tilemap[layer][ppu->y][x].g = FIVEBIT_TO_EIGHTBIT_COLOR(ppu->bgbuf[layer][x].g);
+            dbg_tilemap[layer][ppu->y][x].b = FIVEBIT_TO_EIGHTBIT_COLOR(ppu->bgbuf[layer][x].b);
+            dbg_tilemap[layer][ppu->y][x].a = 0xFF;
+        }
+    }
+}
+
+void dbg_line_drawn() {
+    if (dbg_window_visible) {
+        copy_texture_line(BG0);
+        copy_texture_line(BG1);
+        copy_texture_line(BG2);
+        copy_texture_line(BG3);
+        copy_texture_line(OBJ);
     }
 }
