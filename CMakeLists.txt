@@ -1,6 +1,7 @@
 cmake_minimum_required (VERSION 3.10)
 ADD_COMPILE_OPTIONS(-Wall -O3)
 project (GBA)
+set(GBA_TARGET gba)
 set(CMAKE_BUILD_TYPE Debug)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/modules")
 INCLUDE(CTest)

@@ -1,4 +1,8 @@
 #include <cflags.h>
+#ifdef MinGW
+#define SDL_MAIN_HANDLED
+#include <SDL.h>
+#endif
 
 #include "mem/gbarom.h"
 #include "gba_system.h"

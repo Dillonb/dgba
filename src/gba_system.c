@@ -22,9 +22,17 @@ bool should_quit = false;
 
 #define BACKUP_PERSIST_DEBOUNCE_FRAMES 10
 
+char* portable_realpath(const char* name, char* resolved) {
+#ifdef MinGW
+    return _fullpath(resolved, name, PATH_MAX);
+#else
+    return realpath(name, resolved);
+#endif
+}
+
 const char* get_backup_path(const char* romfile) {
     char buf[PATH_MAX];
-    char* rom_path = realpath(romfile, buf);
+    char* rom_path = portable_realpath(romfile, buf);
     int backup_path_buf_size = strlen(rom_path) + 8; // .backup + null terminator
 
     if (backup_path_buf_size >= PATH_MAX) {
@@ -38,7 +46,7 @@ const char* get_backup_path(const char* romfile) {
 
 const char* get_savestate_path(const char* romfile, int number) {
     char buf[PATH_MAX];
-    char* rom_path = realpath(romfile, buf);
+    char* rom_path = portable_realpath(romfile, buf);
     int savestate_path_buf_size = strlen(rom_path) + 9; // .xx.save + null terminator
 
     if (savestate_path_buf_size >= PATH_MAX) {
