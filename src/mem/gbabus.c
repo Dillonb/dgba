@@ -114,7 +114,7 @@ gbabus_t* init_gbabus() {
     memset(bus_state, 0, sizeof(gbabus_t));
     bus_state->interrupt_master_enable.raw = 0;
     bus_state->interrupt_enable.raw = 0;
-    bus_state->KEYINPUT.raw = 0xFFFF;
+    bus_state->KEYINPUT.raw = 0x03FF;
     bus_state->SOUNDBIAS.raw = 0x0200;
 
     bus_state->DMA0INT.previously_enabled = false;
