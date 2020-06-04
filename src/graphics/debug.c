@@ -10,14 +10,19 @@
 #define WINDOW_WIDTH 1400
 #define WINDOW_HEIGHT 1050
 
+#define MAX_TILEMAP_SIZE_X 1024
+#define MAX_TILEMAP_SIZE_Y 1024
+
 #define SCREEN_SCALE 1
 
 static SDL_Window* window = NULL;
 static SDL_Renderer* renderer = NULL;
 static int dbg_window_id;
 
+static SDL_Texture* dbg_layer_texture = NULL;
 static SDL_Texture* dbg_tilemap_texture = NULL;
-static color_t dbg_tilemap[5][GBA_SCREEN_Y][GBA_SCREEN_X];
+static color_t dbg_bg_layers[5][GBA_SCREEN_Y][GBA_SCREEN_X];
+static color_t dbg_tilemap[MAX_TILEMAP_SIZE_X][MAX_TILEMAP_SIZE_Y];
 
 bool dbg_window_visible = false;
 
@@ -31,6 +36,7 @@ typedef enum dbg_layer {
 
 dbg_tick_t tick_on = FRAME;
 dbg_layer_t display_layer = BG0;
+dbg_layer_t tilemap_display_layer = BG0;
 
 void setup_dbg_sdl_window() {
     window = SDL_CreateWindow("dgb gba dbg",
@@ -45,7 +51,8 @@ void setup_dbg_sdl_window() {
 
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
-    dbg_tilemap_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB32, SDL_TEXTUREACCESS_STREAMING, GBA_SCREEN_X, GBA_SCREEN_Y);
+    dbg_layer_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB32, SDL_TEXTUREACCESS_STREAMING, GBA_SCREEN_X, GBA_SCREEN_Y);
+    dbg_tilemap_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB32, SDL_TEXTUREACCESS_STREAMING, MAX_TILEMAP_SIZE_X, MAX_TILEMAP_SIZE_Y);
 
     SDL_RenderSetScale(renderer, SCREEN_SCALE, SCREEN_SCALE);
 
@@ -72,11 +79,12 @@ void teardown_dbg_sdl_window() {
 enum {
     TAB_CPU_REGISTERS,
     TAB_VIDEO_REGISTERS,
-    TAB_TILE_DATA,
-    TAB_TILE_MAP
+    TAB_RAM_DUMPING,
+    TAB_TILE_MAP,
+    TAB_LAYERS
 };
 
-int tab_index = TAB_CPU_REGISTERS;
+int tab_index = TAB_TILE_MAP;
 
 #define cpsrflag(f, c) (f == 1?c:"-")
 #define printcpsr(cpsr) DUI_Println("CPSR: %08Xh [%s%s%s%s%s%s%s]", cpsr.raw, cpsrflag(cpsr.N, "N"), cpsrflag(cpsr.Z, "Z"), \
@@ -171,6 +179,194 @@ void print_bgparam(int bg, bg_referencepoint_container_t x, bg_referencepoint_co
             ROTSCALE_TO_DOUBLE(&pb),
             ROTSCALE_TO_DOUBLE(&pc),
             ROTSCALE_TO_DOUBLE(&pd));
+}
+
+bool is_layer_affine(dbg_layer_t layer) {
+    switch (ppu->DISPCNT.mode) {
+        case 0:
+            return false;
+        case 1:
+            return layer == BG2;
+        case 2:
+            return layer == BG2 || layer == BG3;
+        default:
+            return false;
+    }
+}
+
+bool is_layer_drawn(dbg_layer_t layer) {
+    switch (ppu->DISPCNT.mode) {
+        case 0:
+            return true;
+        case 1:
+            return layer <= BG2;
+        case 2:
+            return layer == BG2 || layer == BG3;
+        default:
+            return false;
+    }
+}
+
+BGCNT_t* get_bgcnt(dbg_layer_t layer) {
+    switch (layer) {
+        case BG0:
+            return &ppu->BG0CNT;
+        case BG1:
+            return &ppu->BG1CNT;
+        case BG2:
+            return &ppu->BG2CNT;
+        case BG3:
+            return &ppu->BG3CNT;
+        default:
+            logfatal("Invalid layer requested: %d", layer)
+    }
+}
+
+int get_tilemap_x(dbg_layer_t layer) {
+    BGCNT_t* bgcnt = get_bgcnt(layer);
+    if (is_layer_affine(layer)) {
+        logfatal("aaa")
+    } else {
+        switch (bgcnt->screen_size) {
+            case 0:
+                return 256;
+            case 1:
+                return 512;
+            case 2:
+                return 256;
+            case 3:
+                return 512;
+            default:
+                logfatal("Invalid screen size: %d", bgcnt->screen_size)
+        }
+    }
+}
+
+int get_tilemap_y(dbg_layer_t layer) {
+    BGCNT_t* bgcnt = get_bgcnt(layer);
+    if (is_layer_affine(layer)) {
+        logfatal("aaa")
+    } else {
+        switch (bgcnt->screen_size) {
+            case 0:
+                return 256;
+            case 1:
+                return 256;
+            case 2:
+                return 512;
+            case 3:
+                return 512;
+            default:
+                logfatal("Invalid screen size: %d", bgcnt->screen_size)
+        }
+    }
+}
+
+
+INLINE void dbg_render_tile(gba_ppu_t* ppu, int tid, int pb, gba_color_t (*line)[MAX_TILEMAP_SIZE_X], int screen_x, bool is_256color, word character_base_addr, int tile_x, int tile_y) {
+    int in_tile_offset_divisor = is_256color ? 1 : 2;
+    int tile_size = is_256color ? 0x40 : 0x20;
+    int in_tile_offset = tile_x + tile_y * 8;
+    word tile_address = character_base_addr + tid * tile_size;
+    tile_address += in_tile_offset / in_tile_offset_divisor;
+
+    byte tile = ppu->vram[tile_address];
+
+    if (!is_256color) {
+        tile >>= (in_tile_offset % 2) * 4;
+        tile &= 0xF;
+    }
+
+    word palette_address = is_256color ? 2 * tile : (0x20 * pb + 2 * tile);
+    (*line)[screen_x].raw = half_from_byte_array(ppu->pram, palette_address);
+    (*line)[screen_x].transparent = tile == 0; // This color should only be drawn if we need transparency
+}
+
+INLINE void dbg_render_screenentry(gba_ppu_t* ppu, gba_color_t (*line)[MAX_TILEMAP_SIZE_X], int screen_x, reg_se_t se, bool is_256color, word character_base_addr, int tilemap_x, int tilemap_y) {
+    // Find the tile
+    int tile_x = tilemap_x % 8;
+    if (se.hflip) {
+        tile_x = 7 - tile_x;
+    }
+    int tile_y = tilemap_y % 8;
+    if (se.vflip) {
+        tile_y = 7 - tile_y;
+    }
+
+    dbg_render_tile(ppu, se.tid, se.pb, line, screen_x, is_256color, character_base_addr, tile_x, tile_y);
+}
+
+
+void draw_tilemap_reg(dbg_layer_t layer) {
+    int tilemap_size_x = get_tilemap_x(layer);
+    int tilemap_size_y = get_tilemap_y(layer);
+    BGCNT_t* bgcnt = get_bgcnt(layer);
+
+    word character_base_addr = bgcnt->character_base_block * CHARBLOCK_SIZE;
+    word screen_base_addr = bgcnt->screen_base_block * SCREENBLOCK_SIZE;
+
+    memset(dbg_tilemap, 0, sizeof(color_t) * MAX_TILEMAP_SIZE_X * MAX_TILEMAP_SIZE_Y);
+
+    gba_color_t line[MAX_TILEMAP_SIZE_X];
+    for (int y = 0; y < MAX_TILEMAP_SIZE_Y; y++) {
+        for (int x = 0; x < MAX_TILEMAP_SIZE_X; x++) {
+            if (x > tilemap_size_x || y > tilemap_size_y) {
+                line[x].r = 0;
+                line[x].g = 0;
+                line[x].b = 0;
+                continue;
+            }
+            int screenblock_number;
+            switch (bgcnt->screen_size) {
+                case 0:
+                    // 0
+                    screenblock_number = 0;
+                    break;
+                case 1:
+                    // 0 1
+                    screenblock_number = (x % 512) > 255 ? 1 : 0;
+                    break;
+                case 2:
+                    // 0
+                    // 1
+                    screenblock_number = (y % 512) > 255 ? 1 : 0;
+                    break;
+                case 3:
+                    // 0 1
+                    // 2 3
+                    screenblock_number = (x % 512) > 255 ? 1 : 0;
+                    screenblock_number += (y % 512) > 255 ? 2 : 0;
+                    break;
+                default:
+                    logfatal("Unimplemented screen size: %d", bgcnt->screen_size);
+
+            }
+            int tilemap_x = x % 256;
+            int tilemap_y = y % 256;
+
+            int se_number = (tilemap_x / 8) + (tilemap_y / 8) * 32;
+            reg_se_t se;
+            se.raw = half_from_byte_array(ppu->vram, (screen_base_addr + screenblock_number * SCREENBLOCK_SIZE + se_number * 2));
+            dbg_render_screenentry(ppu, &line, x, se, bgcnt->is_256color, character_base_addr, tilemap_x, tilemap_y);
+        }
+
+        for (int x = 0; x < MAX_TILEMAP_SIZE_X; x++) {
+            dbg_tilemap[y][x].r = FIVEBIT_TO_EIGHTBIT_COLOR(line[x].r);
+            dbg_tilemap[y][x].g = FIVEBIT_TO_EIGHTBIT_COLOR(line[x].g);
+            dbg_tilemap[y][x].b = FIVEBIT_TO_EIGHTBIT_COLOR(line[x].b);
+            dbg_tilemap[y][x].a = 0xFF;
+        }
+    }
+
+    SDL_UpdateTexture(dbg_tilemap_texture, NULL, dbg_tilemap, MAX_TILEMAP_SIZE_X * 4);
+}
+
+void draw_tilemap(dbg_layer_t layer) {
+    if (is_layer_affine(layer)) {
+        logfatal("aaaa")
+    } else {
+        draw_tilemap_reg(layer);
+    }
 }
 
 void actual_dbg_tick() {
@@ -326,7 +522,7 @@ void actual_dbg_tick() {
                     ppu->BLDCNT.bBG0, ppu->BLDCNT.bBG1, ppu->BLDCNT.bBG2, ppu->BLDCNT.bBG3, ppu->BLDCNT.bOBJ, ppu->BLDCNT.bBD);
     }
 
-    if (DUI_Tab("RAM Dumping", TAB_TILE_DATA, &tab_index)) {
+    if (DUI_Tab("RAM Dumping", TAB_RAM_DUMPING, &tab_index)) {
         DUI_MoveCursor(8, 40);
         DUI_Panel(WINDOW_WIDTH - 16, WINDOW_HEIGHT - 48);
 
@@ -355,6 +551,37 @@ void actual_dbg_tick() {
         DUI_MoveCursor(8, 40);
 
         DUI_Print("Display: ");
+        if (DUI_Radio("BG0", BG0, (int*) &tilemap_display_layer)) {
+            tilemap_display_layer = BG0;
+        }
+        if (DUI_Radio("BG1", BG1, (int*) &tilemap_display_layer)) {
+            tilemap_display_layer = BG1;
+        }
+        if (DUI_Radio("BG2", BG2, (int*) &tilemap_display_layer)) {
+            tilemap_display_layer = BG2;
+        }
+        if (DUI_Radio("BG3", BG3, (int*) &tilemap_display_layer)) {
+            tilemap_display_layer = BG3;
+        }
+        DUI_MoveCursor(8, 80);
+        if (is_layer_drawn(tilemap_display_layer)) {
+            DUI_Panel(WINDOW_WIDTH - 16, WINDOW_HEIGHT - 48);
+            draw_tilemap(tilemap_display_layer);
+            SDL_Rect destRect;
+            DUI_GetCursor(&destRect.x, &destRect.y);
+            destRect.w = MAX_TILEMAP_SIZE_X;
+            destRect.h = MAX_TILEMAP_SIZE_Y;
+            DUI_MoveCursorRelative(0, 1024);
+            SDL_RenderCopy(renderer, dbg_tilemap_texture, NULL, &destRect);
+        } else {
+            DUI_Println("This layer does not exist in the current graphics mode!");
+        }
+    }
+
+    if (DUI_Tab("Layers", TAB_LAYERS, &tab_index)) {
+        DUI_MoveCursor(8, 40);
+
+        DUI_Print("Display: ");
         if (DUI_Radio("BG0", BG0, (int*) &display_layer)) {
             display_layer = BG0;
         }
@@ -373,13 +600,13 @@ void actual_dbg_tick() {
         DUI_MoveCursor(8, 80);
         DUI_Panel(WINDOW_WIDTH - 16, WINDOW_HEIGHT - 48);
 
-        SDL_UpdateTexture(dbg_tilemap_texture, NULL, dbg_tilemap[display_layer], GBA_SCREEN_X * 4);
+        SDL_UpdateTexture(dbg_layer_texture, NULL, dbg_bg_layers[display_layer], GBA_SCREEN_X * 4);
         SDL_Rect destRect;
         DUI_GetCursor(&destRect.x, &destRect.y);
         destRect.w = GBA_SCREEN_X * 4;
         destRect.h = GBA_SCREEN_Y * 4;
         DUI_MoveCursorRelative(0, 1024);
-        SDL_RenderCopy(renderer, dbg_tilemap_texture, NULL, &destRect);
+        SDL_RenderCopy(renderer, dbg_layer_texture, NULL, &destRect);
     }
 
     DUI_MoveCursor(16, WINDOW_HEIGHT - 30);
@@ -438,17 +665,17 @@ void debug_handle_event(SDL_Event* event) {
 void copy_texture_line(dbg_layer_t layer) {
     if (layer == OBJ) {
         for (int x = 0; x < GBA_SCREEN_X; x++) {
-            dbg_tilemap[layer][ppu->y][x].r = FIVEBIT_TO_EIGHTBIT_COLOR(ppu->objbuf[x].r);
-            dbg_tilemap[layer][ppu->y][x].g = FIVEBIT_TO_EIGHTBIT_COLOR(ppu->objbuf[x].g);
-            dbg_tilemap[layer][ppu->y][x].b = FIVEBIT_TO_EIGHTBIT_COLOR(ppu->objbuf[x].b);
-            dbg_tilemap[layer][ppu->y][x].a = 0xFF;
+            dbg_bg_layers[layer][ppu->y][x].r = FIVEBIT_TO_EIGHTBIT_COLOR(ppu->objbuf[x].r);
+            dbg_bg_layers[layer][ppu->y][x].g = FIVEBIT_TO_EIGHTBIT_COLOR(ppu->objbuf[x].g);
+            dbg_bg_layers[layer][ppu->y][x].b = FIVEBIT_TO_EIGHTBIT_COLOR(ppu->objbuf[x].b);
+            dbg_bg_layers[layer][ppu->y][x].a = 0xFF;
         }
     } else {
         for (int x = 0; x < GBA_SCREEN_X; x++) {
-            dbg_tilemap[layer][ppu->y][x].r = FIVEBIT_TO_EIGHTBIT_COLOR(ppu->bgbuf[layer][x].r);
-            dbg_tilemap[layer][ppu->y][x].g = FIVEBIT_TO_EIGHTBIT_COLOR(ppu->bgbuf[layer][x].g);
-            dbg_tilemap[layer][ppu->y][x].b = FIVEBIT_TO_EIGHTBIT_COLOR(ppu->bgbuf[layer][x].b);
-            dbg_tilemap[layer][ppu->y][x].a = 0xFF;
+            dbg_bg_layers[layer][ppu->y][x].r = FIVEBIT_TO_EIGHTBIT_COLOR(ppu->bgbuf[layer][x].r);
+            dbg_bg_layers[layer][ppu->y][x].g = FIVEBIT_TO_EIGHTBIT_COLOR(ppu->bgbuf[layer][x].g);
+            dbg_bg_layers[layer][ppu->y][x].b = FIVEBIT_TO_EIGHTBIT_COLOR(ppu->bgbuf[layer][x].b);
+            dbg_bg_layers[layer][ppu->y][x].a = 0xFF;
         }
     }
 }

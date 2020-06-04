@@ -13,6 +13,9 @@
 #define VRAM_SIZE  0x18000
 #define OAM_SIZE   0x400
 
+#define SCREENBLOCK_SIZE 0x800
+#define CHARBLOCK_SIZE  0x4000
+
 #define FIVEBIT_TO_EIGHTBIT_COLOR(c) ((c<<3)|(c&7))
 
 typedef union DISPCNT {
@@ -350,6 +353,16 @@ typedef union obj_attr2 {
     };
     half raw;
 } obj_attr2_t;
+
+typedef union reg_se {
+    half raw;
+    struct {
+        unsigned tid:10;
+        bool hflip:1;
+        bool vflip:1;
+        unsigned pb:4;
+    };
+} reg_se_t;
 
 extern int sprite_heights[3][4];
 extern int sprite_widths[3][4];

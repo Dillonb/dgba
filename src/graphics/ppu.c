@@ -285,16 +285,6 @@ void render_obj(gba_ppu_t* ppu) {
     }
 }
 
-typedef union reg_se {
-    half raw;
-    struct {
-        unsigned tid:10;
-        bool hflip:1;
-        bool vflip:1;
-        unsigned pb:4;
-    };
-} reg_se_t;
-
 INLINE void render_tile(gba_ppu_t* ppu, int tid, int pb, gba_color_t (*line)[GBA_SCREEN_X], int screen_x, bool is_256color, word character_base_addr, int tile_x, int tile_y) {
     int in_tile_offset_divisor = is_256color ? 1 : 2;
     int tile_size = is_256color ? 0x40 : 0x20;
@@ -329,8 +319,6 @@ INLINE void render_screenentry(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X]
 }
 
 
-#define SCREENBLOCK_SIZE 0x800
-#define CHARBLOCK_SIZE  0x4000
 INLINE void render_bg_regular(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X], BGCNT_t* bgcnt, int hofs, int vofs, bool win0in, bool win1in, bool winout, bool objin) {
     // Tileset (like pattern tables in the NES)
     word character_base_addr = bgcnt->character_base_block * CHARBLOCK_SIZE;
@@ -369,8 +357,7 @@ INLINE void render_bg_regular(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X],
             int tilemap_y = (ppu->y + vofs) % 256;
 
             int se_number = (tilemap_x / 8) + (tilemap_y / 8) * 32;
-            se.raw = half_from_byte_array(ppu->vram,
-                                          (screen_base_addr + screenblock_number * SCREENBLOCK_SIZE + se_number * 2));
+            se.raw = half_from_byte_array(ppu->vram, (screen_base_addr + screenblock_number * SCREENBLOCK_SIZE + se_number * 2));
             render_screenentry(ppu, line, x, se, bgcnt->is_256color, character_base_addr, tilemap_x, tilemap_y);
         } else {
             (*line)[x].raw = half_from_byte_array(ppu->pram, 0);
