@@ -45,6 +45,6 @@ void branch(arm7tdmi_t* state, arminstr_t * arminstr) {
 
     word newpc = (state->pc) + signed_offset;
     logdebug("[B] Hold on to your hats, we're jumping to 0x%02X", newpc)
-    set_pc(state, newpc);
+    set_pc(state, newpc & 0xFFFFFFFE);
 }
 

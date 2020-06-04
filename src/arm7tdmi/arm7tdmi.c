@@ -70,6 +70,7 @@ void fill_pipe(arm7tdmi_t* state) {
     }
 }
 
+// Sets the PC, fills the pipeline, and allows mode switching.
 void set_pc(arm7tdmi_t* state, word new_pc) {
     if (new_pc & 1u) {
         state->cpsr.thumb = true;

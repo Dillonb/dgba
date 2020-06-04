@@ -225,7 +225,12 @@ INLINE void set_register(arm7tdmi_t* state, word index, word newvalue) {
     } else if (index == 14) {
         set_lr(state, newvalue);
     } else if (index == 15) {
-        set_pc(state, newvalue);
+        // Writes to R15 should not allow mode switching.
+        if (state->cpsr.thumb) {
+            set_pc(state, newvalue | 1);
+        } else {
+            set_pc(state, newvalue & 0xFFFFFFFE);
+        }
     } else {
         logfatal("Attempted to write unknown register: r%d", index)
     }
