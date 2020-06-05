@@ -796,6 +796,17 @@ void ppu_vblank(gba_ppu_t* ppu) {
     render_screen(&ppu->screen);
 }
 
+void check_vcount(gba_ppu_t* ppu) {
+    if (ppu->y == ppu->DISPSTAT.vcount_setting) {
+        ppu->DISPSTAT.vcount = true;
+        if (ppu->DISPSTAT.vcount_irq_enable) {
+            request_interrupt(IRQ_VCOUNT);
+        }
+    } else {
+        ppu->DISPSTAT.vcount = false;
+    }
+}
+
 void ppu_end_hblank(gba_ppu_t* ppu) {
     dbg_tick(SCANLINE);
 
@@ -807,14 +818,7 @@ void ppu_end_hblank(gba_ppu_t* ppu) {
     ppu->DISPSTAT.hblank = false;
     ppu->y++;
 
-    if (ppu->y == ppu->DISPSTAT.vcount_setting) {
-        ppu->DISPSTAT.vcount = true;
-        if (ppu->DISPSTAT.vcount_irq_enable) {
-            request_interrupt(IRQ_VCOUNT);
-        }
-    } else {
-        ppu->DISPSTAT.vcount = false;
-    }
+    check_vcount(ppu);
 }
 
 void ppu_end_vblank(gba_ppu_t* ppu) {
@@ -824,6 +828,7 @@ void ppu_end_vblank(gba_ppu_t* ppu) {
     ppu->BG3Y.current.raw = ppu->BG3Y.initial.raw;
 
     ppu->y = 0;
+    check_vcount(ppu);
     dbg_tick(FRAME);
     ppu->DISPSTAT.vblank = false;
 }

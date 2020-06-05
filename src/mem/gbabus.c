@@ -194,7 +194,7 @@ void request_interrupt(gba_interrupt_t interrupt) {
                 break;
             case IRQ_VCOUNT:
                 if (bus->interrupt_enable.lcd_vcounter_match) {
-                    logwarn("VCount IRQ")
+                    logwarn("VCount IRQ: %d", ppu->DISPSTAT.vcount_setting)
                     cpu->irq = true;
                     bus->IF.vcount = true;
                 } else {
