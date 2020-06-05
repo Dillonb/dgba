@@ -45,6 +45,7 @@ void load_store_io(arm7tdmi_t* state, thumbinstr_t * thminstr) {
             byte bytevalue = value & 0xFF;
             state->write_byte(address, bytevalue, ACCESS_NONSEQUENTIAL);
         } else {
+            logdebug("Saving 0x%08X to 0x%08X", value, address);
             state->write_word(address, value, ACCESS_NONSEQUENTIAL);
         }
     }
