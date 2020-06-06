@@ -3,7 +3,6 @@
 
 void multiply(arm7tdmi_t* state, arminstr_t* arminstr) {
     multiply_t* instr = &arminstr->parsed.MULTIPLY;
-    unimplemented(instr->rm == instr->rd, "rm must not be the same as rd!")
 
     unimplemented(instr->rd == 15, "rd must not be 15!")
     unimplemented(instr->rn == 15, "rn must not be 15!")
