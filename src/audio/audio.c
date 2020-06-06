@@ -30,10 +30,17 @@ INLINE float convert_sample(byte sample) {
     return ((((float)ssample - s8_min) * (f32_max - f32_min)) / (s8_max - s8_min)) + f32_min;
 }
 
+INLINE float mix(gba_apu_t* apu) {
+    float fifo0 = convert_sample(apu->fifo[0].sample);
+    float fifo1 = convert_sample(apu->fifo[1].sample);
+
+    return (fifo0 + fifo1) / 2;
+}
+
 void apu_push_sample(gba_apu_t* apu) {
     uint64_t size = apu->bigbuffer.write_index - apu->bigbuffer.read_index;
     if (size < AUDIO_BIGBUFFER_SIZE) {
-        float sample = (convert_sample(apu->fifo[0].sample) + convert_sample(apu->fifo[1].sample)) / 2;
+        float sample = mix(apu);
         apu->bigbuffer.buf[(apu->bigbuffer.write_index++) % AUDIO_BIGBUFFER_SIZE] = sample;
     }
 }
