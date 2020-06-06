@@ -1117,7 +1117,8 @@ void gba_write_byte(word addr, byte value, access_type_t access_type) {
                     logwarn("Tried to access backup when backup type unknown!")
                     break;
                 case EEPROM:
-                    logfatal("Backup type EEPROM unimplemented!")
+                    logwarn("Ignoring byte write to EEPROM: [0x%08X]=0x%02X", addr, value)
+                    break;
                 case FLASH64K:
                 case FLASH128K:
                     write_byte_flash(mem, bus, addr, value);
