@@ -61,7 +61,7 @@ typedef struct gba_apu {
 
 gba_apu_t* init_apu(bool enable_audio);
 void sound_timer_overflow(gba_apu_t* apu, int n);
-void write_fifo(gba_apu_t* apu, int channel, word value);
+void write_fifo(gba_apu_t* apu, int channel, word value, word mask);
 void apu_push_sample(gba_apu_t* apu);
 #ifdef ENABLE_AUDIO
 #define apu_tick(apu) do { if (++apu->apu_cycle_counter > SAMPLE_EVERY_CYCLES) { apu->apu_cycle_counter = 0; apu_push_sample(apu); } } while(0)

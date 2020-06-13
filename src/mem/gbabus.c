@@ -632,12 +632,10 @@ INLINE void write_word_ioreg_masked(word addr, word value, word mask) {
     word maskedaddr = addr & 0xFFF;
     switch (maskedaddr) {
         case IO_FIFO_A:
-            unimplemented(mask != 0xFFFFFFFF, "Write to FIFO not all at once")
-            write_fifo(apu, 0, value);
+            write_fifo(apu, 0, value, mask);
             break;
         case IO_FIFO_B:
-            unimplemented(mask != 0xFFFFFFFF, "Write to FIFO not all at once")
-            write_fifo(apu, 1, value);
+            write_fifo(apu, 1, value, mask);
             break;
         case IO_BG2X:
         case IO_BG2Y:

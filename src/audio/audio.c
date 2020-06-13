@@ -77,7 +77,7 @@ gba_apu_t* init_apu(bool enable_audio) {
     return apu;
 }
 
-void write_fifo(gba_apu_t* apu, int channel, word value) {
+void write_fifo(gba_apu_t* apu, int channel, word value, word mask) {
 #ifdef ENABLE_AUDIO
     if (!apu->enable_audio) {
         return;
@@ -87,7 +87,10 @@ void write_fifo(gba_apu_t* apu, int channel, word value) {
     if (size <= 28) {
         for (int b = 0; b < 4; b++) {
             byte sample = (value >> (b * 8)) & 0xFF;
-            apu->fifo[channel].buf[(apu->fifo[channel].write_index++) % SOUND_FIFO_SIZE] = sample;
+            byte bmask = (mask >> (b * 8)) & 0xFF;
+            if (bmask == 0xFF) {
+                apu->fifo[channel].buf[(apu->fifo[channel].write_index++) % SOUND_FIFO_SIZE] = sample;
+            }
         }
     }
 #endif
