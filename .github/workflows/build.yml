@@ -23,6 +23,7 @@ jobs:
           cd build
           cmake -DCMAKE_BUILD_TYPE=Release ..
           make
+          make test
 
       - name: Collect files
         run: |
@@ -53,6 +54,7 @@ jobs:
           cd build
           cmake -DCMAKE_BUILD_TYPE=Release ..
           make
+          make test
 
       - name: Collect files
         run: |
