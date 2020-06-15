@@ -1,5 +1,5 @@
 # gba
-![CI](https://github.com/Dillonb/gba/workflows/CI/badge.svg)
+![Build](https://github.com/Dillonb/gba/workflows/Build/badge.svg)
 
 It's a gba emulator. Things are _mostly working_.
 
