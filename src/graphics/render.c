@@ -1,4 +1,5 @@
 #include <SDL.h>
+#include <SDL_gamecontroller.h>
 
 #include "render.h"
 #include "../common/log.h"
@@ -19,9 +20,38 @@ static uint32_t window_id;
 static SDL_Renderer* renderer = NULL;
 static SDL_Texture* buffer = NULL;
 
+// TODO: Support multiple, maybe up to 4?
+SDL_GameController* controller = NULL;
+SDL_Joystick* joystick = NULL;
+int joystickId = -1;
+
+void gba_refresh_gamepads() {
+    if (controller != NULL) {
+        SDL_GameControllerClose(controller);
+        controller = NULL;
+        joystick = NULL;
+    }
+
+    bool found_one = false;
+
+    for (int i = 0; i < SDL_NumJoysticks(); i++) {
+        if (SDL_IsGameController(i)) {
+            if (!found_one) {
+                found_one = true;
+                controller = SDL_GameControllerOpen(i);
+                if (controller) {
+                    joystick = SDL_GameControllerGetJoystick(controller);
+                }
+            } else {
+                printf("Found more than one joystick! WARNING: only the first will be used!\n");
+            }
+        }
+    }
+}
+
 void initialize() {
     initialized = true;
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER) < 0) {
         logfatal("SDL couldn't initialize! %s", SDL_GetError());
     }
 
@@ -135,6 +165,59 @@ void update_key(SDL_Keycode sdlk, bool state) {
     }
 }
 
+void update_joybutton(byte button, bool state) {
+    KEYINPUT_t* KEYINPUT = get_keyinput();
+    switch (button) {
+        case SDL_CONTROLLER_BUTTON_DPAD_UP:
+            KEYINPUT->up = !state;
+            break;
+        case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+            KEYINPUT->down = !state;
+            break;
+        case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
+            KEYINPUT->left = !state;
+            break;
+        case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
+            KEYINPUT->right = !state;
+            break;
+        case SDL_CONTROLLER_BUTTON_A:
+            KEYINPUT->a = !state;
+            break;
+        case SDL_CONTROLLER_BUTTON_B:
+            KEYINPUT->b = !state;
+            break;
+        case SDL_CONTROLLER_BUTTON_START:
+            KEYINPUT->start = !state;
+            break;
+        case SDL_CONTROLLER_BUTTON_GUIDE:
+        case SDL_CONTROLLER_BUTTON_BACK:
+            KEYINPUT->select = !state;
+            break;
+        case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
+            KEYINPUT->l = !state;
+            break;
+        case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
+            KEYINPUT->r = !state;
+            break;
+        default:
+            break;
+    }
+}
+
+void update_joyaxis(byte axis, int16_t value) {
+    KEYINPUT_t* KEYINPUT = get_keyinput();
+    switch (axis) {
+        case SDL_CONTROLLER_AXIS_LEFTX:
+            KEYINPUT->left = value > -8000;
+            KEYINPUT->right = value < 8000;
+            break;
+        case SDL_CONTROLLER_AXIS_LEFTY:
+            KEYINPUT->down = value < 8000;
+            KEYINPUT->up = value > -8000;
+            break;
+    }
+}
+
 void gba_handle_event(SDL_Event* event) {
     switch (event->type) {
         case SDL_QUIT:
@@ -153,8 +236,22 @@ void gba_handle_event(SDL_Event* event) {
         case SDL_KEYUP:
             if (event->key.windowID == window_id) {
                 update_key(event->key.keysym.sym, false);
-                break;
             }
+            break;
+        case SDL_CONTROLLERDEVICEADDED:
+        case SDL_CONTROLLERDEVICEREMOVED:
+        case SDL_CONTROLLERDEVICEREMAPPED:
+            gba_refresh_gamepads();
+            break;
+        case SDL_CONTROLLERBUTTONDOWN:
+            update_joybutton(event->cbutton.button, true);
+            break;
+        case SDL_CONTROLLERBUTTONUP:
+            update_joybutton(event->cbutton.button, false);
+            break;
+        case SDL_CONTROLLERAXISMOTION:
+            update_joyaxis(event->caxis.axis, event->caxis.value);
+            break;
         default:
             break;
     }
