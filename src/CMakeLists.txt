@@ -33,6 +33,7 @@ add_library(core
         mem/gpio/rtc.c mem/gpio/rtc.h
         mem/mgba_debug.c mem/mgba_debug.h
         mem/backup/eeprom.c mem/backup/eeprom.h)
+target_link_libraries(core m)
 
 IF(NOT MinGW)
     IF(Capstone_FOUND)

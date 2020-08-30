@@ -204,17 +204,49 @@ void update_joybutton(byte button, bool state) {
     }
 }
 
+int16_t joyx, joyy;
+
+#define SLICE_OFFSET 67.5
+#define CHECKSLICE(degrees, angle) (degrees > (angle - SLICE_OFFSET) && degrees < (angle + SLICE_OFFSET))
+
 void update_joyaxis(byte axis, int16_t value) {
     KEYINPUT_t* KEYINPUT = get_keyinput();
     switch (axis) {
         case SDL_CONTROLLER_AXIS_LEFTX:
-            KEYINPUT->left = value > -8000;
-            KEYINPUT->right = value < 8000;
+            joyx = value;
             break;
         case SDL_CONTROLLER_AXIS_LEFTY:
-            KEYINPUT->down = value < 8000;
-            KEYINPUT->up = value > -8000;
+            joyy = value;
             break;
+        default:
+            break;
+    }
+
+    if (abs(joyx) < 8000 && abs(joyy) < 8000) {
+        KEYINPUT->left = true;
+        KEYINPUT->right = true;
+        KEYINPUT->up = true;
+        KEYINPUT->down = true;
+    } else {
+
+        // normalize to unit circle
+        double adjusted_joyx = (double)joyx / 32768;
+        double adjusted_joyy = (double)joyy / -32768; // y axis is reversed from what you'd expect, so flip it back with this division
+
+        // what direction are we pointing?
+        double degrees = atan2(adjusted_joyy, adjusted_joyx) * 180 / M_PI;
+
+        // atan2 returns negative numbers for values > 180
+        if (degrees < 0) {
+            degrees = 360 + degrees;
+        }
+
+        // 135 degree slices, overlapping.
+        KEYINPUT->up = !CHECKSLICE(degrees, 90);
+        KEYINPUT->down = !CHECKSLICE(degrees, 270);
+        KEYINPUT->left = !CHECKSLICE(degrees, 180);
+        // Slightly different since it's around the 0 angle
+        KEYINPUT->right = !(degrees < SLICE_OFFSET || degrees > (360 - SLICE_OFFSET));
     }
 }
 
