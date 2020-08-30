@@ -29,13 +29,12 @@ void multiply_long(arm7tdmi_t* state, arminstr_t* arminstr) {
     multiply_long_t* instr = &arminstr->parsed.MULTIPLY_LONG;
     uint64_t rmdata = get_register(state, instr->rm);
     uint64_t rsdata = get_register(state, instr->rs);
-    uint64_t result;
     if (instr->u) {
         rmdata = sign_extend_64(rmdata, 32, 64);
         rsdata = sign_extend_64(rsdata, 32, 64);
     }
 
-    result = rmdata * rsdata;
+    uint64_t result = rmdata * rsdata;
 
     if (instr->a) { // accumulate (add on to what's already set)
         uint64_t existing = get_register(state, instr->rdhi);
