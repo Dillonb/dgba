@@ -405,13 +405,6 @@ void render_bg_affine(gba_ppu_t* ppu, gba_color_t (*line)[GBA_SCREEN_X], BGCNT_t
         if (bgcnt->wraparound) {
             adjusted_x %= bg_width;
             adjusted_y %= bg_height;
-
-            if (adjusted_x < 0) {
-                adjusted_x += bg_width;
-            }
-            if (adjusted_y < 0) {
-                adjusted_y += bg_height;
-            }
         }
 
         if (adjusted_y < bg_height && adjusted_x < bg_width && should_render_pixel_window(ppu, screen_x, ppu->y, win0in, win1in, winout, objin)) {
