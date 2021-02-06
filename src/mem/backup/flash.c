@@ -9,8 +9,16 @@
 #define ADDRESS13 0xE005555
 #define ADDRESS2  0xE002AAA
 
-#define DEVICE 0x13
-#define MANUFACTURER 0x62
+// Sanyo
+#define DEVICE_128K       0x13
+#define MANUFACTURER_128K 0x62
+
+// Panasonic
+#define DEVICE_64K       0x1B
+#define MANUFACTURER_64K 0x32
+
+#define FLASH_MANUFACTURER(type) ((type) == FLASH128K ? (MANUFACTURER_128K) : (MANUFACTURER_64K))
+#define FLASH_DEVICE(type) ((type) == FLASH128K ? (DEVICE_128K) : (DEVICE_64K))
 
 #define FLASHC_CHIP_ID 0xAA5590
 #define FLASHC_EXIT_CHIP_ID 0xAA55F0
@@ -222,9 +230,9 @@ byte read_byte_flash(gbamem_t* mem, word address, backup_type_t type) {
             break;
         case FLASH_CHIP_ID:
             if (address == 0x0E000000) {
-                return MANUFACTURER; // Stubbing flash
+                return FLASH_MANUFACTURER(type);
             } else if (address == 0x0E000001) {
-                return DEVICE; // Stubbing flash
+                return FLASH_DEVICE(type);
             }
             logfatal("Unimplemented: Reading byte from [0x%08X] when in mode FLASH_CHIP_ID", address)
             break;
